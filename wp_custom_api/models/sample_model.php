@@ -2,8 +2,6 @@
 
 namespace WP_Custom_API\Models;
 
-use WP_Custom_API\Core\Model;
-
 class Sample_Model {
     public const TABLE_NAME = "sample";
     public const TABLE_SCHEMA = 
@@ -17,4 +15,5 @@ class Sample_Model {
         'message' => 'varchar(255) NOT NULL',
         'created_at' => 'DATETIME DEFAULT CURRENT_TIMESTAMP',
     ];
+    public const RUN_MIGRATION = true;
 }

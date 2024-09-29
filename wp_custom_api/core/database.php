@@ -25,7 +25,7 @@ class Database
      * @since 1.0.0
      */
 
-    private const DB_CUSTOM_PREFIX = "custom_api_table_";
+    private const DB_CUSTOM_PREFIX = "custom_api_";
 
     /**
      * METHOD - table_name_err_msg
