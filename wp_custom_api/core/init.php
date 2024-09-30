@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace WP_Custom_API\Core;
 
 use WP_Custom_API\Core\Migration;
+use WP_Custom_API\Core\Error_Generator;
 
 /** 
  * Runs spl_autoload_register for all classes throughout the plugin based upon namespaces
@@ -18,7 +19,7 @@ class Init
     /**
      * PROPERTY
      * 
-     * @array FILES_LOADED
+     * @array files_loaded
      * Stores a list of files that were autoloaded in the plugin
      * 
      * @since 1.0.0
@@ -73,9 +74,7 @@ class Init
             $file_path = WP_CUSTOM_API_BASE_PATH . '/' . str_replace('\\', '/', $class) . '.php';
             if (file_exists($file_path)) {
                 require_once $file_path;
-            } else {
-                error_log("Autoloader error: File '{$file_path}' does not exist.");
-            }
+            } 
         });
     }
 

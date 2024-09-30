@@ -26,7 +26,6 @@ if (!defined('ABSPATH')) {
  */
 
 define("WP_CUSTOM_API_BASE_PATH", strtolower(str_replace('/', '', __DIR__)));
-
 define("WP_CUSTOM_API_ROOT_FOLDER_PATH", WP_CUSTOM_API_BASE_PATH . '/wp_custom_api');
 
 /**
@@ -40,11 +39,23 @@ define("WP_CUSTOM_API_FOLDER_AUTOLOAD_PATHS", ["core", "controllers", "permissio
  */
 
 require_once WP_CUSTOM_API_ROOT_FOLDER_PATH . '/core/init.php';
-
 use WP_Custom_API\Core\Init;
+
+/** 
+ * Load Error Generator to output errors that occur from the plugin
+ */
+
+require_once WP_CUSTOM_API_ROOT_FOLDER_PATH . '/core/error_generator.php';
+use WP_Custom_API\Core\Error_Generator;
 
 /** 
  * Initialize plugin
  */
 
 Init::run();
+
+/** 
+ * Output error messages that occurred when running the plugin
+ */
+
+add_action('admin_notices', [Error_Generator::class, 'display_errors']);

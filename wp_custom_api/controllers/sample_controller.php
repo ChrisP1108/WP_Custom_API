@@ -15,7 +15,7 @@ class Sample_Controller
         $result = Database::get_table_data(Sample_Model::TABLE_NAME);
 
         if (!$result['found']) {
-            return new WP_REST_Response(['msg' => $result['message']], 400);
+            return new WP_REST_Response([], 200);
         }
 
         return new WP_REST_Response($result['data'], 200);
