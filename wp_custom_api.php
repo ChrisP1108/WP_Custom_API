@@ -26,7 +26,7 @@ if (!defined('ABSPATH')) {
  */
 
 define("WP_CUSTOM_API_BASE_PATH", strtolower(str_replace('/', '', __DIR__)));
-define("WP_CUSTOM_API_ROOT_FOLDER_PATH", WP_CUSTOM_API_BASE_PATH . '/wp_custom_api');
+define("WP_CUSTOM_API_ROOT_FOLDER_PATH", WP_CUSTOM_API_BASE_PATH . '/');
 
 /**
  * This is a list of folders within the WP_CUSTOM_API_ROOT_FOLDER_PATH that will be auto loaded when the plugin runs 

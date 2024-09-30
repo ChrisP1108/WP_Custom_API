@@ -2,9 +2,10 @@
 
 namespace WP_Custom_API\Models;
 
-class Sample_Model {
+class Sample_Model
+{
     public const TABLE_NAME = "sample";
-    public const TABLE_SCHEMA = 
+    public const TABLE_SCHEMA =
     [
         'first_name' => 'varchar(100) NOT NULL',
         'last_name' => 'varchar(100) NOT NULL',

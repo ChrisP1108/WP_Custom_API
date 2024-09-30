@@ -6,8 +6,6 @@ namespace WP_Custom_API\Core;
 
 use WP_Custom_API\Core\Database;
 use WP_Custom_API\Core\Error_Generator;
-use WP_Custom_API\Core\Init;
-use \ReflectionClass;
 
 /** 
  * Used for creating and dropping database tables.
