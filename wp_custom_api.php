@@ -2,7 +2,7 @@
 
 /**
  * Plugin Name: WP Custom API
- * Description: This custom made plugin is meant for those seeking to utilize the Wordress REST API with their own custom PHP code.  This plugin provides a structure for routing, controllers, and models for managing your custom API routes.
+ * Description: This custom made plugin is meant for those seeking to utilize the Wordress REST API with their own custom PHP code.  This plugin provides a structure for routing, controllers, and models and a database helper for managing custom API routing.
  * Author: Chris Paschall
  * Version: 1.0.0
  */
@@ -39,6 +39,7 @@ define("WP_CUSTOM_API_FOLDER_AUTOLOAD_PATHS", ["core", "controllers", "permissio
  */
 
 require_once WP_CUSTOM_API_ROOT_FOLDER_PATH . '/core/init.php';
+
 use WP_Custom_API\Core\Init;
 
 /** 
@@ -46,6 +47,7 @@ use WP_Custom_API\Core\Init;
  */
 
 require_once WP_CUSTOM_API_ROOT_FOLDER_PATH . '/core/error_generator.php';
+
 use WP_Custom_API\Core\Error_Generator;
 
 /** 
