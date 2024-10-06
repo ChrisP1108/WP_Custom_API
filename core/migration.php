@@ -38,12 +38,12 @@ class Migration
         }
         foreach ($models_classes_names as $model_class_name) {
             $model = new $model_class_name;
-            $table_exists = Database::table_exists($model::TABLE_NAME);
-            if (!$table_exists && $model::RUN_MIGRATION ?? false) {
-                $table_creation_result = Database::create_table($class::TABLE_NAME, $class::TABLE_SCHEMA);
-                if (!$table_creation_result['created']) {
+            $table_exists = Database::table_exists($model::table_name());
+            if (!$table_exists && $model::run_migration() ?? false) {
+                $table_creation_result = Database::create_table($class::table_name(), $class::table_schema());
+                if (!$table_creation_result['ok']) {
                     Error_Generator::generate('Error creating table in database', 'The table name "'
-                        . Database::get_table_full_name($class::TABLE_NAME) . '" had an error in being created in MySql through the WP_Custom_API plugin.');
+                        . Database::get_table_full_name($class::table_name()) . '" had an error in being created in MySql through the WP_Custom_API plugin.');
                 }
             }
         }

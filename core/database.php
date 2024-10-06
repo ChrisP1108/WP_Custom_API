@@ -38,12 +38,9 @@ class Database
      * @since 1.0.0
      */
 
-    public static function response(bool $ok = false, string $msg = '', ?array $data = null): object
+    public static function response(bool $ok = false, string $msg = '', ?array $data = null): array
     {
-        if ($data) {
-            $data = (object) $data;
-        }
-        return (object) ['ok' => $ok, 'msg' => $msg, 'data' => $data];
+        return ['ok' => $ok, 'msg' => $msg, 'data' => $data];
     }
 
     /**
@@ -53,7 +50,7 @@ class Database
      * @since 1.0.0
      */
 
-    public static function table_name_err_msg(): object
+    public static function table_name_err_msg()
     {
         return self::response(false, 'Invalid table name. Only alphanumeric characters and underscores are allowed.');
     }
@@ -105,7 +102,7 @@ class Database
      * @since 1.0.0
      */
 
-    public static function create_table(string $table_name, array $table_schema): object
+    public static function create_table(string $table_name, array $table_schema): array
     {
         if (self::table_exists($table_name)) return self::response(false, 'Table already exists in database.');
         global $wpdb;
@@ -136,7 +133,7 @@ class Database
      * @since 1.0.0
      */
 
-    public static function drop_table(string $table_name): object
+    public static function drop_table(string $table_name): array
     {
         if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore cannot be dropped.');
         global $wpdb;
@@ -164,14 +161,14 @@ class Database
      * @since 1.0.0
      */
 
-    public static function get_table_data(string $table_name): object
+    public static function get_table_data(string $table_name): array
     {
         if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore no table rows data can be retrieved.');
         global $wpdb;
         $table_name_to_query = self::get_table_full_name($table_name);
         if (!$table_name_to_query) return self::table_name_err_msg();
         $rows_data = $wpdb->get_results("SELECT * FROM $table_name_to_query", ARRAY_A);
-        if (empty($rows_data)) return self::response(false, 'No table row data found. Table is empty.');
+        if (empty($rows_data)) return self::response(true, 'No table row data found. Table is empty.', []);
         return self::response(true, count($rows_data) . ' table row(s) retrieved successfully.', $rows_data);
     }
 
@@ -193,7 +190,7 @@ class Database
      * @since 1.0.0
      */
 
-    public static function get_rows_data(string $table_name, string $column, ?string $value, bool $multiple = true): object
+    public static function get_rows_data(string $table_name, string $column, ?string $value, bool $multiple = true): array
     {
         if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore no table rows data can be retrieved.');
         global $wpdb;
@@ -225,7 +222,7 @@ class Database
      * @since 1.0.0
      */
 
-    public static function insert_row(string $table_name, array $data): object
+    public static function insert_row(string $table_name, array $data): array
     {
         if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore a row cannot be inserted.');
         global $wpdb;
@@ -250,7 +247,7 @@ class Database
      * @since 1.0.0
      */
 
-    public static function update_row(string $table_name, int $id, array $data): object
+    public static function update_row(string $table_name, int $id, array $data): array
     {
         if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore the table row cannot be updated.');
         global $wpdb;
@@ -278,7 +275,7 @@ class Database
      * @since 1.0.0
      */
 
-    public static function delete_row(string $table_name, int $id): object
+    public static function delete_row(string $table_name, int $id): array
     {
         if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore the table row cannot be deleted.');
         global $wpdb;
