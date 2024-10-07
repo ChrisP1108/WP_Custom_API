@@ -37,7 +37,8 @@ class Auth_Token {
      * 
      * @param bool $ok - Used to 
      * @param string $id - Id from token
-     * @return array - Returns array with keys of "ok" for boolean if token was valid, key of "id" for id from token, and a "msg" key that is optional 
+     * @param string $msg - Provide response message
+     * @return array - Returns array with keys of "ok" for boolean if token was valid, key of "id" for id from token, and a "msg" key for a response message
      * 
      * @since 1.0.0
      */
@@ -52,7 +53,7 @@ class Auth_Token {
      * 
      * @param int $id - Id of user for token generation
      * @param string $token_name - Name of token to be stored.  Token name is also the cookie name
-     * @return string|null - Returns the generated token if successful, null if not
+     * @return array - Returns array with "ok", "id", and "msg" keys
      * 
      * @since 1.0.0
      */
@@ -76,12 +77,12 @@ class Auth_Token {
      * Checks that token is valid.  If not, cookie is removed and false value is returned
      * 
      * @param string $token_name - Name of token to verify. Stored as http only cookie with the same name
-     * @return bool - Returns true if valid, false if not
+     * @return array - Returns array with "ok", "id", and "msg" keys
      * 
      * @since 1.0.0
      */
 
-    public static function validate(string $token_name = null) {
+    public static function validate(string $token_name = null): array {
         if (!$token_name) return self::response(false, null, "A token name must be provided for validation.");
         $token = $_COOKIE[$token_name] ?? null;
         if (!$token) return self::response(false, null, "No token with the name of `".$token_name."` was found.");  
