@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace WP_Custom_API\Core;
 
+use WP_Custom_API\Config;
+
 /** 
  * Used for interating with Wordpress database. 
  * Allows API to create tables, drop tables, get table data, get table rows based upon corresponding columns and values, get a single table row based upon corresponding column and value, insert rows, update rows, and delete rows
@@ -15,17 +17,6 @@ namespace WP_Custom_API\Core;
 
 class Database
 {
-
-    /**
-     * CONSTANT
-     * 
-     * @const string BASE_API_ROUTE
-     * Establishes base path for API. Any route will have a url path of {origin}/wp-json/custom-api/v1/${$route}
-     * 
-     * @since 1.0.0
-     */
-
-    private const DB_CUSTOM_PREFIX = "custom_api_";
 
     /**
      * METHOD - response
@@ -69,7 +60,7 @@ class Database
     {
         if (!preg_match('/^[a-zA-Z0-9_]+$/', $table_name)) return null;
         global $wpdb;
-        return $wpdb->prefix . self::DB_CUSTOM_PREFIX . $table_name;
+        return $wpdb->prefix . Config::DB_PREFIX . $table_name;
     }
 
     /**

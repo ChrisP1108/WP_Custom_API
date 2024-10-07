@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace WP_Custom_API\Core;
 
+use WP_Custom_API\Config;
 use WP_Custom_API\Core\Migration;
-use WP_Custom_API\Core\Error_Generator;
 
 /** 
  * Runs spl_autoload_register for all classes throughout the plugin based upon namespaces
@@ -89,7 +89,7 @@ class Init
 
     public static function folders_autoloader(): void
     {
-        foreach (WP_CUSTOM_API_FOLDER_AUTOLOAD_PATHS as $folder_path) {
+        foreach (Config::FOLDER_AUTOLOAD_PATHS as $folder_path) {
             foreach (glob(WP_CUSTOM_API_ROOT_FOLDER_PATH . '/' . $folder_path . '/*.php') as $file) {
                 require_once $file;
                 self::$files_loaded[] = $file;

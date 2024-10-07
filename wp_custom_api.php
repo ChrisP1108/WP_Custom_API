@@ -11,6 +11,7 @@
  * NOTE - DO NOT MODIFY OR CREATE ADDITIONAL FILES INSIDE THE "CORE" FOLDER OF THIS PLUGIN.
  * 
  * You can create, update and delete files within the "controllers", "permisssions", "models", and "routes" folders only.
+ * The config.php file can also be adjusted
  */
 
 /** 
@@ -28,23 +29,11 @@ if (!defined('ABSPATH')) {
 define("WP_CUSTOM_API_BASE_PATH", strtolower(str_replace('/', '', __DIR__)));
 define("WP_CUSTOM_API_ROOT_FOLDER_PATH", WP_CUSTOM_API_BASE_PATH . '/');
 
-/**
- * This is a list of folders within the WP_CUSTOM_API_ROOT_FOLDER_PATH that will be auto loaded when the plugin runs 
+/** 
+ * Load config settings for plugin
  */
 
-define("WP_CUSTOM_API_FOLDER_AUTOLOAD_PATHS", ["core", "controllers", "permissions", "models", "routes"]);
-
-/**
- * Secret key used for auth token generation for the plugin
- */
-
-define("WP_CUSTOM_API_SECRET_KEY", "6835be5d3e17ff0352492525c4d9c9291e61e51e10d07067f39334be1893bf92");
-
-/**
- * Establishes a default expiration time of one is not specified.  Defaults to 604800 seconds(7 days)
- */
-
-define("WP_CUSTOM_API_TOKEN_EXPIRATION", 604800);
+require_once WP_CUSTOM_API_ROOT_FOLDER_PATH . '/config.php';
 
 /** 
  * Load Init class to initialize plugin

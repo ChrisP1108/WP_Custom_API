@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace WP_Custom_API\Core;
 
+use WP_Custom_API\Config;
+
 /** 
  * Used for generating authentication tokens to keep users logged in for a specified period of time
  * These auth tokens are stored on the client side via an HTTP only cookie for improved security.
@@ -16,7 +18,7 @@ class Auth_Token {
     /**
      * METHOD - remove_token
      * 
-     * Removes invalid token by removing cookie name with corresponding name
+     * Removes token by removing cookie name with corresponding name
      * 
      * @param string $token_name - Name of token to remove
      * @return void
@@ -24,8 +26,8 @@ class Auth_Token {
      * @since 1.0.0
      */
 
-    private static function remove_token(string $token_name):void {
-        setcookie($token_name, '', time() - 300, '/'); 
+    public static function remove_token(string $token_name = null): void {
+        if ($token_name) setcookie($token_name, '', time() - 300, '/');
     }
 
     /**
@@ -35,14 +37,14 @@ class Auth_Token {
      * 
      * @param bool $ok - Used to 
      * @param string $id - Id from token
-     * @return array - Returns array with keys of "ok" for boolean if token was valid, key of "id" for id from token 
+     * @return array - Returns array with keys of "ok" for boolean if token was valid, key of "id" for id from token, and a "msg" key that is optional 
      * 
      * @since 1.0.0
      */
 
-    private static function response(bool $ok = false, string $id = null):array {
+    private static function response(bool $ok = false, string|int $id = null, string $msg = null): array {
         if ($id) $id = intval($id);
-        return ['ok' => $ok, 'id' => $id];
+        return ['ok' => $ok, 'id' => $id, 'msg' => $msg];
     }
 
     /**
@@ -55,14 +57,17 @@ class Auth_Token {
      * @since 1.0.0
      */
 
-    public static function generate(int $id = null, string $token_name = ''): bool {
-        if (!$id || $token_name === '') return null;
-        $expiration = time() + WP_CUSTOM_API_TOKEN_EXPIRATION;
-        $data = strval($id) . '|' . $expiration;
-        $hmac = hash_hmac("sha256", $data, WP_CUSTOM_API_SECRET_KEY);
+    public static function generate(int $id = null, string $token_name = null, $expiration = Config::TOKEN_EXPIRATION): array {
+        if (!$id || !$token_name) return self::response(false, $id, "`id` and `token_name` parameters required to generate token.");
+        $expiration_time = time() + intval($expiration);
+        $data = strval($id) . '|' . $expiration_time;
+        $hmac = hash_hmac("sha256", $data, Config::SECRET_KEY);
         $token = $data . '.' . $hmac;
-        setcookie($token_name, $token, $expiration, "/", "", true, true);
-        return true;
+        if (!wp_is_using_https() && Config::TOKEN_OVER_HTTPS_ONLY) {
+            return self::response(false, $id, "Token could not be stored as a cookie on the client, as the `TOKEN_OVER_HTTPS_ONLY` config variable is set to true and the server is not using HTTPS.");
+        }
+        setcookie($token_name, $token, $expiration_time, "/", "", Config::TOKEN_OVER_HTTPS_ONLY, Config::TOKEN_COOKIE_HTTP_ONLY);
+        return self::response(true, $id, "Token successfully generated.");
     }
 
     /**
@@ -76,25 +81,25 @@ class Auth_Token {
      * @since 1.0.0
      */
 
-    public static function validate(string $token_name = '') {
-        if (empty($token_name)) return self::response(false);
+    public static function validate(string $token_name = null) {
+        if (!$token_name) return self::response(false, null, "A token name must be provided for validation.");
         $token = $_COOKIE[$token_name] ?? null;
-        if (!$token) return false;  
+        if (!$token) return self::response(false, null, "No token with the name of `".$token_name."` was found.");  
         list($data, $received_hmac) = explode(".", $token, 2);
         if (!isset($received_hmac) || !isset($data)) {
             self::remove_token($token_name);
-            return self::response(false); 
+            return self::response(false, null, "Inadequate data from existing token.  May be invalid."); 
         }
         list($id, $expiration) = explode('|', $data);
-        if ($expiration <= time()) {
+        if (intval($expiration) <= time() || !isset($id)) {
             self::remove_token($token_name);
-            return self::response(false); 
+            return self::response(false, null, "Invalid token."); 
         }
-        $computed_hmac = hash_hmac("sha256", $data, WP_CUSTOM_API_SECRET_KEY);
-        if(!hash_equals($computed_hmac, $received_hmac)) {
+        $computed_hmac = hash_hmac("sha256", $data, Config::SECRET_KEY);
+        if (!hash_equals($computed_hmac, $received_hmac)) {
             self::remove_token($token_name);
-            return self::response(false); 
+            return self::response(false, null, "Invalid token."); 
         }
-        return self::response(true, $id);
+        return self::response(true, $id, "Token valid.");
     }
 }

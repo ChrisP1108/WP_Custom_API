@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace WP_Custom_API\Core;
 
+use WP_Custom_API\Config;
+
 /** 
  * Used for setting up API Routes.  
  * Files in the routing folder utilize this class for establishing API Routes and passing in controller and permission callbacks.
@@ -13,17 +15,6 @@ namespace WP_Custom_API\Core;
 
 class Router
 {
-
-    /**
-     * CONSTANT
-     * 
-     * @const string BASE_API_ROUTE
-     * Establishes base path for API. Any route will have a url path of {origin}/wp-json/custom-api/v1/${$route}
-     * 
-     * @since 1.0.0
-     */
-
-    private const BASE_API_ROUTE = "custom-api/v1";
 
     /**
      * METHOD - register_rest_api_route
@@ -41,7 +32,7 @@ class Router
     public static function register_rest_api_route(string $method, string $route, ?callable $callback, ?callable $permission_callback)
     {
         add_action("rest_api_init", function () use ($method, $route, $callback, $permission_callback) {
-            register_rest_route(self::BASE_API_ROUTE, $route, [
+            register_rest_route(Config::BASE_API_ROUTE, $route, [
                 "methods" => $method,
                 "permission_callback" => $permission_callback ? $permission_callback : '__return_true',
                 "callback" => $callback
