@@ -19,8 +19,6 @@ class Sample_Controller
             return new Response($result['msg'], 500);
         }
 
-        var_dump(Auth_Token::generate(2, "Sample_Token")['msg']);
-
         return new Response($result['data'], 200);
     }
 }
