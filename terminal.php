@@ -44,7 +44,7 @@ $cr = explode(":", $argv[2]);
 
 define("COMMAND", strtolower($cr[0]));
 define("RESOURCE", strtolower($cr[1]));
-define("NAME", strtolower($argv[3]));
+define("NAME", ucfirst(strtolower($argv[3])));
 
 /**
  * Process create commands from switch below Create class
@@ -54,22 +54,64 @@ class Create
 {
 
     /**
-     * Creates controller.
+     * Generates file content based upon parameters and global variable values and then creates file.  Makes sure file of same name doesn't already exist and makes sure file was created successfully.
+     */ 
+
+    private static function create_file($type, $dependencies) {
+
+        // Check that file of the same name doesn't already exist
+
+        if (file_exists(FOLDER_PATH[$type] . NAME . ".php")) {
+            echo ucfirst($type) . " of the same name already exists.";
+            exit;
+        }
+
+        // Generate file content
+
+        $file_content = "<?php\n\ndeclare(strict_types=1);\n\nnamespace ".APP_NAME."\\".ucfirst(FOLDER_NAME[$type]) .";\n";
+        foreach($dependencies as $dependency) {
+            $file_content .= "use " . $dependency . ";\n";
+        }
+        $file_content .= "\nclass " . NAME . "\n{\n\n}";
+
+        // Create file and check that it was successfullyc created
+
+        $create_file = file_put_contents(FOLDER_PATH[$type] . NAME . '.php', $file_content);
+        if (!$create_file) {
+            echo "Error creating ". ucfirst($type) ." file " . NAME . ".php";
+            exit;
+        }
+    }
+
+    /**
+     * Creates controller file.
      */
 
     public static function controller()
     {
-        if (file_exists(FOLDER_PATH['controller'] . NAME . ".php")) {
-            echo "Controller of the same name already exists.";
-            exit;
-        }
-        $controller_file_content ="<?php \n\ndeclare(strict_types=1);\n\nnamespace ".APP_NAME."\\".ucfirst(FOLDER_NAME['controller']) .";\n\nuse \WP_REST_Response as Response;\nuse WP_Custom_API\Core\Database;\nuse WP_Custom_API\Models\Sample_Model;\nuse WP_Custom_API\Core\Auth_Token;\n\nclass " . ucfirst(NAME) . "\n{\n\n}";
-        $controller_created = file_put_contents(FOLDER_PATH['controller'] . NAME . '.php', $controller_file_content);
-        if ($controller_created) {
-        } else {
-            echo "Error creating controller file " . NAME . ".php";
-            exit;
-        }
+        $dependencies = [
+            "\WP_REST_Response as Response",
+            "WP_Custom_API\Core\Database",
+            "WP_Custom_API\Core\Auth_Token",
+            "WP_Custom_API\Models\\" . NAME
+        ];
+        self::create_file("controller", $dependencies);
+        echo "Controller " . NAME . " successfully created";
+    }
+
+    /**
+     * Creates router file.
+     */
+
+    public static function router()
+    {
+        $dependencies = [
+            "WP_Custom_API\Core\Router",
+            "WP_Custom_API\Controllers\\" . NAME,
+            "WP_Custom_API\Models\\" . NAME
+        ];
+        self::create_file("router", $dependencies);
+        echo "Router " . NAME . " successfully created";
     }
 
     /**
@@ -79,8 +121,8 @@ class Create
     public static function interface()
     {
         self::controller();
+        self::router();
 
-        // Create router file
         if (file_exists(FOLDER_PATH['route'] . NAME . ".php")) {
             return "Route of the same name already exists.";
         }

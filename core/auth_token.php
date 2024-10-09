@@ -8,7 +8,7 @@ use WP_Custom_API\Config;
 
 /** 
  * Used for generating authentication tokens to keep users logged in for a specified period of time
- * These auth tokens are stored on the client side via an HTTP only cookie for improved security.
+ * These auth tokens are stored as cookies on the client side
  * 
  * @since 1.0.0
  */
