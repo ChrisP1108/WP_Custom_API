@@ -55,32 +55,49 @@ class Create
 
     /**
      * Generates file content based upon parameters and global variable values and then creates file.  Makes sure file of same name doesn't already exist and makes sure file was created successfully.
-     */ 
+     */
 
-    private static function create_file($type, $dependencies) {
+    private static function create_file($type, $dependencies, $class_content = '')
+    {
 
         // Check that file of the same name doesn't already exist
 
-        if (file_exists(FOLDER_PATH[$type] . NAME . ".php")) {
+        if (file_exists(FOLDER_PATH[$type] . strtolower(NAME) . ".php")) {
             echo ucfirst($type) . " of the same name already exists.";
             exit;
         }
 
         // Generate file content
 
-        $file_content = "<?php\n\ndeclare(strict_types=1);\n\nnamespace ".APP_NAME."\\".ucfirst(FOLDER_NAME[$type]) .";\n";
-        foreach($dependencies as $dependency) {
+        $file_content = "<?php\n\ndeclare(strict_types=1);\n\nnamespace " . APP_NAME . "\\" . ucfirst(FOLDER_NAME[$type]) . ";\n";
+
+        if (!empty($dependencies)) $file_content .= "\n";
+
+        foreach ($dependencies as $dependency) {
             $file_content .= "use " . $dependency . ";\n";
         }
-        $file_content .= "\nclass " . NAME . "\n{\n\n}";
+
+        if ($type !== 'route') {
+
+            $file_content .= "\nclass " . NAME;
+
+            if ($type === 'model') $file_content .= " implements Model";
+
+            $file_content .= "\n{\n";
+
+            $file_content .= $class_content;
+
+            $file_content .= "\n}";
+        }
 
         // Create file and check that it was successfullyc created
 
-        $create_file = file_put_contents(FOLDER_PATH[$type] . NAME . '.php', $file_content);
+        $create_file = file_put_contents(FOLDER_PATH[$type] . strtolower(NAME) . '.php', $file_content);
         if (!$create_file) {
-            echo "Error creating ". ucfirst($type) ." file " . NAME . ".php";
+            echo "Error creating " . ucfirst($type) . " file " . strtolower(NAME) . ".php";
             exit;
         }
+        echo ucfirst($type) . " " . strtolower(NAME) . ".php file successfully created.\n";
     }
 
     /**
@@ -93,10 +110,32 @@ class Create
             "\WP_REST_Response as Response",
             "WP_Custom_API\Core\Database",
             "WP_Custom_API\Core\Auth_Token",
-            "WP_Custom_API\Models\\" . NAME
+            "WP_Custom_API\Models\\" . NAME . " as Model"
         ];
         self::create_file("controller", $dependencies);
-        echo "Controller " . NAME . " successfully created";
+    }
+
+    /**
+     * Creates model file.
+     */
+
+    public static function model()
+    {
+        $dependencies = [
+            "WP_Custom_API\Core\Model",
+        ];
+        $class_content = "    public static function table_name():string {\n        return '" . strtolower(NAME) . "';\n    }\n    public static function table_schema(): array {\n        return\n            [\n\n            ];\n    }\n    public static function run_migration(): bool {\n        return false;\n    }";
+        self::create_file("model", $dependencies, $class_content);
+    }
+
+    /**
+     * Creates permission file.
+     */
+
+    public static function permission()
+    {
+        $dependencies = [];
+        self::create_file("permission", $dependencies);
     }
 
     /**
@@ -107,11 +146,9 @@ class Create
     {
         $dependencies = [
             "WP_Custom_API\Core\Router",
-            "WP_Custom_API\Controllers\\" . NAME,
-            "WP_Custom_API\Models\\" . NAME
+            "WP_Custom_API\Controllers\\" . NAME . " as Controller",
         ];
-        self::create_file("router", $dependencies);
-        echo "Router " . NAME . " successfully created";
+        self::create_file("route", $dependencies);
     }
 
     /**
@@ -121,18 +158,9 @@ class Create
     public static function interface()
     {
         self::controller();
+        self::model();
+        self::permission();
         self::router();
-
-        if (file_exists(FOLDER_PATH['route'] . NAME . ".php")) {
-            return "Route of the same name already exists.";
-        }
-        $route_file_contents =
-            "<?php \n
-            use WP_Custom_API\Core\Router;\n
-            use WP_Custom_API\Controllers\Sample_Controller;\n\n";
-        $route_handler = fopen(FOLDER_PATH['route'], 'w');
-        if ($route_handler) {
-        }
     }
 }
 
@@ -146,22 +174,25 @@ switch (COMMAND) {
 
     case 'create':
         switch (RESOURCE) {
-            case 'interface':
-                echo 'create controller with the name of ' . NAME . '.';
-                break;
             case 'controller':
-                if (Create::controller()) echo NAME . " controller created successfully.";
-            case 'route':
-                echo 'create controller with the name of ' . NAME . '.';
-                break;
+                Create::controller();
+                exit;
             case 'model':
-                echo 'create model with the name of ' . NAME . '.';
-                break;
+                Create::model();
+                exit;
             case 'permission':
-                echo 'create permission with the name of ' . NAME . '.';
-                break;
+                Create::permission();
+                exit;
+            case 'route':
+                Create::router();
+                exit;
+            case 'interface':
+                Create::interface();
+                echo "Interface files for " . NAME . " created successfully. \n";
+                exit;
             default:
-                break;
+                echo "Invalid create request.  Create methods are `controller`, `model`, `permission`, `route`, and `interface`.";
+                exit;
         }
         break;
 

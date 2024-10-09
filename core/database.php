@@ -104,7 +104,7 @@ class Database
         foreach ($table_schema as $key => $value) {
             $create_table_query .= "$key $value, ";
         }
-        $create_table_query .= "PRIMARY KEY (id)) $charset_collate;";
+        $create_table_query .= "created DATETIME DEFAULT CURRENT_TIMESTAMP, updated datetime DEFAULT '0000-00-00 00:00:00' NOT NULL, PRIMARY KEY (id)) $charset_collate;";
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($create_table_query);
         if ($wpdb->last_error) return self::response(false, 'An error occurred when attempting to create the table: ' . $wpdb->last_error);

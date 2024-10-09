@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace WP_Custom_API\Models;
 
 use WP_Custom_API\Core\Model;
 
-class Sample_Model implements Model
+class Sample implements Model
 {
     public static function table_name():string {
         return "sample";
@@ -19,11 +21,10 @@ class Sample_Model implements Model
                 'how_did_you_hear_about_us' => 'varchar(50) NOT NULL',
                 'tell_us_how_you_heard_about_us' => 'varchar(255) NOT NULL',
                 'message' => 'varchar(255) NOT NULL',
-                'created_at' => 'DATETIME DEFAULT CURRENT_TIMESTAMP',
             ];
     }
-
     public static function run_migration(): bool {
         return true;
     }
 }
+

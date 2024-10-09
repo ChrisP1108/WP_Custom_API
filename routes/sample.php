@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
+namespace WP_Custom_API\Routes;
+
 use WP_Custom_API\Core\Router;
-use WP_Custom_API\Controllers\Sample_Controller;
+use WP_Custom_API\Controllers\Sample as Controller;
 
 // Get Sample Route
 
-Router::get("/samples", [Sample_Controller::class, 'get_all']);
+Router::get("/samples", [Controller::class, 'get_all']);
