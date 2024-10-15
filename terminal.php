@@ -20,7 +20,7 @@ define("FOLDER_NAME", [
     'controller' => 'controllers',
     'model' => 'models',
     'permission' => 'permissions',
-    'route' => 'routes',
+    'router' => 'routes',
 ]);
 
 /**
@@ -31,7 +31,7 @@ define("FOLDER_PATH", [
     'controller' => BASE_PATH . '/' . FOLDER_NAME['controller'] . '/',
     'model' => BASE_PATH . '/' . FOLDER_NAME['model'] . '/',
     'permission' => BASE_PATH . '/' . FOLDER_NAME['permission'] . '/',
-    'route' => BASE_PATH . '/' . FOLDER_NAME['route'] . '/',
+    'router' => BASE_PATH . '/' . FOLDER_NAME['router'] . '/',
 ]);
 
 /**
@@ -47,7 +47,7 @@ define("RESOURCE", strtolower($cr[1]));
 define("NAME", ucfirst(strtolower($argv[3])));
 
 /**
- * Process create commands from switch below Create class
+ * Process create commands
  */
 
 class Create
@@ -63,8 +63,8 @@ class Create
         // Check that file of the same name doesn't already exist
 
         if (file_exists(FOLDER_PATH[$type] . strtolower(NAME) . ".php")) {
-            echo ucfirst($type) . " of the same name already exists.";
-            exit;
+            echo ucfirst($type) . " " . strtolower(NAME) . ".php file already exists.\n";
+            return;
         }
 
         // Generate file content
@@ -77,7 +77,7 @@ class Create
             $file_content .= "use " . $dependency . ";\n";
         }
 
-        if ($type !== 'route') {
+        if ($type !== 'router') {
 
             $file_content .= "\nclass " . NAME;
 
@@ -148,7 +148,7 @@ class Create
             "WP_Custom_API\Core\Router",
             "WP_Custom_API\Controllers\\" . NAME . " as Controller",
         ];
-        self::create_file("route", $dependencies);
+        self::create_file("router", $dependencies);
     }
 
     /**
@@ -165,57 +165,64 @@ class Create
 }
 
 /**
- * Commands to execute.  Create commands utilize the Create class above
+ * Process Delete Commands
  */
 
-switch (COMMAND) {
+class Delete
+{
+    /**
+     * Deletes file by type
+     */
 
-        // Create methods
+    public static function delete_file($type)
+    {
+        $file_path = FOLDER_PATH[$type] . strtolower(NAME) . '.php';
+        if (file_exists($file_path)) {
+            unlink($file_path);
+            echo ucfirst($type) . " " . strtolower(NAME) . ".php file successfully deleted.\n";
+        } else echo ucfirst($type) . " " . strtolower(NAME) . ".php file does not exist and could not be deleted.\n";
+    }
 
-    case 'create':
-        switch (RESOURCE) {
-            case 'controller':
-                Create::controller();
-                exit;
-            case 'model':
-                Create::model();
-                exit;
-            case 'permission':
-                Create::permission();
-                exit;
-            case 'route':
-                Create::router();
-                exit;
-            case 'interface':
-                Create::interface();
-                echo "Interface files for " . NAME . " created successfully. \n";
-                exit;
-            default:
-                echo "Invalid create request.  Create methods are `controller`, `model`, `permission`, `route`, and `interface`.";
-                exit;
-        }
-        break;
-
-        // Delete methods
-
-    case 'delete':
-        switch (RESOURCE) {
-            case 'controller':
-                echo 'delete controller with the name of ' . NAME . '.';
-                break;
-            case 'route':
-                echo 'delete route with the name of ' . NAME . '.';
-                break;
-            case 'model':
-                echo 'delete model with the name of ' . NAME . '.';
-                break;
-            case 'permission':
-                echo 'delete permission with the name of ' . NAME . '.';
-                break;
-            default:
-                break;
-        }
-
-    default:
-        break;
+    public static function interface()
+    {
+        self::delete_file("controller");
+        self::delete_file("model");
+        self::delete_file("permission");
+        self::delete_file("router");
+    }
 }
+
+/**
+ * Commands to execute based upon COMMAND value.
+ */
+
+// Create commands
+
+if (COMMAND === 'create') {
+    if (method_exists('Create', RESOURCE)) {
+        call_user_func([Create::class, RESOURCE]);
+        exit;
+    } else {
+        echo "Create resource(s) method of `" . RESOURCE . "` does not exist and could not be executed.";
+        exit;
+    }
+}
+
+// Delete commands
+
+else if (COMMAND === 'delete') {
+    if (RESOURCE === 'interface') {
+        Delete::interface();
+        exit;
+    } else if (FOLDER_PATH[RESOURCE] ?? null) {
+        Delete::delete_file(RESOURCE);
+        exit;
+    } else {
+        echo "Delete resource(s) method of `" . RESOURCE . "` does not exist and could not be executed.";
+        exit;
+    }
+}
+
+// If command is not `create` or `delete` show error message
+
+echo "`" . COMMAND . "` is not a valid command and could not be executed.\n";
