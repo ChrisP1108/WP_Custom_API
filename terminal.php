@@ -4,7 +4,7 @@
  * Define base file path
  */
 
-define("BASE_PATH", strtolower(str_replace('/', '', __DIR__)));
+define("BASE_PATH", rtrim(__DIR__, '/') . '/');
 
 /**
  * Define app name
@@ -34,13 +34,40 @@ define("FOLDER_PATH", [
     'router' => BASE_PATH . '/' . FOLDER_NAME['router'] . '/',
 ]);
 
+/** 
+ * Establish valid Command names "create" and "delete"
+ */
+
+define('COMMAND_CREATE', 'create');
+define('COMMAND_DELETE', 'delete');
+
 /**
  * Collect command line props
  */
 
-$argv = $_SERVER['argv'];
+$argv = [];
+
+if (is_array($_SERVER['argv'])) {
+    foreach($_SERVER['argv'] as $arg) {
+        $argv[] = filter_var($arg, FILTER_SANITIZE_URL);
+    }
+}
+
+// Check that all arguments exist
+
+if (!isset($argv[2], $argv[3])) {
+    echo "Error: Missing required arguments.\n";
+    exit;
+}
 
 $cr = explode(":", $argv[2]);
+
+// Check that command:resource arguments exist
+
+if (count($cr) < 2) {
+    echo "Error: Invalid command format. Expected 'command:resource'.\n";
+    exit;
+}
 
 define("COMMAND", strtolower($cr[0]));
 define("RESOURCE", strtolower($cr[1]));
@@ -90,10 +117,18 @@ class Create
             $file_content .= "\n}";
         }
 
+        // Check that folder exists for writing file
+
+        if (!is_dir(FOLDER_PATH[$type])) {
+            echo "Directory " . FOLDER_PATH[$type] . " does not exist.\n";
+            exit;
+        }
+
         // Create file and check that it was successfullyc created
 
         $create_file = file_put_contents(FOLDER_PATH[$type] . strtolower(NAME) . '.php', $file_content);
-        if (!$create_file) {
+
+        if ($create_file === false) {
             echo "Error creating " . ucfirst($type) . " file " . strtolower(NAME) . ".php";
             exit;
         }
@@ -198,7 +233,7 @@ class Delete
 
 // Create commands
 
-if (COMMAND === 'create') {
+if (COMMAND === COMMAND_CREATE) {
     if (method_exists('Create', RESOURCE)) {
         call_user_func([Create::class, RESOURCE]);
         exit;
@@ -210,7 +245,7 @@ if (COMMAND === 'create') {
 
 // Delete commands
 
-else if (COMMAND === 'delete') {
+else if (COMMAND === COMMAND_DELETE) {
     if (RESOURCE === 'interface') {
         Delete::interface();
         exit;
@@ -226,3 +261,4 @@ else if (COMMAND === 'delete') {
 // If command is not `create` or `delete` show error message
 
 echo "`" . COMMAND . "` is not a valid command and could not be executed.\n";
+exit;
