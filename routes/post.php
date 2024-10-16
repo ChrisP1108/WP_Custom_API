@@ -6,7 +6,7 @@ namespace WP_Custom_API\Routes;
 
 use WP_Custom_API\Core\Router;
 use WP_Custom_API\Controllers\Post as Controller;
-use WP_Custom_API\Permissions\Post as Permissions;
+use WP_Custom_API\Permissions\Post as Permission;
 
 /**
  * PUBLIC
@@ -20,4 +20,4 @@ Router::get("/post", [Controller::class, "get_all"]);
  * Add post
  */
 
-Router::post("/post", [Controller::class, "add_post"], [Permissions::class, "is_authorized"]);
+Router::post("/post", [Controller::class, "add_post"], [Permission::class, "is_authorized"]);

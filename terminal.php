@@ -157,7 +157,7 @@ class Create
     public static function model()
     {
         $dependencies = [
-            "WP_Custom_API\Core\Model",
+            "WP_Custom_API\Core\Model"
         ];
         $class_content = "    public static function table_name():string {\n        return '" . strtolower(NAME) . "';\n    }\n    public static function table_schema(): array {\n        return\n            [\n\n            ];\n    }\n    public static function run_migration(): bool {\n        return false;\n    }";
         self::create_file("model", $dependencies, $class_content);
@@ -182,6 +182,7 @@ class Create
         $dependencies = [
             "WP_Custom_API\Core\Router",
             "WP_Custom_API\Controllers\\" . NAME . " as Controller",
+            "WP_Custom_API\Permissions\\" . NAME . " as Permission"
         ];
         self::create_file("router", $dependencies);
     }
