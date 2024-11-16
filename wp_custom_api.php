@@ -36,20 +36,20 @@ define("WP_CUSTOM_API_ROOT_FOLDER_PATH", WP_CUSTOM_API_BASE_PATH . '/');
 require_once WP_CUSTOM_API_ROOT_FOLDER_PATH . '/config.php';
 
 /** 
- * Load Init class to initialize plugin
- */
-
-require_once WP_CUSTOM_API_ROOT_FOLDER_PATH . '/core/init.php';
-
-use WP_Custom_API\Core\Init;
-
-/** 
  * Load Error Generator to output errors that occur from the plugin
  */
 
 require_once WP_CUSTOM_API_ROOT_FOLDER_PATH . '/core/error_generator.php';
 
 use WP_Custom_API\Core\Error_Generator;
+
+/** 
+ * Load Init class to initialize plugin
+ */
+
+require_once WP_CUSTOM_API_ROOT_FOLDER_PATH . '/core/init.php';
+
+use WP_Custom_API\Core\Init;
 
 /** 
  * Initialize plugin

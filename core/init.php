@@ -74,7 +74,8 @@ class Init
             $file_path = WP_CUSTOM_API_BASE_PATH . '/' . str_replace('\\', '/', $class) . '.php';
             if (file_exists($file_path)) {
                 require_once $file_path;
-            } 
+                self::$files_loaded[] = $file;
+            }
         });
     }
 
