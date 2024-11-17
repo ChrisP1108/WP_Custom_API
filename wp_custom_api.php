@@ -8,10 +8,10 @@
  */
 
 /**
- * NOTE - DO NOT MODIFY OR CREATE ADDITIONAL FILES INSIDE THE "PLUGIN" FOLDER OF THIS PLUGIN.
+ * NOTE - AVOID MODIFYING OR CREATING ADDITIONAL FILES INSIDE THE "PLUGIN" FOLDER.
  * 
  * You can create, update and delete files within the "controllers", "permissions", "models", and "routes" folders inside the app folder only.
- * The config.php file can also be adjusted
+ * The config.php file can also be adjusted as needed.
  */
 
 /** 

@@ -57,7 +57,6 @@ class Init
         self::namespaces_autoloader();
         self::folders_autoloader();
         Migration::init_all();
-        var_dump(self::get_files_loaded());
     }
 
     /**
@@ -93,8 +92,10 @@ class Init
     {
         foreach (Config::FOLDER_AUTOLOAD_PATHS as $folder_path) {
             foreach (glob(WP_CUSTOM_API_FOLDER_PATH . '/app/' . $folder_path . '/*.php') as $file) {
-                require_once $file;
-                self::$files_loaded[] = $file;
+                if (file_exists($file)) {
+                    require_once $file;
+                    self::$files_loaded[] = $file;
+                }
             }
         }
     }
