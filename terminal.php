@@ -28,10 +28,10 @@ define("FOLDER_NAME", [
  */
 
 define("FOLDER_PATH", [
-    'controller' => BASE_PATH . '/' . FOLDER_NAME['controller'] . '/',
-    'model' => BASE_PATH . '/' . FOLDER_NAME['model'] . '/',
-    'permission' => BASE_PATH . '/' . FOLDER_NAME['permission'] . '/',
-    'router' => BASE_PATH . '/' . FOLDER_NAME['router'] . '/',
+    'controller' => BASE_PATH . '/app/' . FOLDER_NAME['controller'] . '/',
+    'model' => BASE_PATH . '/app/' . FOLDER_NAME['model'] . '/',
+    'permission' => BASE_PATH . '/app/' . FOLDER_NAME['permission'] . '/',
+    'router' => BASE_PATH . '/app/' . FOLDER_NAME['router'] . '/',
 ]);
 
 /** 
@@ -48,7 +48,7 @@ define('COMMAND_DELETE', 'delete');
 $argv = [];
 
 if (is_array($_SERVER['argv'])) {
-    foreach($_SERVER['argv'] as $arg) {
+    foreach ($_SERVER['argv'] as $arg) {
         $argv[] = filter_var($arg, FILTER_SANITIZE_URL);
     }
 }
@@ -96,7 +96,7 @@ class Create
 
         // Generate file content
 
-        $file_content = "<?php\n\ndeclare(strict_types=1);\n\nnamespace " . APP_NAME . "\\" . ucfirst(FOLDER_NAME[$type]) . ";\n";
+        $file_content = "<?php\n\ndeclare(strict_types=1);\n\nnamespace " . APP_NAME . "\\App\\" . ucfirst(FOLDER_NAME[$type]) . ";\n";
 
         if (!empty($dependencies)) $file_content .= "\n";
 
@@ -143,9 +143,9 @@ class Create
     {
         $dependencies = [
             "\WP_REST_Response as Response",
-            "WP_Custom_API\Core\Database",
-            "WP_Custom_API\Core\Auth_Token",
-            "WP_Custom_API\Models\\" . NAME . " as Model"
+            "WP_Custom_API\Plugin\Database",
+            "WP_Custom_API\Plugin\Auth_Token",
+            "WP_Custom_API\App\Models\\" . NAME . " as Model"
         ];
         self::create_file("controller", $dependencies);
     }
@@ -157,7 +157,7 @@ class Create
     public static function model()
     {
         $dependencies = [
-            "WP_Custom_API\Core\Model"
+            "WP_Custom_API\Plugin\Model"
         ];
         $class_content = "    public static function table_name():string {\n        return '" . strtolower(NAME) . "';\n    }\n    public static function table_schema(): array {\n        return\n            [\n\n            ];\n    }\n    public static function run_migration(): bool {\n        return false;\n    }";
         self::create_file("model", $dependencies, $class_content);
@@ -180,9 +180,9 @@ class Create
     public static function router()
     {
         $dependencies = [
-            "WP_Custom_API\Core\Router",
-            "WP_Custom_API\Controllers\\" . NAME . " as Controller",
-            "WP_Custom_API\Permissions\\" . NAME . " as Permission"
+            "WP_Custom_API\Plugin\Router",
+            "WP_Custom_API\App\Controllers\\" . NAME . " as Controller",
+            "WP_Custom_API\App\Permissions\\" . NAME . " as Permission"
         ];
         self::create_file("router", $dependencies);
     }

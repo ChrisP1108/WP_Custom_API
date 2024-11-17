@@ -1,8 +1,8 @@
-<?php  
+<?php
 
 declare(strict_types=1);
 
-namespace WP_Custom_API\Core;
+namespace WP_Custom_API\Plugin;
 
 use WP_Custom_API\Config;
 
@@ -13,7 +13,8 @@ use WP_Custom_API\Config;
  * @since 1.0.0
  */
 
-class Auth_Token {
+class Auth_Token
+{
 
     /**
      * METHOD - remove_token
@@ -26,7 +27,8 @@ class Auth_Token {
      * @since 1.0.0
      */
 
-    public static function remove_token(string $token_name = null): void {
+    public static function remove_token(string $token_name = null): void
+    {
         if ($token_name) setcookie($token_name, '', time() - 300, '/');
     }
 
@@ -43,7 +45,8 @@ class Auth_Token {
      * @since 1.0.0
      */
 
-    private static function response(bool $ok = false, string|int $id = null, string $msg = null): array {
+    private static function response(bool $ok = false, string|int $id = null, string $msg = null): array
+    {
         if ($id) $id = intval($id);
         return ['ok' => $ok, 'id' => $id, 'msg' => $msg];
     }
@@ -58,7 +61,8 @@ class Auth_Token {
      * @since 1.0.0
      */
 
-    public static function generate(int $id = null, string $token_name = null, $expiration = Config::TOKEN_EXPIRATION): array {
+    public static function generate(int $id = null, string $token_name = null, $expiration = Config::TOKEN_EXPIRATION): array
+    {
         if (!$id || !$token_name) return self::response(false, $id, "`id` and `token_name` parameters required to generate token.");
         $expiration_time = time() + intval($expiration);
         $data = strval($id) . '|' . $expiration_time;
@@ -82,24 +86,25 @@ class Auth_Token {
      * @since 1.0.0
      */
 
-    public static function validate(string $token_name = null): array {
+    public static function validate(string $token_name = null): array
+    {
         if (!$token_name) return self::response(false, null, "A token name must be provided for validation.");
         $token = $_COOKIE[$token_name] ?? null;
-        if (!$token) return self::response(false, null, "No token with the name of `".$token_name."` was found.");  
+        if (!$token) return self::response(false, null, "No token with the name of `" . $token_name . "` was found.");
         list($data, $received_hmac) = explode(".", $token, 2);
         if (!isset($received_hmac) || !isset($data)) {
             self::remove_token($token_name);
-            return self::response(false, null, "Inadequate data from existing token.  May be invalid."); 
+            return self::response(false, null, "Inadequate data from existing token.  May be invalid.");
         }
         list($id, $expiration) = explode('|', $data);
         if (intval($expiration) <= time() || !isset($id)) {
             self::remove_token($token_name);
-            return self::response(false, null, "Invalid token."); 
+            return self::response(false, null, "Invalid token.");
         }
         $computed_hmac = hash_hmac("sha256", $data, Config::SECRET_KEY);
         if (!hash_equals($computed_hmac, $received_hmac)) {
             self::remove_token($token_name);
-            return self::response(false, null, "Invalid token."); 
+            return self::response(false, null, "Invalid token.");
         }
         return self::response(true, $id, "Token valid.");
     }

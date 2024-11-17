@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace WP_Custom_API\Core;
+namespace WP_Custom_API\Plugin;
 
 use WP_Custom_API\Config;
 

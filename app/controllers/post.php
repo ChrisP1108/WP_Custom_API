@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace WP_Custom_API\Controllers;
+namespace WP_Custom_API\App\Controllers;
 
 use \WP_REST_Response as Response;
-use WP_Custom_API\Core\Database;
-use WP_Custom_API\Core\Auth_Token;
-use WP_Custom_API\Models\Post as Model;
+use WP_Custom_API\Plugin\Database;
+use WP_Custom_API\Plugin\Auth_Token;
+use WP_Custom_API\App\Models\Post as Model;
 
 class Post
 {
@@ -26,7 +26,8 @@ class Post
      * Get all posts
      */
 
-    public static function get_all() {
+    public static function get_all()
+    {
         $posts = get_posts(self::POST_ARGS);
         return new Response($posts, 200);
     }
@@ -36,8 +37,9 @@ class Post
      * Add Post
      */
 
-    public static function add_post($req) {
-        $decode = json_decode($req->get_body()); 
+    public static function add_post($req)
+    {
+        $decode = json_decode($req->get_body());
         return new Response($decode, 201);
     }
 }

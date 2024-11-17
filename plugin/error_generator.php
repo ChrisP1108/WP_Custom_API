@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace WP_Custom_API\Core;
+namespace WP_Custom_API\Plugin;
 
 use \WP_Error;
 
@@ -12,7 +12,8 @@ use \WP_Error;
  * @since 1.0.0
  */
 
-class Error_Generator {
+class Error_Generator
+{
 
     /**
      * PROPERTY
@@ -37,7 +38,8 @@ class Error_Generator {
      * @since 1.0.0
      */
 
-    public static function generate($code_msg = null, $description_msg = null):void {
+    public static function generate($code_msg = null, $description_msg = null): void
+    {
         if ($code_msg && $description_msg) {
             error_log($description_msg);
             self::$errors_list[] = new WP_Error($code_msg, $description_msg);
@@ -53,7 +55,8 @@ class Error_Generator {
      * 
      * @since 1.0.0
      */
-    public static function display_errors(): void {
+    public static function display_errors(): void
+    {
         foreach (self::$errors_list as $error) {
             echo '<div class="notice notice-error"><strong>' . esc_html($error->get_error_code()) . ':</strong> ' . esc_html($error->get_error_message()) . '</div>';
         }

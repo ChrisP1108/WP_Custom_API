@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace WP_Custom_API\Core;
+namespace WP_Custom_API\Plugin;
 
-use WP_Custom_API\Core\Database;
-use WP_Custom_API\Core\Error_Generator;
+use WP_Custom_API\Plugin\Database;
+use WP_Custom_API\Plugin\Error_Generator;
 
 /** 
  * Used for creating and dropping database tables.
- * Utilizes the WP_Custom_API\Core\Database class for creating and dropping tables.
+ * Utilizes the WP_Custom_API\Plugin\Database class for creating and dropping tables.
  * 
  * @since 1.0.0
  */
@@ -31,8 +31,8 @@ class Migration
     {
         $models_classes_names = [];
         $all_declared_classes = get_declared_classes();
-        foreach($all_declared_classes as $class) {
-            if (strpos($class, 'WP_Custom_API\Models') !== false) {
+        foreach ($all_declared_classes as $class) {
+            if (strpos($class, 'WP_Custom_API\App\Models') !== false) {
                 $models_classes_names[] = $class;
             }
         }

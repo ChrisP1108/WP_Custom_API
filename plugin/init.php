@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace WP_Custom_API\Core;
+namespace WP_Custom_API\Plugin;
 
 use WP_Custom_API\Config;
-use WP_Custom_API\Core\Migration;
+use WP_Custom_API\Plugin\Migration;
 
 /** 
  * Runs spl_autoload_register for all classes throughout the plugin based upon namespaces
@@ -57,6 +57,7 @@ class Init
         self::namespaces_autoloader();
         self::folders_autoloader();
         Migration::init_all();
+        var_dump(self::get_files_loaded());
     }
 
     /**
@@ -71,18 +72,18 @@ class Init
     public static function namespaces_autoloader(): void
     {
         spl_autoload_register(function ($class) {
-            $file_path = WP_CUSTOM_API_BASE_PATH . '/' . str_replace('\\', '/', $class) . '.php';
+            $file_path = WP_CUSTOM_API_PLUGIN_PATH . '/' . str_replace('\\', '/', $class) . '.php';
             if (file_exists($file_path)) {
                 require_once $file_path;
-                self::$files_loaded[] = $file;
+                self::$files_loaded[] = $file_path;
             }
         });
     }
 
     /**
-     * METHOD - folder_autoloader
+     * METHOD - folders_autoloader
      * 
-     * Runs glob() to load all classes from files from specific folders
+     * Runs glob() to load all classes from files from folder within the root app folder
      * @return void
      * 
      * @since 1.0.0
@@ -91,7 +92,7 @@ class Init
     public static function folders_autoloader(): void
     {
         foreach (Config::FOLDER_AUTOLOAD_PATHS as $folder_path) {
-            foreach (glob(WP_CUSTOM_API_ROOT_FOLDER_PATH . '/' . $folder_path . '/*.php') as $file) {
+            foreach (glob(WP_CUSTOM_API_FOLDER_PATH . '/app/' . $folder_path . '/*.php') as $file) {
                 require_once $file;
                 self::$files_loaded[] = $file;
             }

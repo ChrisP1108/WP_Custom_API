@@ -22,7 +22,7 @@ class Config {
      * CONSTANT
      * 
      * @const string FOLDER_AUTOLOAD_PATHS
-     * This is a list of folders within the WP_CUSTOM_API_ROOT_FOLDER_PATH that will be auto loaded when the plugin runs 
+     * This is a list of folders within the app folder that will be auto loaded when the plugin runs 
      * 
      * @since 1.0.0
      */

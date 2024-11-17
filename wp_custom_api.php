@@ -8,9 +8,9 @@
  */
 
 /**
- * NOTE - DO NOT MODIFY OR CREATE ADDITIONAL FILES INSIDE THE "CORE" FOLDER OF THIS PLUGIN.
+ * NOTE - DO NOT MODIFY OR CREATE ADDITIONAL FILES INSIDE THE "PLUGIN" FOLDER OF THIS PLUGIN.
  * 
- * You can create, update and delete files within the "controllers", "permisssions", "models", and "routes" folders only.
+ * You can create, update and delete files within the "controllers", "permissions", "models", and "routes" folders inside the app folder only.
  * The config.php file can also be adjusted
  */
 
@@ -23,33 +23,33 @@ if (!defined('ABSPATH')) {
 }
 
 /** 
- * Define Folder Paths.  Used for auto loader
+ * Define Folder Paths.  Used for requiring init files and auto loader
  */
 
-define("WP_CUSTOM_API_BASE_PATH", strtolower(str_replace('/', '', __DIR__)));
-define("WP_CUSTOM_API_ROOT_FOLDER_PATH", WP_CUSTOM_API_BASE_PATH . '/');
+define("WP_CUSTOM_API_PLUGIN_PATH", strtolower(str_replace('/', '', dirname(__DIR__, 1))));
+define("WP_CUSTOM_API_FOLDER_PATH", WP_CUSTOM_API_PLUGIN_PATH . "/wp_custom_api");
 
 /** 
  * Load config settings for plugin
  */
 
-require_once WP_CUSTOM_API_ROOT_FOLDER_PATH . '/config.php';
+require_once WP_CUSTOM_API_FOLDER_PATH . '/config.php';
 
 /** 
  * Load Error Generator to output errors that occur from the plugin
  */
 
-require_once WP_CUSTOM_API_ROOT_FOLDER_PATH . '/core/error_generator.php';
+require_once WP_CUSTOM_API_FOLDER_PATH . '/plugin/error_generator.php';
 
-use WP_Custom_API\Core\Error_Generator;
+use WP_Custom_API\Plugin\Error_Generator;
 
 /** 
  * Load Init class to initialize plugin
  */
 
-require_once WP_CUSTOM_API_ROOT_FOLDER_PATH . '/core/init.php';
+require_once WP_CUSTOM_API_FOLDER_PATH . '/plugin/init.php';
 
-use WP_Custom_API\Core\Init;
+use WP_Custom_API\Plugin\Init;
 
 /** 
  * Initialize plugin
