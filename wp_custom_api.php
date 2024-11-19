@@ -8,7 +8,7 @@
  */
 
 /**
- * NOTE - AVOID MODIFYING OR CREATING ADDITIONAL FILES INSIDE THE "PLUGIN" FOLDER.
+ * NOTE - AVOID MODIFYING OR CREATING ADDITIONAL FILES INSIDE THE "INCLUDES" FOLDER.
  * 
  * You can create, update and delete files within the "controllers", "permissions", "models", and "routes" folders inside the app folder only.
  * The config.php file can also be adjusted as needed.
