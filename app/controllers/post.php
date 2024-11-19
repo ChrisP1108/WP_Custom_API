@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace WP_Custom_API\App\Controllers;
 
-use \WP_REST_Response as Response;
-use WP_Custom_API\Plugin\Database;
-use WP_Custom_API\Plugin\Auth_Token;
+use WP_REST_Request as Request;
+use WP_REST_Response as Response;
+use WP_Custom_API\Includes\Database;
+use WP_Custom_API\Includes\Auth_Token;
 use WP_Custom_API\App\Models\Post as Model;
 
 class Post
@@ -33,11 +34,21 @@ class Post
     }
 
     /**
+     * PUBLIC
+     * Get post comment
+     */
+
+    public static function get_post_comment(Request $req)
+    {
+        return new Response($req->get_params(), 200);
+    }
+
+    /**
      * PROTECTED
      * Add Post
      */
 
-    public static function add_post($req)
+    public static function add_post(Request $req)
     {
         $decode = json_decode($req->get_body());
         return new Response($decode, 201);

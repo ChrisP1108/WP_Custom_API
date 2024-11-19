@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace WP_Custom_API\Plugin;
+namespace WP_Custom_API\Includes;
 
-use WP_Custom_API\Plugin\Database;
-use WP_Custom_API\Plugin\Error_Generator;
+use WP_Custom_API\Includes\Database;
+use WP_Custom_API\Includes\Error_Generator;
 
 /** 
  * Used for creating and dropping database tables.
- * Utilizes the WP_Custom_API\Plugin\Database class for creating and dropping tables.
+ * Utilizes the WP_Custom_API\Includes\Database class for creating and dropping tables.
  * 
  * @since 1.0.0
  */

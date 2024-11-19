@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace WP_Custom_API\Plugin;
+namespace WP_Custom_API\Includes;
 
 interface Model
 {

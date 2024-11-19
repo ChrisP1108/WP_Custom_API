@@ -142,9 +142,10 @@ class Create
     public static function controller()
     {
         $dependencies = [
-            "\WP_REST_Response as Response",
-            "WP_Custom_API\Plugin\Database",
-            "WP_Custom_API\Plugin\Auth_Token",
+            "WP_REST_Request as Request",
+            "WP_REST_Response as Response",
+            "WP_Custom_API\Includes\Database",
+            "WP_Custom_API\Includes\Auth_Token",
             "WP_Custom_API\App\Models\\" . NAME . " as Model"
         ];
         self::create_file("controller", $dependencies);
@@ -157,7 +158,7 @@ class Create
     public static function model()
     {
         $dependencies = [
-            "WP_Custom_API\Plugin\Model"
+            "WP_Custom_API\Includes\Model"
         ];
         $class_content = "    public static function table_name():string {\n        return '" . strtolower(NAME) . "';\n    }\n    public static function table_schema(): array {\n        return\n            [\n\n            ];\n    }\n    public static function run_migration(): bool {\n        return false;\n    }";
         self::create_file("model", $dependencies, $class_content);
@@ -180,7 +181,7 @@ class Create
     public static function router()
     {
         $dependencies = [
-            "WP_Custom_API\Plugin\Router",
+            "WP_Custom_API\Includes\Router",
             "WP_Custom_API\App\Controllers\\" . NAME . " as Controller",
             "WP_Custom_API\App\Permissions\\" . NAME . " as Permission"
         ];

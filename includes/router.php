@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace WP_Custom_API\Plugin;
+namespace WP_Custom_API\Includes;
 
 use WP_Custom_API\Config;
+use WP_REST_Request as Request;
 
 /** 
  * Used for setting up API Routes.  
@@ -21,7 +22,7 @@ class Router
      * 
      * Registers an API Route through Wordpress from either the Get, Post, Put, or Delete methods
      * @param string $method - HTTP method ('GET', 'POST', etc.).
-     * @param string $route - The specific route to register.
+     * @param string $route - The specific route to register.  Handles parameters if passed in
      * @param callable $callback - The function that runs when the route is accessed.
      * @param callable|null $permission_callback - Callback for checking permissions.
      * @return void
@@ -41,6 +42,23 @@ class Router
     }
 
     /**
+     * METHOD - parse_wildcards
+     * 
+     * Extracts any wildcards in route wrapped in {} and formats the route as a url parameter for the Wordpress REST API
+     * @param string $route The route URL to be converted if wildcards exist.
+     * @return string
+     * 
+     * @since 1.0.0
+     */
+
+    private static function parse_wildcards(string $route): string
+    {
+        return preg_replace_callback('/\{(\w+)\}/', function ($matches) {
+            return '(?P<' . $matches[1] . '>\d+)';
+        }, $route);
+    }
+
+    /**
      * METHOD - get
      * 
      * Registers a GET request route.
@@ -54,8 +72,7 @@ class Router
 
     public static function get(string $route = '', callable $callback = null, ?callable $permission_callback = null): void
     {
-        $route = '/' . ltrim($route, '/');
-        self::register_rest_api_route("GET", $route, $callback, $permission_callback);
+        self::register_rest_api_route("GET", self::parse_wildcards($route), $callback, $permission_callback);
     }
 
     /**
@@ -72,8 +89,7 @@ class Router
 
     public static function post(string $route = '', ?callable $callback = null, ?callable $permission_callback = null): void
     {
-        $route = '/' . ltrim($route, '/');
-        self::register_rest_api_route("POST", $route, $callback, $permission_callback);
+        self::register_rest_api_route("POST", self::parse_wildcards($route), $callback, $permission_callback);
     }
 
     /**
@@ -90,8 +106,7 @@ class Router
 
     public static function put(string $route = '', ?callable $callback = null, ?callable $permission_callback = null): void
     {
-        $route = '/' . ltrim($route, '/');
-        self::register_rest_api_route("PUT", $route, $callback, $permission_callback);
+        self::register_rest_api_route("PUT", self::parse_wildcards($route), $callback, $permission_callback);
     }
 
     /**
@@ -108,7 +123,6 @@ class Router
 
     public static function delete(string $route = '', ?callable $callback = null, ?callable $permission_callback = null): void
     {
-        $route = '/' . ltrim($route, '/');
-        self::register_rest_api_route("DELETE", $route, $callback, $permission_callback);
+        self::register_rest_api_route("DELETE", self::parse_wildcards($route), $callback, $permission_callback);
     }
 }

@@ -39,17 +39,17 @@ require_once WP_CUSTOM_API_FOLDER_PATH . '/config.php';
  * Load Error Generator to output errors that occur from the plugin
  */
 
-require_once WP_CUSTOM_API_FOLDER_PATH . '/plugin/error_generator.php';
+require_once WP_CUSTOM_API_FOLDER_PATH . '/includes/error_generator.php';
 
-use WP_Custom_API\Plugin\Error_Generator;
+use WP_Custom_API\Includes\Error_Generator;
 
 /** 
  * Load Init class to initialize plugin
  */
 
-require_once WP_CUSTOM_API_FOLDER_PATH . '/plugin/init.php';
+require_once WP_CUSTOM_API_FOLDER_PATH . '/includes/init.php';
 
-use WP_Custom_API\Plugin\Init;
+use WP_Custom_API\Includes\Init;
 
 /** 
  * Initialize plugin
