@@ -15,7 +15,7 @@ use WP_Custom_API\App\Permissions\Post as Permission;
  * Description: Gets all posts
  */
 
-Router::get("/post", [Controller::class, "get_all"]);
+Router::get("/posts", [Controller::class, "get_all"]);
 
 /**
  * PUBLIC
@@ -24,7 +24,7 @@ Router::get("/post", [Controller::class, "get_all"]);
  * Description: Get post comment from post id and comment id
  */
 
-Router::get("/post/{id}/comment/{comment_id}", [Controller::class, "get_post_comment"]);
+Router::get("/posts/{id}/comment/{comment_id}", [Controller::class, "get_post_comment"]);
 
 /**
  * PROTECTED
@@ -33,4 +33,4 @@ Router::get("/post/{id}/comment/{comment_id}", [Controller::class, "get_post_com
  * Description: Add Post
  */
 
-Router::post("/post", [Controller::class, "add_post"], [Permission::class, "is_authorized"]);
+Router::post("/posts", [Controller::class, "add_post"], [Permission::class, "is_authorized"]);

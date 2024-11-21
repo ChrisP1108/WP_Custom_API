@@ -6,6 +6,10 @@ namespace WP_Custom_API\Includes;
 
 use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Migration;
+use WP_Custom_API\Includes\Error_Generator;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use Exception;
 
 /** 
  * Runs spl_autoload_register for all classes throughout the plugin based upon namespaces
@@ -45,7 +49,7 @@ class Init
      * METHOD - Init
      * 
      * Initializes the plugin by running spl_auto_load_register for class namespacing 
-     *      and for loading classes from files from specific folder.  Migration init_all method is run
+     *      and for loading files within the application folder.  Migration init_all method is run
      *      to create tables in database for all models that have their RUN_MIGRATION property set to true.
      * @return void
      * 
@@ -55,7 +59,7 @@ class Init
     public static function run()
     {
         self::namespaces_autoloader();
-        self::folders_autoloader();
+        self::app_files_autoloader();
         Migration::init_all();
     }
 
@@ -71,32 +75,36 @@ class Init
     public static function namespaces_autoloader(): void
     {
         spl_autoload_register(function ($class) {
-            $file_path = WP_CUSTOM_API_PLUGIN_PATH . '/' . str_replace('\\', '/', $class) . '.php';
-            if (file_exists($file_path)) {
-                require_once $file_path;
-                self::$files_loaded[] = $file_path;
+            $file = WP_CUSTOM_API_PLUGIN_PATH . '/' . str_replace('\\', '/', $class) . '.php';
+            if (file_exists($file)) {
+                require_once $file;
+                self::$files_loaded[] = $file;
             }
         });
     }
 
     /**
-     * METHOD - folders_autoloader
+     * METHOD - app_files_autoloader
      * 
-     * Runs glob() to load all classes from files from folder within the root app folder
+     * Runs RecursiveDirectoryIterator and RecursiveIteratorIterator to load all .php files within the application folder
      * @return void
      * 
      * @since 1.0.0
      */
 
-    public static function folders_autoloader(): void
+    public static function app_files_autoloader(): void
     {
-        foreach (Config::FOLDER_AUTOLOAD_PATHS as $folder_path) {
-            foreach (glob(WP_CUSTOM_API_FOLDER_PATH . '/app/' . $folder_path . '/*.php') as $file) {
-                if (file_exists($file)) {
-                    require_once $file;
+        try {
+            $directory = new RecursiveDirectoryIterator(WP_CUSTOM_API_FOLDER_PATH . '/' . 'app');
+            $iterator = new RecursiveIteratorIterator($directory);
+            foreach ($iterator as $file) {
+                if ($file->isFile() && $file->getExtension() === 'php') {
+                    require_once $file->getPathname();
                     self::$files_loaded[] = $file;
                 }
             }
+        } catch (Exception $e) {
+            Error_Generator::generate('Error loading application files: ' . $e->getMessage());
         }
     }
 }
