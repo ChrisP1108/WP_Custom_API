@@ -95,7 +95,7 @@ class Init
     public static function app_files_autoloader(): void
     {
         try {
-            $directory = new RecursiveDirectoryIterator(WP_CUSTOM_API_FOLDER_PATH . '/' . 'app');
+            $directory = new RecursiveDirectoryIterator(WP_CUSTOM_API_FOLDER_PATH . '/' . 'api');
             $iterator = new RecursiveIteratorIterator($directory);
             foreach ($iterator as $file) {
                 if ($file->isFile() && $file->getExtension() === 'php') {

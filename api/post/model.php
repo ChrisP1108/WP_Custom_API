@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace WP_Custom_API\App\Models;
+namespace WP_Custom_API\Api\Post;
 
-use WP_Custom_API\Includes\Model;
+use WP_Custom_API\Includes\Model_Interface;
 
-class Post implements Model
+class Model implements Model_Interface
 {
     public static function table_name(): string
     {

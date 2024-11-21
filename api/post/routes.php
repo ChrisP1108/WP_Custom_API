@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace WP_Custom_API\App\Routes;
+namespace WP_Custom_API\Api\Post;
 
 use WP_Custom_API\Includes\Router;
-use WP_Custom_API\App\Controllers\Post as Controller;
-use WP_Custom_API\App\Permissions\Post as Permission;
+use WP_Custom_API\Api\Post\Controller;
+use WP_Custom_API\Api\Post\Permissions;
 
 /**
  * PUBLIC
@@ -33,4 +33,4 @@ Router::get("/posts/{id}/comment/{comment_id}", [Controller::class, "get_post_co
  * Description: Add Post
  */
 
-Router::post("/posts", [Controller::class, "add_post"], [Permission::class, "is_authorized"]);
+Router::post("/posts", [Controller::class, "add_post"], [Permissions::class, "is_authorized"]);

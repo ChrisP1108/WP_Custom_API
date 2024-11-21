@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace WP_Custom_API\App\Controllers;
+namespace WP_Custom_API\Api\Post;
 
 use WP_REST_Request as Request;
 use WP_REST_Response as Response;
 use WP_Custom_API\Includes\Database;
 use WP_Custom_API\Includes\Auth_Token;
-use WP_Custom_API\App\Models\Post as Model;
+use WP_Custom_API\Api\Post\Model;
 
-class Post
+class Controller
 {
     /**
      * Post Arguments for quering posts

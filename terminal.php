@@ -12,28 +12,6 @@ define("BASE_PATH", rtrim(__DIR__, '/') . '/');
 
 define("APP_NAME", "WP_Custom_API");
 
-/**
- * Define folder names
- */
-
-define("FOLDER_NAME", [
-    'controller' => 'controllers',
-    'model' => 'models',
-    'permission' => 'permissions',
-    'router' => 'routes',
-]);
-
-/**
- * Define folder paths
- */
-
-define("FOLDER_PATH", [
-    'controller' => BASE_PATH . '/app/' . FOLDER_NAME['controller'] . '/',
-    'model' => BASE_PATH . '/app/' . FOLDER_NAME['model'] . '/',
-    'permission' => BASE_PATH . '/app/' . FOLDER_NAME['permission'] . '/',
-    'router' => BASE_PATH . '/app/' . FOLDER_NAME['router'] . '/',
-]);
-
 /** 
  * Establish valid Command names "create" and "delete"
  */
@@ -89,14 +67,14 @@ class Create
 
         // Check that file of the same name doesn't already exist
 
-        if (file_exists(FOLDER_PATH[$type] . strtolower(NAME) . ".php")) {
-            echo ucfirst($type) . " " . strtolower(NAME) . ".php file already exists.\n";
+        if (file_exists("api/" . strtolower(NAME) . "/" . $type . ".php")) {
+            echo ucfirst($type) . ".php file in folder " . strtolower(NAME) . " already exists.\n";
             return;
         }
 
         // Generate file content
 
-        $file_content = "<?php\n\ndeclare(strict_types=1);\n\nnamespace " . APP_NAME . "\\App\\" . ucfirst(FOLDER_NAME[$type]) . ";\n";
+        $file_content = "<?php\n\ndeclare(strict_types=1);\n\nnamespace " . APP_NAME . "\\Api\\" . ucfirst(NAME) . ";\n";
 
         if (!empty($dependencies)) $file_content .= "\n";
 
@@ -104,11 +82,11 @@ class Create
             $file_content .= "use " . $dependency . ";\n";
         }
 
-        if ($type !== 'router') {
+        if ($type !== 'routes') {
 
-            $file_content .= "\nclass " . NAME;
+            $file_content .= "\nclass " . ucfirst($type);
 
-            if ($type === 'model') $file_content .= " implements Model";
+            if ($type === 'model') $file_content .= " implements Model_Interface";
 
             $file_content .= "\n{\n";
 
@@ -117,22 +95,26 @@ class Create
             $file_content .= "\n}";
         }
 
-        // Check that folder exists for writing file
+        // Check that folder exists for writing file.  Create folder if it does not
 
-        if (!is_dir(FOLDER_PATH[$type])) {
-            echo "Directory " . FOLDER_PATH[$type] . " does not exist.\n";
-            exit;
+        if (!is_dir("api/" . strtolower(NAME))) {
+            echo "api/" . strtolower(NAME);
+            if (mkdir("api/" . strtolower(NAME))) {
+                echo "Directory " . strtolower(NAME) . " created inside api folder.";
+            } else {
+                echo "Error creating directory " . strtolower(NAME) . " inside api folder.";
+            }
         }
 
-        // Create file and check that it was successfullyc created
+        // Create file and check that it was successfully created
 
-        $create_file = file_put_contents(FOLDER_PATH[$type] . strtolower(NAME) . '.php', $file_content);
+        $create_file = file_put_contents("api/" . strtolower(NAME) . "/" . $type . ".php", $file_content);
 
         if ($create_file === false) {
-            echo "Error creating " . ucfirst($type) . " file " . strtolower(NAME) . ".php";
+            echo "Error creating " . ucfirst($type) . " file " . strtolower(NAME) . ".php inside the " . strtolower(NAME) . " folder.\n";
             exit;
         }
-        echo ucfirst($type) . " " . strtolower(NAME) . ".php file successfully created.\n";
+        echo ucfirst($type) . " " . strtolower(NAME) . ".php file successfully created inside the " . strtolower(NAME) . " folder.\n";
     }
 
     /**
@@ -146,7 +128,7 @@ class Create
             "WP_REST_Response as Response",
             "WP_Custom_API\Includes\Database",
             "WP_Custom_API\Includes\Auth_Token",
-            "WP_Custom_API\App\Models\\" . NAME . " as Model"
+            "WP_Custom_API\Api\\" . NAME . "\Model"
         ];
         self::create_file("controller", $dependencies);
     }
@@ -158,46 +140,46 @@ class Create
     public static function model()
     {
         $dependencies = [
-            "WP_Custom_API\Includes\Model"
+            "WP_Custom_API\Includes\Model_Interface"
         ];
         $class_content = "    public static function table_name():string {\n        return '" . strtolower(NAME) . "';\n    }\n    public static function table_schema(): array {\n        return\n            [\n\n            ];\n    }\n    public static function run_migration(): bool {\n        return false;\n    }";
         self::create_file("model", $dependencies, $class_content);
     }
 
     /**
-     * Creates permission file.
+     * Creates permissions file.
      */
 
-    public static function permission()
+    public static function permissions()
     {
         $dependencies = [];
-        self::create_file("permission", $dependencies);
+        self::create_file("permissions", $dependencies);
     }
 
     /**
-     * Creates router file.
+     * Creates routes file.
      */
 
-    public static function router()
+    public static function routes()
     {
         $dependencies = [
             "WP_Custom_API\Includes\Router",
-            "WP_Custom_API\App\Controllers\\" . NAME . " as Controller",
-            "WP_Custom_API\App\Permissions\\" . NAME . " as Permission"
+            "WP_Custom_API\Api\\" . NAME . "\Controller",
+            "WP_Custom_API\Api\\" . NAME . "\permissions"
         ];
-        self::create_file("router", $dependencies);
+        self::create_file("routes", $dependencies);
     }
 
     /**
-     * Creates interface.  Creates a controller, router, model, and permission file utilizing the other methods
+     * Creates interface.  Creates a controller, routes, model, and permissions file utilizing the other methods
      */
 
     public static function interface()
     {
         self::controller();
         self::model();
-        self::permission();
-        self::router();
+        self::permissions();
+        self::routes();
     }
 }
 
@@ -213,19 +195,21 @@ class Delete
 
     public static function delete_file($type)
     {
-        $file_path = FOLDER_PATH[$type] . strtolower(NAME) . '.php';
+        $file_path = "api/" . strtolower(NAME) . "/" . $type . ".php";
         if (file_exists($file_path)) {
             unlink($file_path);
-            echo ucfirst($type) . " " . strtolower(NAME) . ".php file successfully deleted.\n";
-        } else echo ucfirst($type) . " " . strtolower(NAME) . ".php file does not exist and could not be deleted.\n";
+            echo ucfirst($type) . " " . strtolower(NAME) . ".php file successfully deleted inside the " . strtolower(NAME) . " folder.\n";
+        } else echo ucfirst($type) . " " . strtolower(NAME) . ".php file does not exist inside the " . strtolower(NAME) . " folder and could not be deleted.\n";
     }
 
     public static function interface()
     {
         self::delete_file("controller");
         self::delete_file("model");
-        self::delete_file("permission");
-        self::delete_file("router");
+        self::delete_file("permissions");
+        self::delete_file("routes");
+        rmdir("api/" . strtolower(NAME));
+        echo strtolower(NAME) . " folder deleted inside api folder";
     }
 }
 
@@ -248,10 +232,11 @@ if (COMMAND === COMMAND_CREATE) {
 // Delete commands
 
 else if (COMMAND === COMMAND_DELETE) {
+    $resource_types = ['interface', 'controller', 'model', 'permissions', 'routes'];
     if (RESOURCE === 'interface') {
         Delete::interface();
         exit;
-    } else if (FOLDER_PATH[RESOURCE] ?? null) {
+    } else if (in_array(RESOURCE, $resource_types)) {
         Delete::delete_file(RESOURCE);
         exit;
     } else {

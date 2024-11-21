@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace WP_Custom_API\App\Permissions;
+namespace WP_Custom_API\Api\Post;
 
-class Post
+class Permissions
 {
     public static function is_authorized()
     {
