@@ -10,7 +10,7 @@ use WP_Custom_API\Includes\Database;
 use WP_Custom_API\Includes\Auth_Token;
 use WP_Custom_API\Api\Post\Model;
 
-class Controller
+class Controllers
 {
     /**
      * Post Arguments for quering posts
@@ -31,6 +31,20 @@ class Controller
     {
         $posts = get_posts(self::POST_ARGS);
         return new Response($posts, 200);
+    }
+
+    /**
+     * PUBLIC
+     * Get single post
+     */
+
+    public static function get_single($req)
+    {
+        $post = get_post($req->get_params()['id']);
+        if ($post->post_type ?? null) {
+            $post = $post->post_type === "post" ? $post : [];
+        } else $post = [];
+        return new Response($post, 200);
     }
 
     /**

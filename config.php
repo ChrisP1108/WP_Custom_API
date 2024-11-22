@@ -50,7 +50,7 @@ class Config
      * @since 1.0.0
      */
 
-    public const SECRET_KEY = "6835be5d3e17ff0352492525c4d9c9291e61e51e10d07067f39334be1893bf92";
+    public const SECRET_KEY = WP_CUSTOM_API_SECRET_KEY;
 
     /**
      * CONSTANT

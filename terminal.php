@@ -118,10 +118,10 @@ class Create
     }
 
     /**
-     * Creates controller file.
+     * Creates controllers file.
      */
 
-    public static function controller()
+    public static function controllers()
     {
         $dependencies = [
             "WP_REST_Request as Request",
@@ -130,7 +130,7 @@ class Create
             "WP_Custom_API\Includes\Auth_Token",
             "WP_Custom_API\Api\\" . NAME . "\Model"
         ];
-        self::create_file("controller", $dependencies);
+        self::create_file("controllers", $dependencies);
     }
 
     /**
@@ -164,19 +164,19 @@ class Create
     {
         $dependencies = [
             "WP_Custom_API\Includes\Router",
-            "WP_Custom_API\Api\\" . NAME . "\Controller",
+            "WP_Custom_API\Api\\" . NAME . "\Controllers",
             "WP_Custom_API\Api\\" . NAME . "\permissions"
         ];
         self::create_file("routes", $dependencies);
     }
 
     /**
-     * Creates interface.  Creates a controller, routes, model, and permissions file utilizing the other methods
+     * Creates interface.  Creates a controllers, routes, model, and permissions file utilizing the other methods
      */
 
     public static function interface()
     {
-        self::controller();
+        self::controllers();
         self::model();
         self::permissions();
         self::routes();
@@ -204,7 +204,7 @@ class Delete
 
     public static function interface()
     {
-        self::delete_file("controller");
+        self::delete_file("controllers");
         self::delete_file("model");
         self::delete_file("permissions");
         self::delete_file("routes");
@@ -232,7 +232,7 @@ if (COMMAND === COMMAND_CREATE) {
 // Delete commands
 
 else if (COMMAND === COMMAND_DELETE) {
-    $resource_types = ['interface', 'controller', 'model', 'permissions', 'routes'];
+    $resource_types = ['interface', 'controllers', 'model', 'permissions', 'routes'];
     if (RESOURCE === 'interface') {
         Delete::interface();
         exit;
