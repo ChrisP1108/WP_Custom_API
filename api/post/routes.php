@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace WP_Custom_API\Api\Post;
 
 use WP_Custom_API\Includes\Router;
-use WP_Custom_API\Api\Post\Controllers;
+use WP_Custom_API\Api\Post\Controller;
 use WP_Custom_API\Api\Post\Permissions;
 
 /**
@@ -15,7 +15,7 @@ use WP_Custom_API\Api\Post\Permissions;
  * Description: Gets all posts
  */
 
-Router::get("/posts", [Controllers::class, "get_all"]);
+Router::get("/posts", [Controller::class, "index"]);
 
 /**
  * PUBLIC
@@ -24,7 +24,7 @@ Router::get("/posts", [Controllers::class, "get_all"]);
  * Description: Get single post by id
  */
 
- Router::get("/posts/{id}", [Controllers::class, "get_single"]);
+ Router::get("/posts/{id}", [Controller::class, "show"]);
 
 /**
  * PUBLIC
@@ -33,7 +33,7 @@ Router::get("/posts", [Controllers::class, "get_all"]);
  * Description: Get post comment from post id and comment id
  */
 
-Router::get("/posts/{id}/comments/{comment_id}", [Controllers::class, "get_post_comment"]);
+Router::get("/posts/{id}/comments/{comment_id}", [Controller::class, "show_comment"]);
 
 /**
  * PROTECTED
@@ -42,4 +42,4 @@ Router::get("/posts/{id}/comments/{comment_id}", [Controllers::class, "get_post_
  * Description: Add Post
  */
 
-Router::post("/posts", [Controllers::class, "add_post"], [Permissions::class, "is_authorized"]);
+Router::post("/posts", [Controller::class, "store"], [Permissions::class, "is_authorized"]);

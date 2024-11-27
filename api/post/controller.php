@@ -10,7 +10,7 @@ use WP_Custom_API\Includes\Database;
 use WP_Custom_API\Includes\Auth_Token;
 use WP_Custom_API\Api\Post\Model;
 
-class Controllers
+class Controller
 {
     /**
      * Post Arguments for quering posts
@@ -27,7 +27,7 @@ class Controllers
      * Get all posts
      */
 
-    public static function get_all()
+    public static function index()
     {
         $posts = get_posts(self::POST_ARGS);
         return new Response($posts, 200);
@@ -38,7 +38,7 @@ class Controllers
      * Get single post
      */
 
-    public static function get_single($req)
+    public static function show($req)
     {
         $post = get_post($req->get_params()['id']);
         if ($post->post_type ?? null) {
@@ -52,7 +52,7 @@ class Controllers
      * Get post comment
      */
 
-    public static function get_post_comment(Request $req)
+    public static function show_comment(Request $req)
     {
         return new Response($req->get_params(), 200);
     }
@@ -62,7 +62,7 @@ class Controllers
      * Add Post
      */
 
-    public static function add_post(Request $req)
+    public static function store(Request $req)
     {
         $decode = json_decode($req->get_body());
         return new Response($decode, 201);
