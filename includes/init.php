@@ -59,7 +59,7 @@ class Init
     public static function run()
     {
         self::namespaces_autoloader();
-        self::app_files_autoloader();
+        self::api_files_autoloader();
         Migration::init_all();
     }
 
@@ -84,15 +84,15 @@ class Init
     }
 
     /**
-     * METHOD - app_files_autoloader
+     * METHOD - api_files_autoloader
      * 
-     * Runs RecursiveDirectoryIterator and RecursiveIteratorIterator to load all .php files within the application folder
+     * Runs RecursiveDirectoryIterator and RecursiveIteratorIterator to load all .php files within the api folder
      * @return void
      * 
      * @since 1.0.0
      */
 
-    public static function app_files_autoloader(): void
+    public static function api_files_autoloader(): void
     {
         try {
             $directory = new RecursiveDirectoryIterator(WP_CUSTOM_API_FOLDER_PATH . '/' . 'api');

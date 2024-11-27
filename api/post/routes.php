@@ -24,7 +24,7 @@ Router::get("/posts", [Controller::class, "index"]);
  * Description: Get single post by id
  */
 
- Router::get("/posts/{id}", [Controller::class, "show"]);
+Router::get("/posts/{id}", [Controller::class, "show"]);
 
 /**
  * PUBLIC
