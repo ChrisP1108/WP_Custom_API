@@ -35,20 +35,30 @@ class Auth_Token
     /**
      * METHOD - response
      * 
-     * Used by validate method to return if token was valid and if so, return the id from it
+     * Used to return detailed information about the token and its validity.
      * 
-     * @param bool $ok - Used to 
-     * @param string $id - Id from token
-     * @param string $msg - Provide response message
-     * @return array - Returns array with keys of "ok" for boolean if token was valid, key of "id" for id from token, and a "msg" key for a response message
+     * @param bool $ok - Whether the token validation was successful.
+     * @param string|int|null $id - The user ID from the token.
+     * @param string|null $msg - A descriptive response message.
+     * @param int|null $issued_at - Timestamp when the token was issued.
+     * @param int|null $expires_at - Timestamp when the token will expire.
+     * @return array - Returns a structured response.
      * 
      * @since 1.0.0
      */
-
-    private static function response(bool $ok = false, string|int $id = null, string $msg = null): array
-    {
-        if ($id) $id = intval($id);
-        return ['ok' => $ok, 'id' => $id, 'msg' => $msg];
+    private static function response(bool $ok = false, string|int $id = null, string $msg = null, int $issued_at = null, int $expires_at = null): array {
+        $response = [
+            'ok' => $ok,
+            'id' => $id ? intval($id) : null,
+            'msg' => $msg
+        ];
+        if ($issued_at !== null) {
+            $response['issued_at'] = date("Y-m-d H:i:s", $issued_at);
+        }
+        if ($expires_at !== null) {
+            $response['expires_at'] = date("Y-m-d H:i:s", $expires_at);
+        }
+        return $response;
     }
 
     /**
@@ -56,23 +66,27 @@ class Auth_Token
      * 
      * @param int $id - Id of user for token generation
      * @param string $token_name - Name of token to be stored.  Token name is also the cookie name
+     * @param int $expiration - Set duration of token before expiring.
      * @return array - Returns array with "ok", "id", and "msg" keys
      * 
      * @since 1.0.0
      */
 
-    public static function generate(int $id = null, string $token_name = null, $expiration = Config::TOKEN_EXPIRATION): array
+    public static function generate(int $id = null, string $token_name = null, int $expiration = Config::TOKEN_EXPIRATION): array
     {
-        if (!$id || !$token_name) return self::response(false, $id, "`id` and `token_name` parameters required to generate token.");
-        $expiration_time = time() + intval($expiration);
-        $data = strval($id) . '|' . $expiration_time;
+        if (!$id || !$token_name) {
+            return self::response(false, $id, "`id` and `token_name` parameters required to generate token.");
+        }
+        $issued_at = time(); // Current timestamp
+        $expiration_time = $issued_at + intval($expiration); 
+        $data = strval($id) . '|' . $expiration_time . '|' . $issued_at; 
         $hmac = hash_hmac("sha256", $data, Config::SECRET_KEY);
         $token = $data . '.' . $hmac;
         if (!wp_is_using_https() && Config::TOKEN_OVER_HTTPS_ONLY) {
             return self::response(false, $id, "Token could not be stored as a cookie on the client, as the `TOKEN_OVER_HTTPS_ONLY` config variable is set to true and the server is not using HTTPS.");
         }
         setcookie($token_name, $token, $expiration_time, "/", "", Config::TOKEN_OVER_HTTPS_ONLY, Config::TOKEN_COOKIE_HTTP_ONLY);
-        return self::response(true, $id, "Token successfully generated.");
+        return self::response(true,$id, "Token successfully generated.", $issued_at, $expiration_time);
     }
 
     /**
@@ -81,31 +95,44 @@ class Auth_Token
      * Checks that token is valid.  If not, cookie is removed and false value is returned
      * 
      * @param string $token_name - Name of token to verify. Stored as http only cookie with the same name
+     * @param int|null $logout_time - Optional timestamp of the user's last logout.
      * @return array - Returns array with "ok", "id", and "msg" keys
      * 
      * @since 1.0.0
      */
 
-    public static function validate(string $token_name = null): array
+    public static function validate(string $token_name = null, int $logout_time = null): array
     {
-        if (!$token_name) return self::response(false, null, "A token name must be provided for validation.");
+        if (!$token_name) {
+            return self::response(false, null, "A token name must be provided for validation.");
+        }
         $token = $_COOKIE[$token_name] ?? null;
-        if (!$token) return self::response(false, null, "No token with the name of `" . $token_name . "` was found.");
+        if (!$token) {
+            return self::response(false, null, "No token with the name of `" . $token_name . "` was found.");
+        }
         list($data, $received_hmac) = explode(".", $token, 2);
         if (!isset($received_hmac) || !isset($data)) {
             self::remove_token($token_name);
-            return self::response(false, null, "Inadequate data from existing token.  May be invalid.");
+            return self::response(false, null, "Inadequate data from existing token. May be invalid.");
         }
-        list($id, $expiration) = explode('|', $data);
-        if (intval($expiration) <= time() || !isset($id)) {
+        list($id, $expiration, $issued_at) = explode('|', $data);
+        if (!isset($id) || !isset($expiration) || !isset($issued_at)) {
             self::remove_token($token_name);
-            return self::response(false, null, "Invalid token.");
+            return self::response(false, null, "Token structure is invalid.");
+        }
+        if (intval($expiration) <= time()) {
+            self::remove_token($token_name);
+            return self::response(false, null, "Token has expired.");
+        }
+        if ($logout_time !== null && intval($issued_at) <= $logout_time) {
+            self::remove_token($token_name);
+            return self::response(false, null, "Token was issued before or at the last logout time.");
         }
         $computed_hmac = hash_hmac("sha256", $data, Config::SECRET_KEY);
         if (!hash_equals($computed_hmac, $received_hmac)) {
             self::remove_token($token_name);
             return self::response(false, null, "Invalid token.");
         }
-        return self::response(true, $id, "Token valid.");
+        return self::response(true, $id, "Token is valid.", intval($issued_at), intval($expiration));
     }
 }
