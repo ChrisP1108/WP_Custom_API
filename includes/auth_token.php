@@ -80,10 +80,8 @@ class Auth_Token
         $issued_at = time(); // Current timestamp
         $expiration_time = $issued_at + intval($expiration); 
         $data = strval($id) . '|' . $expiration_time . '|' . $issued_at;
-        $base64_data = base64_encode($data); 
-        $hmac = hash_hmac("sha256", $base64_data, Config::SECRET_KEY);
-        $base64_hmac = base64_encode($hmac);
-        $token = $base64_data . '.' . $base64_hmac;
+        $hmac = hash_hmac("sha256", $data, Config::SECRET_KEY);
+        $token = base64_encode($data . '.' . $hmac);
         if (!wp_is_using_https() && Config::TOKEN_OVER_HTTPS_ONLY) {
             return self::response(false, $id, "Token could not be stored as a cookie on the client, as the `TOKEN_OVER_HTTPS_ONLY` config variable is set to true and the server is not using HTTPS.");
         }
@@ -112,13 +110,12 @@ class Auth_Token
         if (!$token) {
             return self::response(false, null, "No token with the name of `" . $token_name . "` was found.");
         }
-        list($base64_data, $base64_received_hmac) = explode(".", $token, 2);
-        if (!isset($base64_received_hmac) || !isset($base64_data)) {
+        $token_base64_decoded = base64_decode($token);
+        list($data, $received_hmac) = explode(".", $token_base64_decoded, 2);
+        if (!isset($received_hmac) || !isset($data)) {
             self::remove_token($token_name);
             return self::response(false, null, "Inadequate data from existing token. May be invalid.");
         }
-        $data = base64_decode($base64_data);
-        $received_hmac = base64_decode($base64_received_hmac);
         list($id, $expiration, $issued_at) = explode('|', $data);
         if (!isset($id) || !isset($expiration) || !isset($issued_at)) {
             self::remove_token($token_name);

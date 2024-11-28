@@ -38,7 +38,7 @@ class Controller
      * Get single post
      */
 
-    public static function show($req)
+    public static function show(Request $req)
     {
         $post = get_post($req->get_params()['id']);
         if ($post->post_type ?? null) {
