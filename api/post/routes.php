@@ -6,7 +6,7 @@ namespace WP_Custom_API\Api\Post;
 
 use WP_Custom_API\Includes\Router;
 use WP_Custom_API\Api\Post\Controller;
-use WP_Custom_API\Api\Post\Permissions;
+use WP_Custom_API\Api\Post\Permission;
 
 /**
  * PUBLIC
@@ -42,4 +42,4 @@ Router::get("/posts/{id}/comments/{comment_id}", [Controller::class, "show_comme
  * Description: Add Post
  */
 
-Router::post("/posts", [Controller::class, "store"], [Permissions::class, "is_authorized"]);
+Router::post("/posts", [Controller::class, "store"], [Permission::class, "is_authorized"]);

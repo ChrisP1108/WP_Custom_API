@@ -9,6 +9,7 @@ use WP_REST_Response as Response;
 use WP_Custom_API\Includes\Database;
 use WP_Custom_API\Includes\Auth_Token;
 use WP_Custom_API\Api\Post\Model;
+use WP_Custom_API\Api\Post\Permission;
 
 class Controller
 {

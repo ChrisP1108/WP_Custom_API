@@ -28,7 +28,7 @@ class Config
      * @since 1.0.0
      */
 
-    public const BASE_API_ROUTE = "custom-api/v1";
+    public const BASE_API_ROUTE = "/custom-api/v1";
 
     /**
      * CONSTANT

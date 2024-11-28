@@ -128,7 +128,8 @@ class Create
             "WP_REST_Response as Response",
             "WP_Custom_API\Includes\Database",
             "WP_Custom_API\Includes\Auth_Token",
-            "WP_Custom_API\Api\\" . NAME . "\Model"
+            "WP_Custom_API\Api\\" . NAME . "\Model",
+            "WP_Custom_API\Api\\" . NAME . "\Permission"
         ];
         self::create_file("controller", $dependencies);
     }
@@ -147,13 +148,13 @@ class Create
     }
 
     /**
-     * Creates permissions file.
+     * Creates permission file.
      */
 
-    public static function permissions()
+    public static function permission()
     {
         $dependencies = [];
-        self::create_file("permissions", $dependencies);
+        self::create_file("permission", $dependencies);
     }
 
     /**
@@ -165,20 +166,20 @@ class Create
         $dependencies = [
             "WP_Custom_API\Includes\Router",
             "WP_Custom_API\Api\\" . NAME . "\Controller",
-            "WP_Custom_API\Api\\" . NAME . "\Permissions"
+            "WP_Custom_API\Api\\" . NAME . "\Permission"
         ];
         self::create_file("routes", $dependencies);
     }
 
     /**
-     * Creates interface.  Creates a controller, routes, model, and permissions file utilizing the other methods
+     * Creates interface.  Creates a controller, routes, model, and permission file utilizing the other methods
      */
 
     public static function interface()
     {
         self::controller();
         self::model();
-        self::permissions();
+        self::permission();
         self::routes();
     }
 }
@@ -206,7 +207,7 @@ class Delete
     {
         self::delete_file("controller");
         self::delete_file("model");
-        self::delete_file("permissions");
+        self::delete_file("permission");
         self::delete_file("routes");
         rmdir("api/" . strtolower(NAME));
         echo strtolower(NAME) . " folder deleted inside api folder";
@@ -232,7 +233,7 @@ if (COMMAND === COMMAND_CREATE) {
 // Delete commands
 
 else if (COMMAND === COMMAND_DELETE) {
-    $resource_types = ['interface', 'controller', 'model', 'permissions', 'routes'];
+    $resource_types = ['interface', 'controller', 'model', 'permission', 'routes'];
     if (RESOURCE === 'interface') {
         Delete::interface();
         exit;
