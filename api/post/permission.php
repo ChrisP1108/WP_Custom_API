@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 namespace WP_Custom_API\Api\Post;
+
+use WP_Custom_API\Includes\Database;
 use WP_Custom_API\Includes\Auth_Token;
 
 class Permission

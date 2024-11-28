@@ -72,7 +72,7 @@ class Config
      * @since 1.0.0
      */
 
-    public const TOKEN_OVER_HTTPS_ONLY = false;
+    public const TOKEN_OVER_HTTPS_ONLY = IN_PRODUCTION_MODE;
 
     /**
      * CONSTANT

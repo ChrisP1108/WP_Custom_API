@@ -154,6 +154,7 @@ class Create
     public static function permission()
     {
         $dependencies = [
+            "WP_Custom_API\Includes\Database",
             "WP_Custom_API\Includes\Auth_Token"
         ];
         self::create_file("permission", $dependencies);
