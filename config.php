@@ -33,13 +33,13 @@ class Config
     /**
      * CONSTANT
      * 
-     * @const string DB_CUSTOM_PREFIX
-     * Establishes database table prefix name to establish unique table naming for plugin
+     * @const string PREFIX
+     * Establishes prefix name to establish unique naming for plugin
      * 
      * @since 1.0.0
      */
 
-    public const DB_PREFIX = "custom_api_";
+    public const PREFIX = "custom_api_";
 
     /**
      * CONSTANT
@@ -62,6 +62,17 @@ class Config
      */
 
     public const TOKEN_EXPIRATION = 604800; // 7 days
+
+    /**
+     * CONSTANT
+     * 
+     * @const string AUTH_TOKEN_PREFIX
+     * Sets a prefix name for authentication tokens.  Used primarily in the Auth_Token class.
+     * 
+     * @since 1.0.0
+     */
+
+    public const AUTH_TOKEN_PREFIX = self::PREFIX . 'auth_token_';
 
     /**
      * CONSTANT

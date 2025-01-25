@@ -22,14 +22,31 @@ class Auth_Token
      * Removes token by removing cookie name with corresponding name
      * 
      * @param string $token_name - Name of token to remove
+     * @param string|int|null $id - The user ID from the token.
      * @return void
      * 
      * @since 1.0.0
      */
 
-    public static function remove_token(string $token_name = null): void
+    public static function remove_token(string $token_name = null, string|int $id = null): void
     {
-        if ($token_name) setcookie($token_name, '', time() - 300, '/');
+        if ($token_name) {
+
+            // Apply auth token prefix to token name if it doesn't exist
+            if (!str_starts_with($token_name, Config::AUTH_TOKEN_PREFIX)) {
+                $token_name = Config::AUTH_TOKEN_PREFIX . $token_name;
+            }
+
+            // Remove cookie
+            setcookie($token_name, '', time() - 300, '/');
+
+            // Remove transient if id passed in and transient exists
+            if ($id) {
+                $id = intval($id);
+                $stored_nonce = get_transient(Config::AUTH_TOKEN_PREFIX . $id);
+                if ($stored_nonce) delete_transient(Config::AUTH_TOKEN_PREFIX . $id);
+            }
+        }
     }
 
     /**
@@ -84,13 +101,13 @@ class Auth_Token
         $expiration_time = $issued_at + intval($expiration);
 
         // Generate a secure random nonce for replay protection
-        $nonce = bin2hex(random_bytes(16)); // Secure random nonce
+        $nonce = bin2hex(random_bytes(16));
 
         // Token data to be stored
         $data = strval($id) . '|' . $expiration_time . '|' . $issued_at . '|' . $nonce;
 
         // Encrypt the token data for additional security
-        $iv = random_bytes(16); // Generate a random IV for encryption
+        $iv = random_bytes(16);
         $encrypted_data = openssl_encrypt($data, 'aes-256-cbc', Config::SECRET_KEY, 0, $iv);
         if ($encrypted_data === false) {
             return self::response(false, $id, "Encryption failed while generating the token.");
@@ -108,9 +125,12 @@ class Auth_Token
         }
 
         // Store the nonce server-side in a transient (or database) to validate later
-        set_transient("auth_nonce_$id", $nonce, $expiration_time - $issued_at);
+        set_transient(Config::AUTH_TOKEN_PREFIX . $id, $nonce, $expiration_time - $issued_at);
 
-        // Set the token as as a cookie in the browser
+        // Apply auth token prefix to token name
+        $token_name = Config::AUTH_TOKEN_PREFIX . $token_name;
+
+        // Set the token as a cookie in the browser
         setcookie($token_name, $token, $expiration_time, "/", "", Config::TOKEN_OVER_HTTPS_ONLY, Config::TOKEN_COOKIE_HTTP_ONLY);
 
         return self::response(true, $id, "Token successfully generated.", $issued_at, $expiration_time);
@@ -133,6 +153,10 @@ class Auth_Token
         if (!$token_name) {
             return self::response(false, null, "A token name must be provided for validation.");
         }
+
+        // Apply auth token prefix to token name
+
+        $token_name = Config::AUTH_TOKEN_PREFIX . $token_name;
 
         $token = $_COOKIE[$token_name] ?? null;
         if (!$token) {
@@ -166,41 +190,42 @@ class Auth_Token
             return self::response(false, null, "Decryption failed. Token may be invalid.");
         }
 
+        // Extract token components
         list($id, $expiration, $issued_at, $nonce) = explode('|', $decrypted_data);
         if (!isset($id) || !isset($expiration) || !isset($issued_at) || !isset($nonce)) {
-            self::remove_token($token_name);
+            self::remove_token($token_name, $id);
             return self::response(false, null, "Token structure is invalid.");
         }
 
         // Check token expiration
         if (intval($expiration) <= time()) {
-            self::remove_token($token_name);
+            self::remove_token($token_name, $id);
             return self::response(false, null, "Token has expired.");
         }
 
         // Check if token was issued before logout
         if ($logout_time !== null && intval($issued_at) <= $logout_time) {
-            self::remove_token($token_name);
+            self::remove_token($token_name, $id);
             return self::response(false, null, "Token was issued before or at the last logout time.");
         }
 
         // Retrieve and validate nonce
-        $stored_nonce = get_transient("auth_nonce_$id");
+        $stored_nonce = get_transient(Config::AUTH_TOKEN_PREFIX . $id);
         if (!$stored_nonce || $stored_nonce !== $nonce) {
-            if ($stored_nonce) {
-                delete_transient("auth_nonce_$id");
-            }
-            self::remove_token($token_name);
+            self::remove_token($token_name, $id);
             return self::response(false, null, "Invalid or replayed token.");
         }
 
         // Recompute the HMAC and compare it
         $computed_hmac = hash_hmac("sha256", $iv . $encrypted_data, Config::SECRET_KEY);
+
+        // Use hash_equals for a secure HMAC comparison
         if (!hash_equals($computed_hmac, $received_hmac)) {
-            self::remove_token($token_name);
+            self::remove_token($token_name, $id);
             return self::response(false, null, "Invalid token.");
         }
 
+        // Token is valid
         return self::response(true, $id, "Token is valid.", intval($issued_at), intval($expiration));
     }
 }

@@ -126,6 +126,7 @@ class Create
         $dependencies = [
             "WP_REST_Request as Request",
             "WP_REST_Response as Response",
+            "WP_Custom_API\Config",
             "WP_Custom_API\Includes\Database",
             "WP_Custom_API\Includes\Auth_Token",
             "WP_Custom_API\Api\\" . NAME . "\Model",
@@ -154,6 +155,7 @@ class Create
     public static function permission()
     {
         $dependencies = [
+            "WP_Custom_API\Config",
             "WP_Custom_API\Includes\Database",
             "WP_Custom_API\Includes\Auth_Token"
         ];
