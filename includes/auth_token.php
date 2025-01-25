@@ -7,6 +7,14 @@ namespace WP_Custom_API\Includes;
 use WP_Custom_API\Config;
 
 /** 
+ * Prevent direct access from sources other than the Wordpress environment
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+/** 
  * Used for generating authentication tokens to keep users logged in for a specified period of time
  * These auth tokens are stored as cookies on the client side
  * 

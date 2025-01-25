@@ -4,12 +4,19 @@ declare(strict_types=1);
 
 namespace WP_Custom_API\Includes;
 
-use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Migration;
 use WP_Custom_API\Includes\Error_Generator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use Exception;
+
+/** 
+ * Prevent direct access from sources other than the Wordpress environment
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 /** 
  * Runs spl_autoload_register for all classes throughout the plugin based upon namespaces

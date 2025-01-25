@@ -9,6 +9,14 @@ use WP_Custom_API\Api\Post\Controller;
 use WP_Custom_API\Api\Post\Permission;
 
 /**
+* Prevent direct access from sources other than the Wordpress environment
+*/
+
+if (!defined('ABSPATH')) { 
+    exit;
+}
+
+/**
  * PUBLIC
  * Method: GET
  * Route: /post

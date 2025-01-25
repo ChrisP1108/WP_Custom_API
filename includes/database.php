@@ -7,6 +7,14 @@ namespace WP_Custom_API\Includes;
 use WP_Custom_API\Config;
 
 /** 
+ * Prevent direct access from sources other than the Wordpress environment
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+/** 
  * Used for interating with Wordpress database. 
  * Allows API to create tables, drop tables, get table data, get table rows based upon corresponding columns and values, get a single table row based upon corresponding column and value, insert rows, update rows, and delete rows
  * 

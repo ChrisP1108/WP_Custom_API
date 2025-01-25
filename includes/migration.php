@@ -8,6 +8,14 @@ use WP_Custom_API\Includes\Database;
 use WP_Custom_API\Includes\Error_Generator;
 
 /** 
+ * Prevent direct access from sources other than the Wordpress environment
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+/** 
  * Used for creating and dropping database tables.
  * Utilizes the WP_Custom_API\Includes\Database class for creating and dropping tables.
  * 

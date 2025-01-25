@@ -82,6 +82,10 @@ class Create
             $file_content .= "use " . $dependency . ";\n";
         }
 
+        // Add code snippet to prevent direct access to files outside Wordpress environment
+
+        $file_content .= "\n/**\n* Prevent direct access from sources other than the Wordpress environment\n*/\n\nif (!defined('ABSPATH')) { \n    exit;\n}\n";
+
         if ($type !== 'routes') {
 
             $file_content .= "\nclass " . ucfirst($type);
@@ -159,7 +163,8 @@ class Create
             "WP_Custom_API\Includes\Database",
             "WP_Custom_API\Includes\Auth_Token"
         ];
-        self::create_file("permission", $dependencies);
+        $class_content = "    public const TOKEN_NAME = '" . strtolower(NAME) . "_token';\n\n    public static function is_authorized()\n    {\n\n    }";
+        self::create_file("permission", $dependencies, $class_content);
     }
 
     /**

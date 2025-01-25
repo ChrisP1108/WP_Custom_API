@@ -8,6 +8,15 @@ use WP_Custom_API\Config;
 use WP_REST_Request as Request;
 
 /** 
+ * Prevent direct access from sources other than the Wordpress environment
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+
+/** 
  * Used for setting up API Routes.  
  * Files in the routing folder utilize this class for establishing API Routes and passing in controller and permission callbacks.
  * 

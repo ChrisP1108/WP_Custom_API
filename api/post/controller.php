@@ -12,6 +12,14 @@ use WP_Custom_API\Includes\Auth_Token;
 use WP_Custom_API\Api\Post\Model;
 use WP_Custom_API\Api\Post\Permission;
 
+/**
+* Prevent direct access from sources other than the Wordpress environment
+*/
+
+if (!defined('ABSPATH')) { 
+    exit;
+}
+
 class Controller
 {
     /**
