@@ -8,9 +8,10 @@
  */
 
 /**
- * NOTE - AVOID MODIFYING OR CREATING ADDITIONAL FILES INSIDE THE "INCLUDES" FOLDER.
+ * NOTE - AVOID MODIFYING FILES INSIDE THE "INCLUDES" FOLDER. ALSO AVOID RENAMING FILE NAMES WITHIN API FOLDER.
  * 
  * You can create, update and delete files within the "controllers", "permissions", "models", and "routes" folders inside the app folder only.
+ * Avoid changing the names of the files, especially the routes.php files, as those are loaded through the api_routes_files_autoloader method that loads filenames specifically to routes.php.
  * The config.php file can also be adjusted as needed.
  */
 
