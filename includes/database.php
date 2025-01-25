@@ -59,7 +59,9 @@ class Database
     public static function get_table_full_name(string $table_name): ?string
     {
         if (!preg_match('/^[a-zA-Z0-9_]+$/', $table_name)) return null;
+
         global $wpdb;
+
         return $wpdb->prefix . Config::DB_PREFIX . $table_name;
     }
 
@@ -76,8 +78,11 @@ class Database
     public static function table_exists(string $table_name): bool
     {
         global $wpdb;
+
         $table_search_name = self::get_table_full_name($table_name);
+
         $query = $wpdb->prepare("SHOW TABLES LIKE %s", $table_search_name);
+        
         return $wpdb->get_var($query) ? true : false;
     }
 
@@ -96,17 +101,25 @@ class Database
     public static function create_table(string $table_name, array $table_schema): array
     {
         if (self::table_exists($table_name)) return self::response(false, 'Table already exists in database.');
+
         global $wpdb;
+
         $table_create_name = self::get_table_full_name($table_name);
+
         if (!$table_create_name) return self::table_name_err_msg();
+
         $charset_collate = $wpdb->get_charset_collate();
         $create_table_query = "CREATE TABLE $table_create_name ( id mediumint(11) NOT NULL AUTO_INCREMENT, ";
+
         foreach ($table_schema as $key => $value) {
             $create_table_query .= "$key $value, ";
         }
+
         $create_table_query .= "created DATETIME DEFAULT CURRENT_TIMESTAMP, updated datetime DEFAULT '0000-00-00 00:00:00' NOT NULL, PRIMARY KEY (id)) $charset_collate;";
+        
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($create_table_query);
+        
         if ($wpdb->last_error) return self::response(false, 'An error occurred when attempting to create the table: ' . $wpdb->last_error);
         return self::table_exists($table_name)
             ? self::response(true, 'Table successfully created.')
@@ -127,11 +140,17 @@ class Database
     public static function drop_table(string $table_name): array
     {
         if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore cannot be dropped.');
+        
         global $wpdb;
+        
         $table_to_drop_name = self::get_table_full_name($table_name);
+        
         if (!$table_to_drop_name) return self::table_name_err_msg();
+        
         $result = $wpdb->query($wpdb->prepare("DROP TABLE IF EXISTS `$table_to_drop_name`"));
+        
         if (!$result) return self::response(false, 'An error occured when attempting to drop the table:' . $wpdb->last_error);
+        
         return !self::table_exists($table_name)
             ? self::response(true, 'Table was successfully dropped.')
             : self::response(false, 'An error occured when attempting to drop the table.');
@@ -155,11 +174,17 @@ class Database
     public static function get_table_data(string $table_name): array
     {
         if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore no table rows data can be retrieved.');
+        
         global $wpdb;
+        
         $table_name_to_query = self::get_table_full_name($table_name);
+
         if (!$table_name_to_query) return self::table_name_err_msg();
+        
         $rows_data = $wpdb->get_results("SELECT * FROM $table_name_to_query", ARRAY_A);
+        
         if (empty($rows_data)) return self::response(true, 'No table row data found. Table is empty.', []);
+
         return self::response(true, count($rows_data) . ' table row(s) retrieved successfully.', $rows_data);
     }
 
@@ -184,19 +209,27 @@ class Database
     public static function get_rows_data(string $table_name, string $column, ?string $value, bool $multiple = true): array
     {
         if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore no table rows data can be retrieved.');
+        
         global $wpdb;
+        
         $table_name_to_query = self::get_table_full_name($table_name);
+        
         if (!$table_name_to_query) return self::table_name_err_msg();
+        
         if (is_numeric($value)) {
             $query = $wpdb->prepare("SELECT * FROM $table_name_to_query WHERE $column = %d", $value);
         } else {
             $query = $wpdb->prepare("SELECT * FROM $table_name_to_query WHERE $column = %s", $value);
         }
+        
         $rows_data = $wpdb->get_results($query, ARRAY_A);
+        
         if (empty($rows_data)) return self::response(false, 'No table rows found corresponding to the specified column name and value.');
+        
         if (!$multiple) {
             return self::response(true, 'Table row retrieved successfully based upon search parameters.', $rows_data[0]);
         }
+
         return self::response(true, count($rows_data) . ' table row(s) retrieved successfully based upon search parameters.', $rows_data);
     }
 
@@ -216,11 +249,17 @@ class Database
     public static function insert_row(string $table_name, array $data): array
     {
         if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore a row cannot be inserted.');
+        
         global $wpdb;
+        
         $table_name_to_insert = self::get_table_full_name($table_name);
+        
         if (!$table_name_to_insert) return self::table_name_err_msg();
+        
         $result = $wpdb->insert($table_name_to_insert, $data);
+        
         if (!$result || $wpdb->insert_id === 0) return self::response(false, 'An error occurred while inserting data into row: ' . $wpdb->last_error);
+        
         return self::response(true, 'Table row successfully inserted.', ['id' => $wpdb->insert_id]);
     }
 
@@ -241,13 +280,21 @@ class Database
     public static function update_row(string $table_name, int $id, array $data): array
     {
         if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore the table row cannot be updated.');
+        
         global $wpdb;
+        
         $table_name_to_update = self::get_table_full_name($table_name);
+        
         if (!$table_name_to_update) return self::table_name_err_msg();
+        
         $where = ['id' => intval($id)];
+        
         $result = $wpdb->update($table_name_to_update, $data, $where);
+        
         if ($result === false) return self::response(false, 'An error occurred while updating the table row: ' . $wpdb->last_error);
+        
         if ($result === 0) return self::response(false, 'Table row could not be updated.  Please check the ID and make sure it corresponds to an existing table row.');
+        
         return self::response(true, 'Table row successfully updated.');
     }
 
@@ -269,12 +316,19 @@ class Database
     public static function delete_row(string $table_name, int $id): array
     {
         if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore the table row cannot be deleted.');
+        
         global $wpdb;
+        
         $table_name_to_delete_row = self::get_table_full_name($table_name);
+        
         if (!$table_name_to_delete_row) return self::table_name_err_msg();
+        
         $where = ['id' => intval($id)];
+        
         $result = $wpdb->delete($table_name_to_delete_row, $where);
+        
         if ($result === false) return self::response(false, 'An error occurred while attempting to delete the row: ' . $wpdb->last_error);
+        
         return self::response(true, 'Table row successfully deleted.');
     }
 }

@@ -187,6 +187,9 @@ class Auth_Token
         // Retrieve and validate nonce
         $stored_nonce = get_transient("auth_nonce_$id");
         if (!$stored_nonce || $stored_nonce !== $nonce) {
+            if ($stored_nonce) {
+                delete_transient("auth_nonce_$id");
+            }
             self::remove_token($token_name);
             return self::response(false, null, "Invalid or replayed token.");
         }
