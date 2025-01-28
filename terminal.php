@@ -130,9 +130,11 @@ class Create
         $dependencies = [
             "WP_REST_Request as Request",
             "WP_REST_Response as Response",
+            "WP_Error as Error",
             "WP_Custom_API\Config",
             "WP_Custom_API\Includes\Database",
             "WP_Custom_API\Includes\Auth_Token",
+            "WP_Custom_API\Includes\Password",
             "WP_Custom_API\Api\\" . NAME . "\Model",
             "WP_Custom_API\Api\\" . NAME . "\Permission"
         ];
@@ -161,7 +163,8 @@ class Create
         $dependencies = [
             "WP_Custom_API\Config",
             "WP_Custom_API\Includes\Database",
-            "WP_Custom_API\Includes\Auth_Token"
+            "WP_Custom_API\Includes\Auth_Token",
+            "WP_Custom_API\Includes\Password",
         ];
         $class_content = "    public const TOKEN_NAME = '" . strtolower(NAME) . "_token';\n\n    public static function is_authorized()\n    {\n\n    }";
         self::create_file("permission", $dependencies, $class_content);

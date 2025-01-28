@@ -39,7 +39,7 @@ class Router
      * @since 1.0.0
      */
 
-    public static function register_rest_api_route(string $method, string $route, ?callable $callback, ?callable $permission_callback)
+    public static function register_rest_api_route(string $method, string $route, ?callable $callback, ?callable $permission_callback): void
     {
         add_action("rest_api_init", function () use ($method, $route, $callback, $permission_callback) {
             register_rest_route(Config::BASE_API_ROUTE, $route, [

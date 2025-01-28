@@ -7,12 +7,13 @@ namespace WP_Custom_API\Api\Post;
 use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Database;
 use WP_Custom_API\Includes\Auth_Token;
+use WP_Custom_API\Includes\Password;
 
 /**
-* Prevent direct access from sources other than the Wordpress environment
-*/
+ * Prevent direct access from sources other than the Wordpress environment
+ */
 
-if (!defined('ABSPATH')) { 
+if (!defined('ABSPATH')) {
     exit;
 }
 
@@ -22,6 +23,6 @@ class Permission
 
     public static function is_authorized()
     {
-
+        return false;
     }
 }

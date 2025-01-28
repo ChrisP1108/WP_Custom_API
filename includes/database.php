@@ -49,7 +49,7 @@ class Database
      * @since 1.0.0
      */
 
-    public static function table_name_err_msg()
+    public static function table_name_err_msg(): array|object
     {
         return self::response(false, 'Invalid table name. Only alphanumeric characters and underscores are allowed.');
     }

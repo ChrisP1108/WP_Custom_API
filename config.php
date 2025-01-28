@@ -77,6 +77,17 @@ class Config
     /**
      * CONSTANT
      * 
+     * @const string HASH_ROUNDS
+     * Determines number of cost rounds for password hashing.  Used primarily in the Password class.
+     * 
+     * @since 1.0.0
+     */
+
+    public const PASSWORD_HASH_ROUNDS = 12;
+
+    /**
+     * CONSTANT
+     * 
      * @const string TOKEN_HTTPS_ONLY
      * If this constant is set to true, then auth token cookies will only be stored on the client if over HTTPS.
      * 
