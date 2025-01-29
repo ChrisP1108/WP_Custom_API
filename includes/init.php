@@ -67,6 +67,7 @@ class Init
     {
         self::namespaces_autoloader();
         self::api_routes_files_autoloader();
+        self::api_model_files_autoloader();
         Migration::init_all();
     }
 
@@ -93,7 +94,34 @@ class Init
     /**
      * METHOD - api_routes_files_autoloader
      * 
-     * Runs RecursiveDirectoryIterator and RecursiveIteratorIterator to load all routes.php files from folders within the api folder
+     * Runs RecursiveDirectoryIterator and RecursiveIteratorIterator to load all php files from folders within the api folder
+     * 
+     * @param $filename - Name of PHP files to load from within api folder.
+     * @return void
+     * 
+     * @since 1.0.0
+     */
+
+    private static function files_autoloader(string $filename): void
+    {
+        try {
+            $directory = new RecursiveDirectoryIterator(WP_CUSTOM_API_FOLDER_PATH . '/' . 'api');
+            $iterator = new RecursiveIteratorIterator($directory);
+            foreach ($iterator as $file) {
+                if ($file->isFile() && $file->getExtension() === 'php' && $file->getFilename() === $filename . '.php') {
+                    require_once $file->getPathname();
+                    self::$files_loaded[$filename] = $file->getPathname();
+                }
+            }
+        } catch (Exception $e) {
+            Error_Generator::generate('Error loading ' . $filename . '.php file in "api" folder at ' . WP_CUSTOM_API_FOLDER_PATH . '/api: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * METHOD - api_routes_files_autoloader
+     * 
+     * Runs files_autoloader method.  Loads all routes.php files from within the plugin api folder.
      * @return void
      * 
      * @since 1.0.0
@@ -101,17 +129,20 @@ class Init
 
     public static function api_routes_files_autoloader(): void
     {
-        try {
-            $directory = new RecursiveDirectoryIterator(WP_CUSTOM_API_FOLDER_PATH . '/' . 'api');
-            $iterator = new RecursiveIteratorIterator($directory);
-            foreach ($iterator as $file) {
-                if ($file->isFile() && $file->getExtension() === 'php' && $file->getFilename() === 'routes.php') {
-                    require_once $file->getPathname();
-                    self::$files_loaded[] = $file->getPathname();
-                }
-            }
-        } catch (Exception $e) {
-            Error_Generator::generate('Error loading routes.php file in "api" folder at ' . WP_CUSTOM_API_FOLDER_PATH . '/api: ' . $e->getMessage());
-        }
+        self::files_autoloader('routes');
+    }
+
+    /**
+     * METHOD - api_model_files_autoloader
+     * 
+     * Runs files_autoloader method.  Loads all model.php files from within the plugin api folder.
+     * @return void
+     * 
+     * @since 1.0.0
+     */
+
+    public static function api_model_files_autoloader(): void
+    {
+        self::files_autoloader('model');
     }
 }

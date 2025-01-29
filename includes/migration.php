@@ -6,6 +6,7 @@ namespace WP_Custom_API\Includes;
 
 use WP_Custom_API\Includes\Database;
 use WP_Custom_API\Includes\Error_Generator;
+use ReflectionClass;
 
 /** 
  * Prevent direct access from sources other than the Wordpress environment
@@ -27,7 +28,7 @@ class Migration
     /**
      * METHOD - init_all
      * 
-     * Will iterate through all model classes in the models folder and create tables 
+     * Will iterate through all model classes in the model array from the Init::get_files_loaded() method and create tables 
      *      in the database for any in which the class constant RUN_MIGRATION is set to true if it hasn't been created yet.
      * 
      * @return void
@@ -38,20 +39,32 @@ class Migration
     public static function init_all(): void
     {
         $models_classes_names = [];
+        $class_name = 'Model';
         $all_declared_classes = get_declared_classes();
+
         foreach ($all_declared_classes as $class) {
-            if (strpos($class, 'WP_Custom_API\App\Models') !== false) {
-                $models_classes_names[] = $class;
+            if (str_starts_with($class, "WP_Custom_API")) {
+                $short_name = (new ReflectionClass($class))->getShortName();
+                if ($short_name === $class_name) {
+                    $models_classes_names[] = $class;
+                }
             }
         }
+
         foreach ($models_classes_names as $model_class_name) {
             $model = new $model_class_name;
             $table_exists = Database::table_exists($model::table_name());
-            if (!$table_exists && $model::run_migration() ?? false) {
-                $table_creation_result = Database::create_table($class::table_name(), $class::table_schema());
+
+            if (!$table_exists && method_exists($model, 'run_migration') && $model::run_migration() && !empty($model::table_schema())) {
+                $table_creation_result = Database::create_table(
+                    $model::table_name(), 
+                    $model::table_schema()
+                );
+
                 if (!$table_creation_result['ok']) {
-                    Error_Generator::generate('Error creating table in database', 'The table name "'
-                        . Database::get_table_full_name($class::table_name()) . '" had an error in being created in MySql through the WP_Custom_API plugin.');
+                    Error_Generator::generate(
+                        'Error creating table in database', 
+                        'The table name "' . Database::get_table_full_name($model::table_name()) . '" had an error in being created in MySql through the WP_Custom_API plugin.');
                 }
             }
         }

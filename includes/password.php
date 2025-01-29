@@ -60,7 +60,7 @@ class Password
     public static function hash(string $string = ''): array|object 
     {
         if ($string === '') {
-            self::response(false, 'String must be provided to hash in Password hash method.');
+            return self::response(false, 'String must be provided to hash in Password hash method.');
         }
 
         $hash = password_hash($string, PASSWORD_BCRYPT, ['cost' => Config::PASSWORD_HASH_ROUNDS]);
@@ -87,7 +87,7 @@ class Password
     public static function verify(string $entered_password = '', string $hashed_password = ''): array|object 
     {
         if ($entered_password === '' || $hashed_password === '') {
-            self::response(false, 'The entered plain text password and the hashed password must be passed in as parameters in the Password verify method.');
+            return self::response(false, 'The entered plain text password and the hashed password must be passed in as parameters in the Password verify method.');
         }
         $result = password_verify($entered_password, $hashed_password);
 
