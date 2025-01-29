@@ -123,7 +123,7 @@ class Database
             $create_table_query .= "$key $value, ";
         }
 
-        $create_table_query .= "created DATETIME DEFAULT CURRENT_TIMESTAMP, updated datetime DEFAULT '0000-00-00 00:00:00' NOT NULL, PRIMARY KEY (id)) $charset_collate;";
+        $create_table_query .= "created DATETIME DEFAULT CURRENT_TIMESTAMP, updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id)) $charset_collate;";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($create_table_query);
