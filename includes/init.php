@@ -56,7 +56,7 @@ class Init
      * METHOD - Init
      * 
      * Initializes the plugin by running spl_auto_load_register for class namespacing 
-     *      and for loading files within the application folder with the name 'routes.php', as those files do not contain classes but rather utilize the Router class.  
+     *      and for loading files within the application folder with the name 'routes.php' and 'model.php', as those files do not contain classes but rather utilize the Router class.  
      *      Migration init_all method is run to create tables in database for all models that have their RUN_MIGRATION property set to true.
      * @return void
      * 
@@ -66,8 +66,8 @@ class Init
     public static function run(): void
     {
         self::namespaces_autoloader();
-        self::files_autoloader('routes');
         self::files_autoloader('model');
+        self::files_autoloader('routes');
         Migration::init_all();
     }
 
