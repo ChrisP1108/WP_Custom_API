@@ -67,8 +67,8 @@ class Init
     {
         self::namespaces_autoloader();
         self::files_autoloader('model');
-        self::files_autoloader('routes');
         Migration::init_all();
+        self::files_autoloader('routes');
     }
 
     /**
