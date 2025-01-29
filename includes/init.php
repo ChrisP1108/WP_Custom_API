@@ -66,8 +66,8 @@ class Init
     public static function run(): void
     {
         self::namespaces_autoloader();
-        self::api_routes_files_autoloader();
-        self::api_model_files_autoloader();
+        self::files_autoloader('routes');
+        self::files_autoloader('model');
         Migration::init_all();
     }
 
@@ -80,7 +80,7 @@ class Init
      * @since 1.0.0
      */
 
-    public static function namespaces_autoloader(): void
+    private static function namespaces_autoloader(): void
     {
         spl_autoload_register(function ($class) {
             $file = WP_CUSTOM_API_PLUGIN_PATH . '/' . str_replace('\\', '/', $class) . '.php';
@@ -116,33 +116,5 @@ class Init
         } catch (Exception $e) {
             Error_Generator::generate('Error loading ' . $filename . '.php file in "api" folder at ' . WP_CUSTOM_API_FOLDER_PATH . '/api: ' . $e->getMessage());
         }
-    }
-
-    /**
-     * METHOD - api_routes_files_autoloader
-     * 
-     * Runs files_autoloader method.  Loads all routes.php files from within the plugin api folder.
-     * @return void
-     * 
-     * @since 1.0.0
-     */
-
-    public static function api_routes_files_autoloader(): void
-    {
-        self::files_autoloader('routes');
-    }
-
-    /**
-     * METHOD - api_model_files_autoloader
-     * 
-     * Runs files_autoloader method.  Loads all model.php files from within the plugin api folder.
-     * @return void
-     * 
-     * @since 1.0.0
-     */
-
-    public static function api_model_files_autoloader(): void
-    {
-        self::files_autoloader('model');
     }
 }
