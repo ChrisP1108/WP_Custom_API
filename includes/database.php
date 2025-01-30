@@ -278,8 +278,8 @@ class Database
      * Validates that the table exists and that the data is properly formatted.
      * 
      * @param string $table_name - The name of the table to update the row in.
+     * @param int $id - Id of table row to update.
      * @param array $data - An associative array of column names and their corresponding values to update.
-     * @param array $where - An associative array of column names and their corresponding values to identify the row(s) to update.
      * @return array - Returns an array with an "updated" key and a "message" key. "updated" will have either a true or false value, and "message" key will have a message associated with it.
      * 
      * @since 1.0.0
