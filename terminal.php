@@ -88,7 +88,9 @@ class Create
 
         if ($type !== 'routes') {
 
-            $file_content .= "\nclass " . ucfirst($type);
+            if ($type === 'model') {
+                $file_content .= "\nfinal class " . ucfirst($type);
+            } else $file_content .= "\nclass " . ucfirst($type);
 
             if ($type === 'model') $file_content .= " implements Model_Interface";
 

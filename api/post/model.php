@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class Model implements Model_Interface
+final class Model implements Model_Interface
 {
     public static function table_name(): string
     {
