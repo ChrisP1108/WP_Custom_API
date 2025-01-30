@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
  * @since 1.0.0
  */
 
-class Auth_Token
+final class Auth_Token
 {
 
     /**

@@ -23,7 +23,7 @@ if (!defined('ABSPATH')) {
  * @since 1.0.0
  */
 
-class Router
+final class Router
 {
 
     /**

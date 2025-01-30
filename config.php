@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
  * 
  */
 
-class Config
+final class Config
 {
 
     /**
