@@ -63,7 +63,7 @@ class Password
             return self::response(false, 'String must be provided to hash in Password hash method.');
         }
 
-        $hash = password_hash($string, PASSWORD_BCRYPT, ['cost' => Config::PASSWORD_HASH_ROUNDS]);
+        $hash = password_hash($string, PASSWORD_BCRYPT, ['cost' => Config::PASSWORD_HASH_ROUNDS ?? 12]);
 
         if ($hash === false) {
             return self::response(false, 'Failed to hash the string.');
