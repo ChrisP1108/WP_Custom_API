@@ -149,7 +149,7 @@ final class Init
             $model = new $model_class_name;
             $table_exists = Database::table_exists($model::table_name());
 
-            if (!$table_exists && method_exists($model, 'run_migration') && $model::run_migration() && !empty($model::table_schema())) {
+            if (!$table_exists && $model::table_name() !== '' && method_exists($model, 'run_migration') && $model::run_migration() && !empty($model::table_schema())) {
                 $table_creation_result = Database::create_table(
                     $model::table_name(), 
                     $model::table_schema()
