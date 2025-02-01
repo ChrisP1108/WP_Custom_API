@@ -8,7 +8,6 @@ use WP_Custom_API\Includes\Database;
 use WP_Custom_API\Includes\Error_Generator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
-use ReflectionClass;
 use Exception;
 
 /** 
@@ -73,6 +72,36 @@ final class Init
     }
 
     /**
+     * METHOD - load_file
+     * 
+     * Loads file and adds its path to $files_loaded property array
+     * 
+     * @return void
+     * 
+     * @since 1.0.0
+     */
+
+    private static function load_file($file) {
+
+        require_once $file;
+        
+        $file_contents = file_get_contents($file);
+        $namespace = null;
+
+        if (preg_match('/^namespace\s+([^;]+);/m', $file_contents, $matches)) {
+            $namespace = trim($matches[1]);
+        }
+
+        $file_name = strtolower(pathinfo($file, PATHINFO_FILENAME));
+
+        self::$files_loaded[] = [
+            'name' => $file_name,
+            'path' => $file,
+            'namespace' => $namespace
+        ];
+    }
+
+    /**
      * METHOD - namespaces_autoloader
      * 
      * Runs spl_auto_load_register for class importing based upon namespace
@@ -84,10 +113,9 @@ final class Init
     private static function namespaces_autoloader(): void
     {
         spl_autoload_register(function ($class) {
-            $file = WP_PLUGIN_DIR. '/' . str_replace('\\', '/', $class) . '.php';
+            $file = WP_PLUGIN_DIR . '/' . str_replace('\\', '/', $class) . '.php';
             if (file_exists($file)) {
-                require_once $file;
-                self::$files_loaded[] = $file;
+                self::load_file($file);
             }
         });
     }
@@ -110,8 +138,7 @@ final class Init
             $iterator = new RecursiveIteratorIterator($directory);
             foreach ($iterator as $file) {
                 if ($file->isFile() && $file->getExtension() === 'php' && $file->getFilename() === $filename . '.php') {
-                    require_once $file->getPathname();
-                    self::$files_loaded[$filename] = $file->getPathname();
+                    self::load_file($file->getPathname());
                 }
             }
         } catch (Exception $e) {
@@ -134,13 +161,13 @@ final class Init
     {
         $models_classes_names = [];
         $class_name = 'Model';
-        $all_declared_classes = get_declared_classes();
 
-        foreach ($all_declared_classes as $class) {
-            if (str_starts_with($class, "WP_Custom_API")) {
-                $short_name = (new ReflectionClass($class))->getShortName();
-                if ($short_name === $class_name) {
-                    $models_classes_names[] = $class;
+        foreach (self::$files_loaded as $file_data) {
+            if (isset($file_data['namespace']) && isset($file_data['name']) && $file_data['name'] === 'model') {
+                $class_name = $file_data['namespace'] . '\\' . $file_data['name'];
+    
+                if (class_exists($class_name)) {
+                    $models_classes_names[] = $class_name;
                 }
             }
         }
@@ -151,14 +178,15 @@ final class Init
 
             if (!$table_exists && $model::table_name() !== '' && method_exists($model, 'run_migration') && $model::run_migration() && !empty($model::table_schema())) {
                 $table_creation_result = Database::create_table(
-                    $model::table_name(), 
+                    $model::table_name(),
                     $model::table_schema()
                 );
 
                 if (!$table_creation_result['ok']) {
                     Error_Generator::generate(
-                        'Error creating table in database', 
-                        'The table name "' . Database::get_table_full_name($model::table_name()) . '" had an error in being created in MySql through the WP_Custom_API plugin.');
+                        'Error creating table in database',
+                        'The table name "' . Database::get_table_full_name($model::table_name()) . '" had an error in being created in MySql through the WP_Custom_API plugin.'
+                    );
                 }
             }
         }
