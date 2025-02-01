@@ -84,7 +84,7 @@ final class Init
     private static function namespaces_autoloader(): void
     {
         spl_autoload_register(function ($class) {
-            $file = WP_CUSTOM_API_PLUGIN_PATH . '/' . str_replace('\\', '/', $class) . '.php';
+            $file = WP_PLUGIN_DIR. '/' . str_replace('\\', '/', $class) . '.php';
             if (file_exists($file)) {
                 require_once $file;
                 self::$files_loaded[] = $file;

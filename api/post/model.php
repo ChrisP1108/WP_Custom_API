@@ -23,9 +23,7 @@ final class Model implements Model_Interface
     public static function table_schema(): array
     {
         return
-            [
-
-            ];
+            [];
     }
     public static function run_migration(): bool
     {

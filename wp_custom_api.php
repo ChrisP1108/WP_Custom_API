@@ -17,7 +17,7 @@
  */
 
 /** 
- * Prevent direct access from sources other than the Wordpress environment
+ * Prevent direct access from sources other than the Wordpress environment.
  */
 
 if (!defined('ABSPATH')) {
@@ -25,11 +25,10 @@ if (!defined('ABSPATH')) {
 }
 
 /** 
- * Define Folder Paths.  Used for requiring init files and auto loader
+ * Define WP Custom API Plugin Folder Path.  Used for requiring plugin files and auto loader on init class.
  */
 
-define("WP_CUSTOM_API_PLUGIN_PATH", strtolower(str_replace('/', '', dirname(__DIR__, 1))));
-define("WP_CUSTOM_API_FOLDER_PATH", WP_CUSTOM_API_PLUGIN_PATH . "/wp_custom_api");
+define("WP_CUSTOM_API_FOLDER_PATH", plugin_dir_path(__FILE__));
 
 /** 
  * Load Error Generator to output errors that occur from the plugin
@@ -40,7 +39,7 @@ require_once WP_CUSTOM_API_FOLDER_PATH . '/includes/error_generator.php';
 use WP_Custom_API\Includes\Error_Generator;
 
 /** 
- * Load Init class to initialize plugin
+ * Load Init class to initialize plugin.
  */
 
 require_once WP_CUSTOM_API_FOLDER_PATH . '/includes/init.php';
@@ -59,7 +58,7 @@ if (!version_compare(PHP_VERSION, '8.0.0', '>=')) {
 }
 
 /** 
- * Output error messages that occurred when running the plugin
+ * Output error messages that occurred when running the plugin.
  */
 
 add_action('admin_notices', [Error_Generator::class, 'display_errors']);

@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace WP_Custom_API\Includes;
 
 use \WP_Error;
@@ -46,7 +44,7 @@ final class Error_Generator
      * @since 1.0.0
      */
 
-    public static function generate($code_msg = null, $description_msg = null): void
+    public static function generate($code_msg = null, $description_msg = null)
     {
         if ($code_msg && $description_msg) {
             error_log($description_msg);
@@ -57,16 +55,31 @@ final class Error_Generator
     /**
      * METHOD - display_errors
      * 
-     * Outputs error messages to the WordPress admin dashboard.
+     * Outputs error messages to the WordPress admin dashboard.  Styling is applied for better readability.
      * 
      * @return void
      * 
      * @since 1.0.0
      */
-    public static function display_errors(): void
+    public static function display_errors()
     {
+
+        // Style error notices
+
+            echo '
+                <style>
+                    .wp-custom-api-notice-error {
+                        font-size: min(0.875rem, 4.25vw) !important;
+                        padding: 1em !important;
+                        text-wrap: balance;
+                    }
+                </style>
+            ';
+
+        // Output notice errors
+
         foreach (self::$errors_list as $error) {
-            echo '<div class="notice notice-error"><strong>' . esc_html($error->get_error_code()) . ':</strong> ' . esc_html($error->get_error_message()) . '</div>';
+            echo '<div class="notice notice-error wp-custom-api-notice-error"><strong>' . esc_html($error->get_error_code()) . ':</strong> ' . esc_html($error->get_error_message()) . '</div>';
         }
     }
 }
