@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace WP_Custom_API\Includes;
 
-use WP_Custom_API\Includes\Migration;
+use WP_Custom_API\Includes\Database;
 use WP_Custom_API\Includes\Error_Generator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use ReflectionClass;
 use Exception;
 
 /** 
@@ -57,7 +58,7 @@ final class Init
      * 
      * Initializes the plugin by running spl_auto_load_register for class namespacing 
      *      and for loading files within the application folder with the name 'routes.php' and 'model.php', as those files do not contain classes but rather utilize the Router class.  
-     *      Migration init_all method is run to create tables in database for all models that have their RUN_MIGRATION property set to true.
+     *      run_migrations method is run to create tables in database for all models that have their RUN_MIGRATION property set to true.
      * @return void
      * 
      * @since 1.0.0
@@ -67,7 +68,7 @@ final class Init
     {
         self::namespaces_autoloader();
         self::files_autoloader('model');
-        Migration::init_all();
+        self::run_migrations();
         self::files_autoloader('routes');
     }
 
@@ -115,6 +116,51 @@ final class Init
             }
         } catch (Exception $e) {
             Error_Generator::generate('Error loading ' . $filename . '.php file in "api" folder at ' . WP_CUSTOM_API_FOLDER_PATH . '/api: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * METHOD - run_migrations
+     * 
+     * Will iterate through all model classes in the model array from the Init::get_files_loaded() method and create tables 
+     *      in the database for any in which the class constant RUN_MIGRATION is set to true if it hasn't been created yet.
+     * 
+     * @return void
+     * 
+     * @since 1.0.0
+     */
+
+    private static function run_migrations(): void
+    {
+        $models_classes_names = [];
+        $class_name = 'Model';
+        $all_declared_classes = get_declared_classes();
+
+        foreach ($all_declared_classes as $class) {
+            if (str_starts_with($class, "WP_Custom_API")) {
+                $short_name = (new ReflectionClass($class))->getShortName();
+                if ($short_name === $class_name) {
+                    $models_classes_names[] = $class;
+                }
+            }
+        }
+
+        foreach ($models_classes_names as $model_class_name) {
+            $model = new $model_class_name;
+            $table_exists = Database::table_exists($model::table_name());
+
+            if (!$table_exists && method_exists($model, 'run_migration') && $model::run_migration() && !empty($model::table_schema())) {
+                $table_creation_result = Database::create_table(
+                    $model::table_name(), 
+                    $model::table_schema()
+                );
+
+                if (!$table_creation_result['ok']) {
+                    Error_Generator::generate(
+                        'Error creating table in database', 
+                        'The table name "' . Database::get_table_full_name($model::table_name()) . '" had an error in being created in MySql through the WP_Custom_API plugin.');
+                }
+            }
         }
     }
 }
