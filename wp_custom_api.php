@@ -32,12 +32,6 @@ define("WP_CUSTOM_API_PLUGIN_PATH", strtolower(str_replace('/', '', dirname(__DI
 define("WP_CUSTOM_API_FOLDER_PATH", WP_CUSTOM_API_PLUGIN_PATH . "/wp_custom_api");
 
 /** 
- * Load config settings for plugin
- */
-
-require_once WP_CUSTOM_API_FOLDER_PATH . '/config.php';
-
-/** 
  * Load Error Generator to output errors that occur from the plugin
  */
 
