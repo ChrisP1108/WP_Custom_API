@@ -155,7 +155,7 @@ final class Database
 
         if (!$table_to_drop_name) return self::table_name_err_msg();
 
-        $result = $wpdb->query($wpdb->prepare("DROP TABLE IF EXISTS `$table_to_drop_name`"));
+        $result = $wpdb->query("DROP TABLE IF EXISTS `$table_to_drop_name`");
 
         if (!$result) return self::response(false, 'An error occured when attempting to drop the table:' . $wpdb->last_error);
 
