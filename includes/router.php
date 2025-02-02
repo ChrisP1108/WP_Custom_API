@@ -53,7 +53,8 @@ final class Router
     /**
      * METHOD - parse_wildcards
      * 
-     * Extracts any wildcards in route wrapped in {} and formats the route as a url parameter for the Wordpress REST API
+     * Extracts any wildcards in route wrapped in {} and formats the route as a url parameter for the Wordpress REST API.
+     * This will match either numeric IDs or alphanumeric values (slugs, etc.)
      * @param string $route The route URL to be converted if wildcards exist.
      * @return string
      * 
@@ -63,7 +64,7 @@ final class Router
     private static function parse_wildcards(string $route): string
     {
         return preg_replace_callback('/\{(\w+)\}/', function ($matches) {
-            return '(?P<' . $matches[1] . '>\d+)';
+            return '(?P<' . $matches[1] . '>(\d+|[\w\-]+))';
         }, $route);
     }
 
