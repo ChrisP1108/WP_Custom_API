@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace WP_Custom_API\Includes;
 
+use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Database;
 use WP_Custom_API\Includes\Error_Generator;
 use RecursiveDirectoryIterator;
@@ -26,6 +27,17 @@ if (!defined('ABSPATH')) {
 
 final class Init
 {
+
+    /**
+     * PROPERTY
+     * 
+     * @bool initialized
+     * Determines if Init class has been instantiated.
+     * 
+     * @since 1.0.0
+     */
+
+    private static $instantiated = false;
 
     /**
      * PROPERTY
@@ -53,22 +65,42 @@ final class Init
     }
 
     /**
-     * METHOD - Init
+     * CONSTRUCTOR
      * 
      * Initializes the plugin by running spl_auto_load_register for class namespacing 
-     *      and for loading files within the application folder with the name 'routes.php' and 'model.php', as those files do not contain classes but rather utilize the Router class.  
+     *      and for loading files within the application folder from the FILES_TO_AUTOLOAD constant in the CONFIG class. 
      *      run_migrations method is run to create tables in database for all models that have their RUN_MIGRATION property set to true.
      * @return void
      * 
      * @since 1.0.0
      */
 
-    public static function run(): void
+    private function __construct()
     {
         self::namespaces_autoloader();
-        self::files_autoloader('model');
+        self::files_autoloader();
         self::run_migrations();
-        self::files_autoloader('routes');
+    }
+
+    /**
+     * METHOD - run
+     * 
+     * Instantiates Init class constructor if $instantiated is set to false.
+     * Once instantiated, $instantiated is set to true and 'wp_custom_api_loaded' action is run.
+     * This helps prevent more than one instance of the Init class from being loaded.
+     * 
+     * @return void
+     * 
+     * @since 1.0.0
+     */
+
+    public static function run(): void {
+        if (!self::$instantiated) {
+            new self();
+            self::$instantiated = true;
+
+            do_action('wp_custom_api_loaded');
+        }
     }
 
     /**
@@ -83,7 +115,12 @@ final class Init
 
     private static function load_file($file) {
 
-        require_once $file;
+        try {
+            require_once $file;
+        } catch(Exception $e) {
+            Error_Generator::generate('Error loading ' . $file . '.php file: '. $e->getMessage());
+            return;
+        }
         
         $file_contents = file_get_contents($file);
         $namespace = null;
@@ -123,26 +160,27 @@ final class Init
     /**
      * METHOD - api_routes_files_autoloader
      * 
-     * Runs RecursiveDirectoryIterator and RecursiveIteratorIterator to load all php files from folders within the api folder
+     * Runs RecursiveDirectoryIterator and RecursiveIteratorIterator to load files that are in the CONFIG class FILES_TO_AUTOLOAD constant.
      * 
-     * @param $filename - Name of PHP files to load from within api folder.
      * @return void
      * 
      * @since 1.0.0
      */
 
-    private static function files_autoloader(string $filename): void
+    private static function files_autoloader(): void
     {
-        try {
-            $directory = new RecursiveDirectoryIterator(WP_CUSTOM_API_FOLDER_PATH . '/' . 'api');
-            $iterator = new RecursiveIteratorIterator($directory);
-            foreach ($iterator as $file) {
-                if ($file->isFile() && $file->getExtension() === 'php' && $file->getFilename() === $filename . '.php') {
-                    self::load_file($file->getPathname());
+        foreach(CONFIG::FILES_TO_AUTOLOAD as $filename) {
+            try {
+                $directory = new RecursiveDirectoryIterator(WP_CUSTOM_API_FOLDER_PATH . '/' . 'api');
+                $iterator = new RecursiveIteratorIterator($directory);
+                foreach ($iterator as $file) {
+                    if ($file->isFile() && $file->getExtension() === 'php' && $file->getFilename() === $filename . '.php') {
+                        self::load_file($file->getPathname());
+                    }
                 }
+            } catch (Exception $e) {
+                Error_Generator::generate('Error loading ' . $filename . '.php file in "api" folder at ' . WP_CUSTOM_API_FOLDER_PATH . '/api: ' . $e->getMessage());
             }
-        } catch (Exception $e) {
-            Error_Generator::generate('Error loading ' . $filename . '.php file in "api" folder at ' . WP_CUSTOM_API_FOLDER_PATH . '/api: ' . $e->getMessage());
         }
     }
 

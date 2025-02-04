@@ -44,6 +44,18 @@ final class Config
     /**
      * CONSTANT
      * 
+     * @const array file_autoload
+     * Files to autoload when plugin is initialized.
+     * These are files that will automatically run that aren't directly called upon from other classes through the namespace autoloader.
+     * 
+     * @since 1.0.0
+     */
+
+    public const FILES_TO_AUTOLOAD = ['model', 'routes'];
+
+    /**
+     * CONSTANT
+     * 
      * @const string SECRET_KEY
      * Secret key used for auth token generation
      * 
