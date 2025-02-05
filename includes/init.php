@@ -94,7 +94,8 @@ final class Init
      * @since 1.0.0
      */
 
-    public static function run(): void {
+    public static function run(): void
+    {
         if (!self::$instantiated) {
             new self();
             self::$instantiated = true;
@@ -113,19 +114,19 @@ final class Init
      * @since 1.0.0
      */
 
-    private static function load_file($file) {
-
-        try {
-            require_once $file;
-        } catch(Exception $e) {
-            Error_Generator::generate('Error loading ' . $file . '.php file: '. $e->getMessage());
+    private static function load_file($file): void
+    {
+        if (!file_exists($file)) {
+            Error_Generator::generate('Error loading ' . $file . '.php file. The file does not exist');
             return;
         }
-        
+
+        require_once $file;
+
         $file_contents = file_get_contents($file);
         $namespace = null;
 
-        if (preg_match('/^namespace\s+([^;]+);/m', $file_contents, $matches)) {
+        if (preg_match('/namespace\s+([\w\\\\]+);/m', $file_contents, $matches)) {
             $namespace = trim($matches[1]);
         }
 
@@ -150,10 +151,12 @@ final class Init
     private static function namespaces_autoloader(): void
     {
         spl_autoload_register(function ($class) {
-            $file = WP_PLUGIN_DIR . '/' . str_replace('\\', '/', $class) . '.php';
-            if (file_exists($file)) {
-                self::load_file($file);
+            if (strpos($class, 'WP_Custom_API') !== 0) {
+                return;
             }
+            $relative_class = str_replace('WP_Custom_API\\', '', $class);
+            $file = WP_CUSTOM_API_FOLDER_PATH . '/' . str_replace('\\', '/', $relative_class) . '.php';
+            self::load_file($file);
         });
     }
 
@@ -169,7 +172,7 @@ final class Init
 
     private static function files_autoloader(): void
     {
-        foreach(CONFIG::FILES_TO_AUTOLOAD as $filename) {
+        foreach (CONFIG::FILES_TO_AUTOLOAD as $filename) {
             try {
                 $directory = new RecursiveDirectoryIterator(WP_CUSTOM_API_FOLDER_PATH . '/' . 'api');
                 $iterator = new RecursiveIteratorIterator($directory);
@@ -203,7 +206,7 @@ final class Init
         foreach (self::$files_loaded as $file_data) {
             if (isset($file_data['namespace']) && isset($file_data['name']) && $file_data['name'] === 'model') {
                 $class_name = $file_data['namespace'] . '\\' . $file_data['name'];
-    
+
                 if (class_exists($class_name)) {
                     $models_classes_names[] = $class_name;
                 }

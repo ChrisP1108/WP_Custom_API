@@ -37,7 +37,7 @@ final class Database
      * @since 1.0.0
      */
 
-    public static function response(bool $ok = false, string $msg = '', ?array $data = null): array
+    private static function response(bool $ok = false, string $msg = '', ?array $data = null): array
     {
         return ['ok' => $ok, 'msg' => $msg, 'data' => $data];
     }
