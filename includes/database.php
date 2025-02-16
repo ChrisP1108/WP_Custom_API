@@ -89,7 +89,7 @@ final class Database
 
         $table_search_name = self::get_table_full_name($table_name);
 
-        $query = $wpdb->prepare("SHOW TABLES LIKE %s", $table_search_name);
+        $query = $wpdb->prepare("SHOW TABLES LIKE $table_search_name");
 
         return $wpdb->get_var($query) ? true : false;
     }
@@ -120,7 +120,7 @@ final class Database
         $create_table_query = "CREATE TABLE $table_create_name ( id mediumint(11) NOT NULL AUTO_INCREMENT, ";
 
         foreach ($table_schema as $key => $value) {
-            $create_table_query .= "$key $value, ";
+            $create_table_query .= esc_sql($key) . " " . esc_sql($value) . ", ";
         }
 
         $create_table_query .= "created DATETIME DEFAULT CURRENT_TIMESTAMP, updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id)) $charset_collate;";
