@@ -63,7 +63,11 @@ final class Password
             return self::response(false, 'String must be provided to hash in Password hash method.');
         }
 
-        $hash = password_hash($string, PASSWORD_BCRYPT, ['cost' => Config::PASSWORD_HASH_ROUNDS ?? 12]);
+        $cost = defined('Config::PASSWORD_HASH_ROUNDS') ? Config::PASSWORD_HASH_ROUNDS : 12;
+
+        $cost = is_int($cost) && $cost <= 20 && $cost >= 8 ? $cost : 12;
+
+        $hash = password_hash($string, PASSWORD_BCRYPT, ['cost' => $cost]);
 
         if ($hash === false) {
             return self::response(false, 'Failed to hash the string.');
