@@ -89,7 +89,7 @@ final class Database
 
         $table_search_name = self::get_table_full_name($table_name);
 
-        $query = $wpdb->prepare("SHOW TABLES LIKE $table_search_name");
+        $query = "SHOW TABLES LIKE $table_search_name";
 
         return $wpdb->get_var($query) ? true : false;
     }
