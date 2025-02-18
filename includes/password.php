@@ -63,7 +63,7 @@ final class Password
             return self::response(false, 'String must be provided to hash in Password hash method.');
         }
 
-        $cost = defined('Config::PASSWORD_HASH_ROUNDS') ? Config::PASSWORD_HASH_ROUNDS : 12;
+        $cost = (int) (Config::PASSWORD_HASH_ROUNDS ?? 12);
 
         $cost = is_int($cost) && $cost <= 20 && $cost >= 8 ? $cost : 12;
 
