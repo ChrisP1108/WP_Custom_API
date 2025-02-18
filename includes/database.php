@@ -45,6 +45,7 @@ final class Database
     /**
      * METHOD - table_name_err_msg
      * 
+     * Provides table name error message response.
      * @return array - Returns an object from response method with a key name of "ok" with a value of false, and a "message" key with a message indicating invalid table name, and a "data" key with value of null
      * @since 1.0.0
      */
@@ -89,7 +90,7 @@ final class Database
 
         $table_search_name = self::get_table_full_name($table_name);
 
-        $query = "SHOW TABLES LIKE $table_search_name";
+        $query = "SHOW TABLES LIKE `$table_search_name`";
 
         return $wpdb->get_var($query) ? true : false;
     }
@@ -117,7 +118,7 @@ final class Database
         if (!$table_create_name) return self::table_name_err_msg();
 
         $charset_collate = $wpdb->get_charset_collate();
-        $create_table_query = "CREATE TABLE $table_create_name ( id mediumint(11) NOT NULL AUTO_INCREMENT, ";
+        $create_table_query = "CREATE TABLE `$table_create_name` ( id mediumint(11) NOT NULL AUTO_INCREMENT, ";
 
         foreach ($table_schema as $key => $value) {
             $create_table_query .= esc_sql($key) . " " . esc_sql($value) . ", ";
@@ -189,7 +190,7 @@ final class Database
 
         if (!$table_name_to_query) return self::table_name_err_msg();
 
-        $rows_data = $wpdb->get_results("SELECT * FROM $table_name_to_query", ARRAY_A);
+        $rows_data = $wpdb->get_results("SELECT * FROM `$table_name_to_query`", ARRAY_A);
 
         if (empty($rows_data)) return self::response(true, 'No table row data found. Table is empty.', []);
 
@@ -224,11 +225,11 @@ final class Database
 
         if (!$table_name_to_query) return self::table_name_err_msg();
 
-        if (is_numeric($value)) {
-            $query = $wpdb->prepare("SELECT * FROM $table_name_to_query WHERE $column = %d", $value);
-        } else {
-            $query = $wpdb->prepare("SELECT * FROM $table_name_to_query WHERE $column = %s", $value);
-        }
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $column)) return self::response(false, 'Invalid column name provided.');
+
+        $placeholder = is_numeric($value) ? "%d" : "%s";
+
+        $query = $wpdb->prepare("SELECT * FROM `$table_name_to_query` WHERE `$column` = $placeholder", $value);
 
         $rows_data = $wpdb->get_results($query, ARRAY_A);
 
