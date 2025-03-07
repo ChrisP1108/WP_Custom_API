@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace WP_Custom_API\Api\Post;
 
 use WP_Custom_API\Includes\Model_Interface;
+use WP_Custom_API\Includes\Database;
 
 /**
  * Prevent direct access from sources other than the Wordpress environment
