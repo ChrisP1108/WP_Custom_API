@@ -150,7 +150,8 @@ class Create
     public static function model()
     {
         $dependencies = [
-            "WP_Custom_API\Includes\Model_Interface"
+            "WP_Custom_API\Includes\Model_Interface",
+            "WP_Custom_API\Includes\Database"
         ];
         $class_content = "    public static function table_name():string {\n        return '" . strtolower(NAME) . "';\n    }\n    public static function table_schema(): array {\n        return\n            [\n\n            ];\n    }\n    public static function run_migration(): bool {\n        return false;\n    }";
         self::create_file("model", $dependencies, $class_content);
@@ -166,7 +167,7 @@ class Create
             "WP_Custom_API\Config",
             "WP_Custom_API\Includes\Database",
             "WP_Custom_API\Includes\Auth_Token",
-            "WP_Custom_API\Includes\Password",
+            "WP_Custom_API\Includes\Password"
         ];
         $class_content = "    public const TOKEN_NAME = '" . strtolower(NAME) . "_token';\n\n    public static function is_authorized()\n    {\n\n    }";
         self::create_file("permission", $dependencies, $class_content);
