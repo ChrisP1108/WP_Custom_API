@@ -64,7 +64,7 @@ final class Router
     private static function parse_wildcards(string $route): string
     {
         return preg_replace_callback('/\{(\w+)\}/', function ($matches) {
-            return '(?P<' . $matches[1] . '>(\d+|[\w\-]+))';
+            return '(?P<' . $matches[1] . '>[a-zA-Z0-9_-]+)';
         }, $route);
     }
 
@@ -122,7 +122,7 @@ final class Router
     /**
      * METHOD - delete
      * 
-     * Registers a Delete request route.
+     * Registers a DELETE request route.
      * @param string $route The route URL.
      * @param callable|null $callback - The function that runs when the route is accessed.
      * @param callable|null $permission_callback - Callback for checking permissions.
