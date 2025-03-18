@@ -107,7 +107,7 @@ final class Database
      * @since 1.0.0
      */
 
-    public static function create_table(string $table_name, array $table_schema): array
+    public static function create_table(string $table_name, array $table_schema): array|object
     {
         if (self::table_exists($table_name)) return self::response(false, 'Table already exists in database.');
 
@@ -146,7 +146,7 @@ final class Database
      * @since 1.0.0
      */
 
-    public static function drop_table(string $table_name): array
+    public static function drop_table(string $table_name): array|object
     {
         if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore cannot be dropped.');
 
@@ -180,7 +180,7 @@ final class Database
      * @since 1.0.0
      */
 
-    public static function get_table_data(string $table_name): array
+    public static function get_table_data(string $table_name): array|object
     {
         if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore no table rows data can be retrieved.');
 
@@ -215,7 +215,7 @@ final class Database
      * @since 1.0.0
      */
 
-    public static function get_rows_data(string $table_name, string $column, ?string $value, bool $multiple = true): array
+    public static function get_rows_data(string $table_name, string $column, ?string $value, bool $multiple = true): array|object
     {
         if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore no table rows data can be retrieved.');
 
@@ -255,7 +255,7 @@ final class Database
      * @since 1.0.0
      */
 
-    public static function insert_row(string $table_name, array $data): array
+    public static function insert_row(string $table_name, array $data): array|object
     {
         if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore a row cannot be inserted.');
 
@@ -286,7 +286,7 @@ final class Database
      * @since 1.0.0
      */
 
-    public static function update_row(string $table_name, int $id, array $data): array
+    public static function update_row(string $table_name, int $id, array $data): array|object
     {
         if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore the table row cannot be updated.');
 
@@ -322,7 +322,7 @@ final class Database
      * @since 1.0.0
      */
 
-    public static function delete_row(string $table_name, int $id): array
+    public static function delete_row(string $table_name, int $id): array|object
     {
         if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore the table row cannot be deleted.');
 
