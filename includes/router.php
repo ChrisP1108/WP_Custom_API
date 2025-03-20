@@ -28,13 +28,24 @@ final class Router
     /**
      * PROPERTY
      * 
-     * @bool routes
+     * @array routes
      * Collects routes to register before the Init method is called.
      * 
      * @since 1.0.0
      */
 
-    private static array $routes = [];
+    private static $routes = [];
+
+    /**
+     * PROPERTY
+     * 
+     * @bool routes_registered
+     * USed to determine if routes have already been registered.
+     * 
+     * @since 1.0.0
+     */
+
+    private static $routes_registered = false;
 
     /**
      * METHOD - register_rest_api_route
@@ -52,7 +63,7 @@ final class Router
     private static function register_rest_api_route(string $method, string $route, ?callable $callback, ?callable $permission_callback): void
     {
         self::$routes[] = [
-            'method' => $method,
+            'method' => strtoupper($method),
             'route' => self::parse_wildcards($route),
             'callback' => $callback,
             'permission_callback' => $permission_callback
@@ -63,6 +74,7 @@ final class Router
      * METHOD - init
      * 
      * Loops through routes that were registered and registers them to Wordpress REST API through the rest_api_init action.
+     * After routes are registered, the routes_registered property is set to true to prevent duplicate registrations.
      * @return void
      * 
      * @since 1.0.0
@@ -70,6 +82,10 @@ final class Router
 
     public static function init(): void
     {
+        if (self::$routes_registered) return;
+
+        self::$routes_registered = true;
+
         add_action('rest_api_init', function () {
             foreach (self::$routes as $route) {
                 register_rest_route(Config::BASE_API_ROUTE, $route['route'], [
@@ -165,5 +181,25 @@ final class Router
     public static function delete(string $route = '', ?callable $callback = null, ?callable $permission_callback = null): void
     {
         self::register_rest_api_route("DELETE", $route, $callback, $permission_callback);
+    }
+
+    /**
+     * METHOD - match
+     * 
+     * Registers multiple routes for different HTTP methods.
+     * @param array $methods An array of HTTP methods.
+     * @param string $route The route URL.
+     * @param callable|null $callback - The function that runs when the route is accessed.
+     * @param callable|null $permission_callback - Callback for checking permissions.
+     * @return void
+     * 
+     * @since 1.0.0
+     */
+
+    public static function match(array $methods, string $route, ?callable $callback, ?callable $permission_callback = null): void
+    {
+        foreach ($methods as $method) {
+            self::register_rest_api_route($method, $route, $callback, $permission_callback);
+        }
     }
 }
