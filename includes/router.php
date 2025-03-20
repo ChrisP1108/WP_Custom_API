@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace WP_Custom_API\Includes;
 
 use WP_Custom_API\Config;
-use WP_REST_Request as Request;
 
 /** 
  * Prevent direct access from sources other than the Wordpress environment
@@ -27,9 +26,20 @@ final class Router
 {
 
     /**
+     * PROPERTY
+     * 
+     * @bool routes
+     * Collects routes to register before the Init method is called.
+     * 
+     * @since 1.0.0
+     */
+
+    private static array $routes = [];
+
+    /**
      * METHOD - register_rest_api_route
      * 
-     * Registers an API Route through Wordpress from either the Get, Post, Put, or Delete methods
+     * Registers an API Route to the routes property to get registered through the Wordpress rest_api_init action.
      * @param string $method - HTTP method ('GET', 'POST', etc.).
      * @param string $route - The specific route to register.  Handles parameters if passed in
      * @param callable $callback - The function that runs when the route is accessed.
@@ -39,14 +49,35 @@ final class Router
      * @since 1.0.0
      */
 
-    public static function register_rest_api_route(string $method, string $route, ?callable $callback, ?callable $permission_callback): void
+    private static function register_rest_api_route(string $method, string $route, ?callable $callback, ?callable $permission_callback): void
     {
-        add_action("rest_api_init", function () use ($method, $route, $callback, $permission_callback) {
-            register_rest_route(Config::BASE_API_ROUTE, $route, [
-                "methods" => $method,
-                "permission_callback" => $permission_callback ? $permission_callback : '__return_true',
-                "callback" => $callback
-            ]);
+        self::$routes[] = [
+            'method' => $method,
+            'route' => self::parse_wildcards($route),
+            'callback' => $callback,
+            'permission_callback' => $permission_callback
+        ];
+    }
+
+    /**
+     * METHOD - init
+     * 
+     * Loops through routes that were registered and registers them to Wordpress REST API through the rest_api_init action.
+     * @return void
+     * 
+     * @since 1.0.0
+     */
+
+    public static function init(): void
+    {
+        add_action('rest_api_init', function () {
+            foreach (self::$routes as $route) {
+                register_rest_route(Config::BASE_API_ROUTE, $route['route'], [
+                    'methods' => $route['method'],
+                    'callback' => $route['callback'],
+                    'permission_callback' => $route['permission_callback'] ? $route['permission_callback'] : '__return_true'
+                ]);
+            }
         });
     }
 
@@ -80,9 +111,9 @@ final class Router
      * @since 1.0.0
      */
 
-    public static function get(string $route = '', callable $callback = null, ?callable $permission_callback = null): void
+    public static function get(string $route = '', ?callable $callback = null, ?callable $permission_callback = null): void
     {
-        self::register_rest_api_route("GET", self::parse_wildcards($route), $callback, $permission_callback);
+        self::register_rest_api_route("GET", $route, $callback, $permission_callback);
     }
 
     /**
@@ -99,7 +130,7 @@ final class Router
 
     public static function post(string $route = '', ?callable $callback = null, ?callable $permission_callback = null): void
     {
-        self::register_rest_api_route("POST", self::parse_wildcards($route), $callback, $permission_callback);
+        self::register_rest_api_route("POST", $route, $callback, $permission_callback);
     }
 
     /**
@@ -116,7 +147,7 @@ final class Router
 
     public static function put(string $route = '', ?callable $callback = null, ?callable $permission_callback = null): void
     {
-        self::register_rest_api_route("PUT", self::parse_wildcards($route), $callback, $permission_callback);
+        self::register_rest_api_route("PUT", $route, $callback, $permission_callback);
     }
 
     /**
@@ -133,6 +164,6 @@ final class Router
 
     public static function delete(string $route = '', ?callable $callback = null, ?callable $permission_callback = null): void
     {
-        self::register_rest_api_route("DELETE", self::parse_wildcards($route), $callback, $permission_callback);
+        self::register_rest_api_route("DELETE", $route, $callback, $permission_callback);
     }
 }

@@ -6,6 +6,7 @@ namespace WP_Custom_API\Includes;
 
 use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Database;
+use WP_Custom_API\Includes\Router;
 use WP_Custom_API\Includes\Error_Generator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -31,7 +32,7 @@ final class Init
     /**
      * PROPERTY
      * 
-     * @bool initialized
+     * @bool instantiated
      * Determines if Init class has been instantiated.
      * 
      * @since 1.0.0
@@ -70,6 +71,7 @@ final class Init
      * Initializes the plugin by running spl_auto_load_register for class namespacing 
      *      and for loading files within the application folder from the FILES_TO_AUTOLOAD constant in the CONFIG class. 
      *      run_migrations method is run to create tables in database for all models that have their RUN_MIGRATION property set to true.
+     *      It will then run the init method of the Router class to register all routes to the Wordpress REST API.
      * @return void
      * 
      * @since 1.0.0
@@ -80,6 +82,7 @@ final class Init
         self::namespaces_autoloader();
         self::files_autoloader();
         self::run_migrations();
+        Router::init();
     }
 
     /**
