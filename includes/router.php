@@ -74,6 +74,7 @@ final class Router
      * METHOD - init
      * 
      * Loops through routes that were registered and registers them to Wordpress REST API through the rest_api_init action.
+     * Developers can utilize the Wordpress action and filter hooks to customize routes from outside of thie plugin.
      * After routes are registered, the routes_registered property is set to true to prevent duplicate registrations.
      * @return void
      * 
@@ -83,6 +84,9 @@ final class Router
     public static function init(): void
     {
         if (self::$routes_registered) return;
+
+        self::$routes = apply_filters('wp_custom_api_routes_filter', self::$routes);
+        do_action('wp_custom_api_routes_registered', self::$routes);
 
         self::$routes_registered = true;
 

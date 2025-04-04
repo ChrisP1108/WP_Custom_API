@@ -167,6 +167,8 @@ final class Init
      * METHOD - api_routes_files_autoloader
      * 
      * Runs RecursiveDirectoryIterator and RecursiveIteratorIterator to load files that are in the CONFIG class FILES_TO_AUTOLOAD constant.
+     * Additional files can be loaded/modified through the Wordpress filter hook. 
+     * Wordpress action hook is called at the end for other custom code to run after files are loaded.
      * 
      * @return void
      * 
@@ -175,7 +177,9 @@ final class Init
 
     private static function files_autoloader(): void
     {
-        foreach (CONFIG::FILES_TO_AUTOLOAD as $filename) {
+        $all_files_to_load = apply_filters('wp_custom_api_files_to_autoload', CONFIG::FILES_TO_AUTOLOAD);
+
+        foreach ($all_files_to_load as $filename) {
             try {
                 $directory = new RecursiveDirectoryIterator(WP_CUSTOM_API_FOLDER_PATH . '/' . 'api');
                 $iterator = new RecursiveIteratorIterator($directory);
@@ -188,6 +192,8 @@ final class Init
                 Error_Generator::generate('Error loading ' . $filename . '.php file in "api" folder at ' . WP_CUSTOM_API_FOLDER_PATH . '/api: ' . $e->getMessage());
             }
         }
+
+        do_action('wp_custom_api_files_autoloaded', self::$files_loaded);
     }
 
     /**
@@ -195,6 +201,7 @@ final class Init
      * 
      * Will iterate through all model classes in the model array from the Init::get_files_loaded() method and create tables 
      *      in the database for any in which the class constant RUN_MIGRATION is set to true if it hasn't been created yet.
+     * Calls a Wordpress action hook after migrations are finished
      * 
      * @return void
      * 
@@ -234,5 +241,7 @@ final class Init
                 }
             }
         }
+
+        do_action('wp_custom_api_migrations_run', $models_classes_names);
     }
 }
