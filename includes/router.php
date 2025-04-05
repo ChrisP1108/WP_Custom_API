@@ -86,7 +86,6 @@ final class Router
         if (self::$routes_registered) return;
 
         self::$routes = apply_filters('wp_custom_api_routes_filter', self::$routes);
-        do_action('wp_custom_api_routes_registered', self::$routes);
 
         self::$routes_registered = true;
 
@@ -99,6 +98,8 @@ final class Router
                 ]);
             }
         });
+
+        do_action('wp_custom_api_routes_registered', self::$routes);
     }
 
     /**

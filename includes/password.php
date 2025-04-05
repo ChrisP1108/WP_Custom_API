@@ -27,6 +27,8 @@ final class Password
     /**
      * METHOD - response
      * 
+     * Response handler for Password class methods.  Allows wordpress action hook integration.
+     * 
      * @param bool $ok - True or false boolean value if hash was generated or validated successfully.
      * @param string $msg - Message description.
      * @param string $hash - optional - Used only when hashing. Omitted on validation.
@@ -42,6 +44,8 @@ final class Password
         if ($hash !== '') {
             $output['hash'] = $hash;
         }
+
+        do_action('wp_custom_api_password_response', $output);
 
         return $output;
     }

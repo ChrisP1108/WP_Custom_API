@@ -81,5 +81,7 @@ final class Error_Generator
         foreach (self::$errors_list as $error) {
             echo '<div class="notice notice-error wp-custom-api-notice-error"><strong>' . esc_html($error->get_error_code()) . ':</strong> ' . esc_html($error->get_error_message()) . '</div>';
         }
+
+        do_action('wp_custom_api_error_displayed', self::$errors_list);
     }
 }

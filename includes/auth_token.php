@@ -41,14 +41,17 @@ final class Auth_Token
         if ($token_name) {
 
             // Apply auth token prefix to token name if it doesn't exist
+
             if (!str_starts_with($token_name, Config::AUTH_TOKEN_PREFIX)) {
                 $token_name = Config::AUTH_TOKEN_PREFIX . $token_name;
             }
 
             // Remove cookie
+
             setcookie($token_name, '', time() - 300, '/');
 
             // Remove transient if id passed in and transient exists
+            
             if ($id) {
                 $id = intval($id);
                 $stored_nonce = get_transient(Config::AUTH_TOKEN_PREFIX . $id);
