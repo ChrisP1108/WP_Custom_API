@@ -115,7 +115,7 @@ final class Database
 
     public static function create_table(string $table_name, array $table_schema): array|object
     {
-        if (self::table_exists($table_name)) return self::response(false, 'Table already exists in database.');
+        if (self::table_exists($table_name)) return self::response(false, 'Table "' . $table_name . '" already exists in database.');
 
         global $wpdb;
 
@@ -154,7 +154,7 @@ final class Database
 
     public static function drop_table(string $table_name): array|object
     {
-        if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore cannot be dropped.');
+        if (!self::table_exists($table_name)) return self::response(false, 'Table "' . $table_name . '" does not exist and therefore cannot be dropped.');
 
         global $wpdb;
 
@@ -188,7 +188,7 @@ final class Database
 
     public static function get_table_data(string $table_name): array|object
     {
-        if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore no table rows data can be retrieved.');
+        if (!self::table_exists($table_name)) return self::response(false, 'Table "' . $table_name . '" does not exist and therefore no table rows data can be retrieved.');
 
         global $wpdb;
 
@@ -223,7 +223,7 @@ final class Database
 
     public static function get_rows_data(string $table_name, string $column, ?string $value, bool $multiple = true): array|object
     {
-        if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore no table rows data can be retrieved.');
+        if (!self::table_exists($table_name)) return self::response(false, 'Table "' . $table_name . '" does not exist and therefore no table rows data can be retrieved.');
 
         global $wpdb;
 
@@ -263,7 +263,7 @@ final class Database
 
     public static function insert_row(string $table_name, array $data): array|object
     {
-        if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore a row cannot be inserted.');
+        if (!self::table_exists($table_name)) return self::response(false, 'Table "' . $table_name . '" does not exist and therefore a row cannot be inserted.');
 
         global $wpdb;
 
@@ -294,7 +294,7 @@ final class Database
 
     public static function update_row(string $table_name, int $id, array $data): array|object
     {
-        if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore the table row cannot be updated.');
+        if (!self::table_exists($table_name)) return self::response(false, 'Table ".' . $table_name . '" does not exist and therefore the table row cannot be updated.');
 
         global $wpdb;
 
@@ -330,7 +330,7 @@ final class Database
 
     public static function delete_row(string $table_name, int $id): array|object
     {
-        if (!self::table_exists($table_name)) return self::response(false, 'Table does not exist and therefore the table row cannot be deleted.');
+        if (!self::table_exists($table_name)) return self::response(false, 'Table "' . $table_name . '" does not exist and therefore the table row cannot be deleted.');
 
         global $wpdb;
 

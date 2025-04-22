@@ -33,12 +33,12 @@ if (is_array($_SERVER['argv'])) {
 
 // Check that all arguments exist
 
-if (!isset($argv[2], $argv[3])) {
+if (!isset($argv[1], $argv[2])) {
     echo "Error: Missing required arguments.\n";
     exit;
 }
 
-$cr = explode(":", $argv[2]);
+$cr = explode(":", $argv[1]);
 
 // Check that command:resource arguments exist
 
@@ -47,9 +47,10 @@ if (count($cr) < 2) {
     exit;
 }
 
+
 define("COMMAND", strtolower($cr[0]));
 define("RESOURCE", strtolower($cr[1]));
-define("NAME", ucfirst(strtolower($argv[3])));
+define("NAME", ucfirst(strtolower($argv[2])));
 
 /**
  * Process create commands
@@ -134,7 +135,6 @@ class Create
             "WP_REST_Response as Response",
             "WP_Error as Error",
             "WP_Custom_API\Config",
-            "WP_Custom_API\Includes\Database",
             "WP_Custom_API\Includes\Auth_Token",
             "WP_Custom_API\Includes\Password",
             "WP_Custom_API\Api\\" . NAME . "\Model",
@@ -150,8 +150,7 @@ class Create
     public static function model()
     {
         $dependencies = [
-            "WP_Custom_API\Includes\Model_Interface",
-            "WP_Custom_API\Includes\Database"
+            "WP_Custom_API\Includes\Model_Interface"
         ];
         $class_content = "    public static function table_name():string {\n        return '" . strtolower(NAME) . "';\n    }\n    public static function table_schema(): array {\n        return\n            [\n\n            ];\n    }\n    public static function run_migration(): bool {\n        return false;\n    }";
         self::create_file("model", $dependencies, $class_content);
@@ -165,7 +164,6 @@ class Create
     {
         $dependencies = [
             "WP_Custom_API\Config",
-            "WP_Custom_API\Includes\Database",
             "WP_Custom_API\Includes\Auth_Token",
             "WP_Custom_API\Includes\Password"
         ];

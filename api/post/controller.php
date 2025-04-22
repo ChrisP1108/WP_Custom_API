@@ -8,17 +8,16 @@ use WP_REST_Request as Request;
 use WP_REST_Response as Response;
 use WP_Error as Error;
 use WP_Custom_API\Config;
-use WP_Custom_API\Includes\Database;
 use WP_Custom_API\Includes\Auth_Token;
 use WP_Custom_API\Includes\Password;
 use WP_Custom_API\Api\Post\Model;
 use WP_Custom_API\Api\Post\Permission;
 
 /**
-* Prevent direct access from sources other than the Wordpress environment
-*/
+ * Prevent direct access from sources other than the Wordpress environment
+ */
 
-if (!defined('ABSPATH')) { 
+if (!defined('ABSPATH')) {
     exit;
 }
 
