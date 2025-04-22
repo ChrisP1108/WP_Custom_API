@@ -24,13 +24,11 @@ final class Model extends Model_Interface
 
     public static function table_schema(): array
     {
-        return [
-            'name' => 'VARCHAR(255) NOT NULL'
-        ];
+        return [];
     }
 
     public static function run_migration(): bool
     {
-        return true;
+        return false;
     }
 }
