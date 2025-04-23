@@ -56,7 +56,7 @@ final class Database
      * @since 1.0.0
      */
 
-    public static function table_name_err_msg(): array|object
+    private static function table_name_err_msg(): array|object
     {
         return self::response(false, 'Invalid table name. Only alphanumeric characters and underscores are allowed.');
     }
@@ -96,7 +96,7 @@ final class Database
 
         $table_search_name = self::get_table_full_name($table_name);
 
-        $query = "SHOW TABLES LIKE '$table_search_name'";
+        $query = "SHOW TABLES LIKE $table_search_name";
 
         return $wpdb->get_var($query) ? true : false;
     }
@@ -124,7 +124,7 @@ final class Database
         if (!$table_create_name) return self::table_name_err_msg();
 
         $charset_collate = $wpdb->get_charset_collate();
-        $create_table_query = "CREATE TABLE '$table_create_name' ( id mediumint(11) NOT NULL AUTO_INCREMENT, ";
+        $create_table_query = "CREATE TABLE $table_create_name ( id mediumint(11) NOT NULL AUTO_INCREMENT, ";
 
         foreach ($table_schema as $key => $value) {
             $create_table_query .= esc_sql($key) . " " . esc_sql($value) . ", ";
@@ -135,10 +135,10 @@ final class Database
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($create_table_query);
 
-        if ($wpdb->last_error) return self::response(false, 'An error occurred when attempting to create the table: ' . $wpdb->last_error);
+        if ($wpdb->last_error) return self::response(false, 'An error occurred when attempting to create the table "' . $table_name . '": ' . $wpdb->last_error);
         return self::table_exists($table_name)
-            ? self::response(true, 'Table successfully created.')
-            : self::response(false, 'An error occurred when attempting to create the table.');
+            ? self::response(true, 'Table "' . $table_name . '" successfully created.')
+            : self::response(false, 'An error occurred when attempting to create the table "' . $table_name . '".');
     }
 
     /**
@@ -162,13 +162,13 @@ final class Database
 
         if (!$table_to_drop_name) return self::table_name_err_msg();
 
-        $result = $wpdb->query("DROP TABLE IF EXISTS '$table_to_drop_name'");
+        $result = $wpdb->query("DROP TABLE IF EXISTS $table_to_drop_name");
 
-        if (!$result) return self::response(false, 'An error occured when attempting to drop the table:' . $wpdb->last_error);
+        if (!$result) return self::response(false, 'An error occured when attempting to drop the table "' . $table_name . '": ' . $wpdb->last_error);
 
         return !self::table_exists($table_name)
-            ? self::response(true, 'Table was successfully dropped.')
-            : self::response(false, 'An error occured when attempting to drop the table.');
+            ? self::response(true, 'Table "' . $table_name . '" was successfully dropped.')
+            : self::response(false, 'An error occured when attempting to drop the table "' . $table_name . '".');
     }
 
     /**
@@ -196,11 +196,11 @@ final class Database
 
         if (!$table_name_to_query) return self::table_name_err_msg();
 
-        $rows_data = $wpdb->get_results("SELECT * FROM '$table_name_to_query'", ARRAY_A);
+        $rows_data = $wpdb->get_results("SELECT * FROM $table_name_to_query", ARRAY_A);
 
-        if (empty($rows_data)) return self::response(true, 'No table row data found. Table is empty.', []);
+        if (empty($rows_data)) return self::response(true, 'No table row data found. Table "' . $table_name . '" is empty.', []);
 
-        return self::response(true, count($rows_data) . ' table row(s) retrieved successfully.', $rows_data);
+        return self::response(true, count($rows_data) . ' table row(s) retrieved successfully from "' . $table_name . '".', $rows_data);
     }
 
     /**
@@ -231,21 +231,21 @@ final class Database
 
         if (!$table_name_to_query) return self::table_name_err_msg();
 
-        if (!preg_match('/^[a-zA-Z0-9_]+$/', $column)) return self::response(false, 'Invalid column name provided.');
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $column)) return self::response(false, 'Invalid column name provided for "' . $table_name . '".');
 
         $placeholder = is_numeric($value) ? "%d" : "%s";
 
-        $query = $wpdb->prepare("SELECT * FROM '$table_name_to_query' WHERE '$column' = $placeholder", $value);
+        $query = $wpdb->prepare("SELECT * FROM $table_name_to_query WHERE $column = $placeholder", $value);
 
         $rows_data = $wpdb->get_results($query, ARRAY_A);
 
-        if (empty($rows_data)) return self::response(false, 'No table rows found corresponding to the specified column name and value.');
+        if (empty($rows_data)) return self::response(false, 'No table rows found corresponding to the specified column name and value for "' . $table_name . '".');
 
         if (!$multiple) {
-            return self::response(true, 'Table row retrieved successfully based upon search parameters.', $rows_data[0]);
+            return self::response(true, 'Table row retrieved successfully for "' . $table_name . '" based upon search parameters.', $rows_data[0]);
         }
 
-        return self::response(true, count($rows_data) . ' table row(s) retrieved successfully based upon search parameters.', $rows_data);
+        return self::response(true, count($rows_data) . ' table row(s) retrieved successfully for "' . $table_name . '" based upon search parameters.', $rows_data);
     }
 
     /**
@@ -273,9 +273,9 @@ final class Database
 
         $result = $wpdb->insert($table_name_to_insert, $data);
 
-        if (!$result || $wpdb->insert_id === 0) return self::response(false, 'An error occurred while inserting data into row: ' . $wpdb->last_error);
+        if (!$result || $wpdb->insert_id === 0) return self::response(false, 'An error occurred while inserting data into row for "' . $table_name . '": ' . $wpdb->last_error);
 
-        return self::response(true, 'Table row successfully inserted.', ['id' => $wpdb->insert_id]);
+        return self::response(true, 'Table row for "' . $table_name . '" successfully inserted.', ['id' => $wpdb->insert_id]);
     }
 
     /**
@@ -306,11 +306,11 @@ final class Database
 
         $result = $wpdb->update($table_name_to_update, $data, $where);
 
-        if ($result === false) return self::response(false, 'An error occurred while updating the table row: ' . $wpdb->last_error);
+        if ($result === false) return self::response(false, 'An error occurred while updating the table row for "' . $table_name . '": ' . $wpdb->last_error);
 
-        if ($result === 0) return self::response(false, 'Table row could not be updated.  Please check the ID and make sure it corresponds to an existing table row.');
+        if ($result === 0) return self::response(false, 'Table row for "' . $table_name . '" could not be updated.  Please check the ID and make sure it corresponds to an existing table row.');
 
-        return self::response(true, 'Table row successfully updated.');
+        return self::response(true, 'Table row for "' . $table_name . '" successfully updated.');
     }
 
     /**
@@ -342,8 +342,8 @@ final class Database
 
         $result = $wpdb->delete($table_name_to_delete_row, $where);
 
-        if ($result === false) return self::response(false, 'An error occurred while attempting to delete the row: ' . $wpdb->last_error);
+        if ($result === false) return self::response(false, 'An error occurred while attempting to delete the row for "' . $table_name . '": ' . $wpdb->last_error);
 
-        return self::response(true, 'Table row successfully deleted.');
+        return self::response(true, 'Table row for "' . $table_name . '" successfully deleted.');
     }
 }
