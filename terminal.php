@@ -33,7 +33,7 @@ if (is_array($_SERVER['argv'])) {
 
 /*
  * Check that all arguments exist\
- */ 
+ */
 
 if (!isset($argv[1], $argv[2])) {
     echo "Error: Missing required arguments.\n";
@@ -42,13 +42,13 @@ if (!isset($argv[1], $argv[2])) {
 
 /*
  * Split command and resource
- */ 
+ */
 
 $cr = explode(":", $argv[1]);
 
 /*
  * Check that command:resource arguments exist
- */ 
+ */
 
 if (count($cr) < 2) {
     echo "Error: Invalid command format. Expected 'command:resource'.\n";
@@ -63,21 +63,21 @@ $namings = explode("/", $argv[2]);
 
 /*
  * Loop through naming split at "/" and make string lowercase with first name uppercase
- */ 
+ */
 
-$naming_formatted = array_map(function($str) {
+$naming_formatted = array_map(function ($str) {
     return ucfirst(strtolower($str));
 }, $namings);
 
 /*
  * Combine naming split at "/"
- */ 
+ */
 
 $naming_string = implode("/", $naming_formatted);
 
 /*
  * Check that naming string only contains alphanumeric characters, underscores, and forward slashes
- */ 
+ */
 
 if (!preg_match('/^[a-zA-Z_\/]+$/', $naming_string)) {
     echo "Error: Invalid resource name format.  The resource name can only contain alphanumeric characters, underscores, and forward slashes.\n";
@@ -105,7 +105,7 @@ class Create
      * Generates file content based upon parameters and global variable values and then creates file.  Makes sure file of same name doesn't already exist and makes sure file was created successfully.
      */
 
-    private static function create_file($type, $dependencies, $class_content = '')
+    private static function create_file($type, $dependencies, $class_content = '', $additional_content = '')
     {
 
         // Check that file of the same name doesn't already exist
@@ -135,7 +135,7 @@ class Create
                 $file_content .= "\nfinal class " . ucfirst($type);
             } else $file_content .= "\nclass " . ucfirst($type);
 
-            if ($type === 'model') $file_content .= " implements Model_Interface";
+            if ($type === 'model') $file_content .= " extends Model_Interface";
 
             $file_content .= "\n{\n";
 
@@ -143,6 +143,10 @@ class Create
 
             $file_content .= "\n}";
         }
+
+        // Add additional content if it exists
+
+        if (!empty($additional_content)) $file_content .=  "\n" . $additional_content;
 
         // Check that folder exists for writing file.  Create folder if it does not
 
@@ -182,7 +186,8 @@ class Create
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Model",
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Permission"
         ];
-        self::create_file("controller", $dependencies);
+        $class_content = "    public static function index() {\n        return new Response(\"" . ucfirst(PATH) . " route works\", 200);\n    }";
+        self::create_file("controller", $dependencies, $class_content);
     }
 
     /**
@@ -224,7 +229,8 @@ class Create
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Controller",
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Permission"
         ];
-        self::create_file("routes", $dependencies);
+        $additional_content = "/**\n* Sample GET route\n*/\n\nRouter::get(\"/" . strtolower(PATH) . "\", [Controller::class, \"index\"]);";
+        self::create_file("routes", $dependencies, '', $additional_content);
     }
 
     /**
