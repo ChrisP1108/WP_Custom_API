@@ -31,26 +31,68 @@ if (is_array($_SERVER['argv'])) {
     }
 }
 
-// Check that all arguments exist
+/*
+ * Check that all arguments exist\
+ */ 
 
 if (!isset($argv[1], $argv[2])) {
     echo "Error: Missing required arguments.\n";
     exit;
 }
 
+/*
+ * Split command and resource
+ */ 
+
 $cr = explode(":", $argv[1]);
 
-// Check that command:resource arguments exist
+/*
+ * Check that command:resource arguments exist
+ */ 
 
 if (count($cr) < 2) {
     echo "Error: Invalid command format. Expected 'command:resource'.\n";
     exit;
 }
 
+/* 
+ *Split any slashes in resource name for folder nesting
+ */
+
+$namings = explode("/", $argv[2]);
+
+/*
+ * Loop through naming split at "/" and make string lowercase with first name uppercase
+ */ 
+
+$naming_formatted = array_map(function($str) {
+    return ucfirst(strtolower($str));
+}, $namings);
+
+/*
+ * Combine naming split at "/"
+ */ 
+
+$naming_string = implode("/", $naming_formatted);
+
+/*
+ * Check that naming string only contains alphanumeric characters, underscores, and forward slashes
+ */ 
+
+if (!preg_match('/^[a-zA-Z_\/]+$/', $naming_string)) {
+    echo "Error: Invalid resource name format.  The resource name can only contain alphanumeric characters, underscores, and forward slashes.\n";
+    exit;
+}
+
+/*
+ * Define global variables
+ */
 
 define("COMMAND", strtolower($cr[0]));
 define("RESOURCE", strtolower($cr[1]));
-define("NAME", ucfirst(strtolower($argv[2])));
+define("PATH", implode("/", $naming_formatted));
+define("NAMESPACE_PATH", implode("\\", $naming_formatted));
+
 
 /**
  * Process create commands
@@ -68,14 +110,14 @@ class Create
 
         // Check that file of the same name doesn't already exist
 
-        if (file_exists("api/" . strtolower(NAME) . "/" . $type . ".php")) {
-            echo ucfirst($type) . ".php file in folder " . strtolower(NAME) . " already exists.\n";
+        if (file_exists("api/" . strtolower(PATH) . "/" . $type . ".php")) {
+            echo ucfirst($type) . ".php file in folder " . strtolower(PATH) . " already exists.\n";
             return;
         }
 
         // Generate file content
 
-        $file_content = "<?php\n\ndeclare(strict_types=1);\n\nnamespace " . APP_NAME . "\\Api\\" . ucfirst(NAME) . ";\n";
+        $file_content = "<?php\n\ndeclare(strict_types=1);\n\nnamespace " . APP_NAME . "\\Api\\" . ucfirst(NAMESPACE_PATH) . ";\n";
 
         if (!empty($dependencies)) $file_content .= "\n";
 
@@ -104,24 +146,24 @@ class Create
 
         // Check that folder exists for writing file.  Create folder if it does not
 
-        if (!is_dir("api/" . strtolower(NAME))) {
-            echo "api/" . strtolower(NAME);
-            if (mkdir("api/" . strtolower(NAME))) {
-                echo "Directory " . strtolower(NAME) . " created inside api folder.";
+        if (!is_dir("api/" . strtolower(PATH))) {
+            echo "api/" . strtolower(PATH);
+            if (mkdir("api/" . strtolower(PATH), 0755, true)) {
+                echo "Directory " . strtolower(PATH) . " created inside api folder.";
             } else {
-                echo "Error creating directory " . strtolower(NAME) . " inside api folder.";
+                echo "Error creating directory " . strtolower(PATH) . " inside api folder.";
             }
         }
 
         // Create file and check that it was successfully created
 
-        $create_file = file_put_contents("api/" . strtolower(NAME) . "/" . $type . ".php", $file_content);
+        $create_file = file_put_contents("api/" . strtolower(PATH) . "/" . $type . ".php", $file_content);
 
         if ($create_file === false) {
-            echo "Error creating " . ucfirst($type) . " file " . strtolower(NAME) . ".php inside the " . strtolower(NAME) . " folder.\n";
+            echo "Error creating " . ucfirst($type) . " file " . strtolower(PATH) . ".php inside the " . strtolower(PATH) . " folder.\n";
             exit;
         }
-        echo ucfirst($type) . " " . strtolower(NAME) . ".php file successfully created inside the " . strtolower(NAME) . " folder.\n";
+        echo ucfirst($type) . " " . strtolower(PATH) . ".php file successfully created inside the " . strtolower(PATH) . " folder.\n";
     }
 
     /**
@@ -137,8 +179,8 @@ class Create
             "WP_Custom_API\Config",
             "WP_Custom_API\Includes\Auth_Token",
             "WP_Custom_API\Includes\Password",
-            "WP_Custom_API\Api\\" . NAME . "\Model",
-            "WP_Custom_API\Api\\" . NAME . "\Permission"
+            "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Model",
+            "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Permission"
         ];
         self::create_file("controller", $dependencies);
     }
@@ -152,7 +194,7 @@ class Create
         $dependencies = [
             "WP_Custom_API\Includes\Model_Interface"
         ];
-        $class_content = "    public static function table_name():string {\n        return '" . strtolower(NAME) . "';\n    }\n    public static function table_schema(): array {\n        return\n            [\n\n            ];\n    }\n    public static function run_migration(): bool {\n        return false;\n    }";
+        $class_content = "    public static function table_name():string {\n        return '" . strtolower(str_replace('/', '_', PATH)) . "';\n    }\n    public static function table_schema(): array {\n        return\n            [\n\n            ];\n    }\n    public static function run_migration(): bool {\n        return false;\n    }";
         self::create_file("model", $dependencies, $class_content);
     }
 
@@ -167,7 +209,7 @@ class Create
             "WP_Custom_API\Includes\Auth_Token",
             "WP_Custom_API\Includes\Password"
         ];
-        $class_content = "    public const TOKEN_NAME = '" . strtolower(NAME) . "_token';\n\n    public static function is_authorized()\n    {\n\n    }";
+        $class_content = "    public const TOKEN_NAME = '" . strtolower(str_replace('/', '_', PATH)) . "_token';\n\n    public static function is_authorized()\n    {\n\n    }";
         self::create_file("permission", $dependencies, $class_content);
     }
 
@@ -179,8 +221,8 @@ class Create
     {
         $dependencies = [
             "WP_Custom_API\Includes\Router",
-            "WP_Custom_API\Api\\" . NAME . "\Controller",
-            "WP_Custom_API\Api\\" . NAME . "\Permission"
+            "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Controller",
+            "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Permission"
         ];
         self::create_file("routes", $dependencies);
     }
@@ -210,11 +252,11 @@ class Delete
 
     public static function delete_file($type)
     {
-        $file_path = "api/" . strtolower(NAME) . "/" . $type . ".php";
+        $file_path = "api/" . strtolower(PATH) . "/" . $type . ".php";
         if (file_exists($file_path)) {
             unlink($file_path);
-            echo ucfirst($type) . " " . strtolower(NAME) . ".php file successfully deleted inside the " . strtolower(NAME) . " folder.\n";
-        } else echo ucfirst($type) . " " . strtolower(NAME) . ".php file does not exist inside the " . strtolower(NAME) . " folder and could not be deleted.\n";
+            echo ucfirst($type) . " " . strtolower(PATH) . ".php file successfully deleted inside the " . strtolower(PATH) . " folder.\n";
+        } else echo ucfirst($type) . " " . strtolower(PATH) . ".php file does not exist inside the " . strtolower(PATH) . " folder and could not be deleted.\n";
     }
 
     public static function interface()
@@ -223,8 +265,8 @@ class Delete
         self::delete_file("model");
         self::delete_file("permission");
         self::delete_file("routes");
-        rmdir("api/" . strtolower(NAME));
-        echo strtolower(NAME) . " folder deleted inside api folder";
+        rmdir("api/" . strtolower(PATH));
+        echo strtolower(PATH) . " folder deleted inside api folder";
     }
 }
 

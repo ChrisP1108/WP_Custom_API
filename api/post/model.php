@@ -20,8 +20,6 @@ final class Model extends Model_Interface
     {
         return 'post';
     }
-
-
     public static function table_schema(): array
     {
         return [];
