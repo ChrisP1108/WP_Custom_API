@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace WP_Custom_API\Includes;
 
 use WP_Custom_API\Config;
+use WP_REST_Response as Response;
 
 /** 
  * Prevent direct access from sources other than the Wordpress environment
@@ -48,6 +49,19 @@ final class Router
     private static $routes_registered = false;
 
     /**
+     * Creates a permission error response if no permission callback is registered.
+     * @param string $route - The route that needs to have a permission callback registered.
+     * @return callable - A function that returns a 401 error when called.
+     * @since 1.0.0
+     */
+
+    private static function permission_error(string $route): callable {
+        return function () use ($route) {
+            return new Response(['msg' => 'The route `' . $route . '` needs to have a permission callback registered as a third parameter in the Router class.'], 401);
+        };
+    }
+
+    /**
      * METHOD - register_rest_api_route
      * 
      * Registers an API Route to the routes property to get registered through the Wordpress rest_api_init action.
@@ -62,6 +76,12 @@ final class Router
 
     private static function register_rest_api_route(string $method, string $route, ?callable $callback, ?callable $permission_callback): void
     {
+        // Check that route has a registered callback.  Otherwise return error message.
+
+        if (!is_callable($permission_callback)) {
+            $callback = self::permission_error($route);
+        }
+
         self::$routes[] = [
             'method' => strtoupper($method),
             'route' => self::parse_wildcards($route),

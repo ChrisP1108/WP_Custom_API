@@ -211,10 +211,11 @@ class Create
     {
         $dependencies = [
             "WP_Custom_API\Config",
+            "WP_Custom_API\Includes\Permission_Interface",
             "WP_Custom_API\Includes\Auth_Token",
             "WP_Custom_API\Includes\Password"
         ];
-        $class_content = "    public const TOKEN_NAME = '" . strtolower(str_replace('/', '_', PATH)) . "_token';\n\n    public static function is_authorized()\n    {\n\n    }";
+        $class_content = "    public const TOKEN_NAME = '" . strtolower(str_replace('/', '_', PATH)) . "_token';\n\n    public static function is_authorized()\n    {\n        // Replace code in this method with logic for protecting a route from unauthorized access. \n\n        return Auth_Token::validate(self::TOKEN_NAME)['ok'];\n    }";
         self::create_file("permission", $dependencies, $class_content);
     }
 
@@ -229,7 +230,7 @@ class Create
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Controller",
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Permission"
         ];
-        $additional_content = "/**\n* Sample GET route\n*/\n\nRouter::get(\"/" . strtolower(PATH) . "\", [Controller::class, \"index\"]);";
+        $additional_content = "/**\n* Sample GET route\n*/\n\nRouter::get(\"/" . strtolower(PATH) . "\", [Controller::class, \"index\"], [Permission::class, \"public\"]);";
         self::create_file("routes", $dependencies, '', $additional_content);
     }
 

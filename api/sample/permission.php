@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace WP_Custom_API\Api\Sample;
 
 use WP_Custom_API\Config;
+use WP_Custom_API\Includes\Permission_Interface;
 use WP_Custom_API\Includes\Auth_Token;
 use WP_Custom_API\Includes\Password;
 
@@ -22,6 +23,8 @@ class Permission
 
     public static function is_authorized()
     {
+        // Replace code in this method with logic for protecting a route from unauthorized access. 
 
+        return Auth_Token::validate(self::TOKEN_NAME)['ok'];
     }
 }

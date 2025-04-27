@@ -20,4 +20,4 @@ if (!defined('ABSPATH')) {
 * Sample GET route
 */
 
-Router::get("/sample", [Controller::class, "index"]);
+Router::get("/sample", [Controller::class, "index"], [Permission::class, "public"]);
