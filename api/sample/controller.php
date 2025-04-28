@@ -10,6 +10,7 @@ use WP_Error as Error;
 use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Auth_Token;
 use WP_Custom_API\Includes\Password;
+use WP_Custom_API\Includes\Permission_Interface;
 use WP_Custom_API\Api\Sample\Model;
 use WP_Custom_API\Api\Sample\Permission;
 
@@ -21,7 +22,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class Controller
+final class Controller
 {
     public static function index() {
         return new Response("Sample route works", 200);

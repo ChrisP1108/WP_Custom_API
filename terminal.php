@@ -131,11 +131,11 @@ class Create
 
         if ($type !== 'routes') {
 
-            if ($type === 'model') {
-                $file_content .= "\nfinal class " . ucfirst($type);
-            } else $file_content .= "\nclass " . ucfirst($type);
+            $file_content .= "\nfinal class " . ucfirst($type);
 
             if ($type === 'model') $file_content .= " extends Model_Interface";
+
+            if ($type === 'permission') $file_content .= " extends Permission_Interface";
 
             $file_content .= "\n{\n";
 
@@ -183,6 +183,7 @@ class Create
             "WP_Custom_API\Config",
             "WP_Custom_API\Includes\Auth_Token",
             "WP_Custom_API\Includes\Password",
+            "WP_Custom_API\Includes\Permission_Interface",
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Model",
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Permission"
         ];
@@ -215,7 +216,7 @@ class Create
             "WP_Custom_API\Includes\Auth_Token",
             "WP_Custom_API\Includes\Password"
         ];
-        $class_content = "    public const TOKEN_NAME = '" . strtolower(str_replace('/', '_', PATH)) . "_token';\n\n    public static function is_authorized()\n    {\n        // Replace code in this method with logic for protecting a route from unauthorized access. \n\n        return Auth_Token::validate(self::TOKEN_NAME)['ok'];\n    }";
+        $class_content = "    public const TOKEN_NAME = '" . strtolower(str_replace('/', '_', PATH)) . "_token';\n\n    public static function authorized(): bool\n    {\n        // Replace code in this method with logic for protecting a route from unauthorized access. \n\n        return Auth_Token::validate(self::TOKEN_NAME)['ok'];\n    }";
         self::create_file("permission", $dependencies, $class_content);
     }
 

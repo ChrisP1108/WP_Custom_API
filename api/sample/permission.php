@@ -17,11 +17,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class Permission
+final class Permission extends Permission_Interface
 {
     public const TOKEN_NAME = 'sample_token';
 
-    public static function is_authorized()
+    public static function authorized(): bool
     {
         // Replace code in this method with logic for protecting a route from unauthorized access. 
 

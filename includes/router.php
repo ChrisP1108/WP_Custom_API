@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace WP_Custom_API\Includes;
 
 use WP_Custom_API\Config;
+use WP_Custom_API\Includes\Permission_Interface;
+use WP_Error as Error;
 use WP_REST_Response as Response;
 
 /** 
@@ -49,19 +51,6 @@ final class Router
     private static $routes_registered = false;
 
     /**
-     * Creates a permission error response if no permission callback is registered.
-     * @param string $route - The route that needs to have a permission callback registered.
-     * @return callable - A function that returns a 401 error when called.
-     * @since 1.0.0
-     */
-
-    private static function permission_error(string $route): callable {
-        return function () use ($route) {
-            return new Response(['msg' => 'The route `' . $route . '` needs to have a permission callback registered as a third parameter in the Router class.'], 401);
-        };
-    }
-
-    /**
      * METHOD - register_rest_api_route
      * 
      * Registers an API Route to the routes property to get registered through the Wordpress rest_api_init action.
@@ -76,11 +65,12 @@ final class Router
 
     private static function register_rest_api_route(string $method, string $route, ?callable $callback, ?callable $permission_callback): void
     {
-        // Check that route has a registered callback.  Otherwise return error message.
 
+        // Check that permission callback is callable.  If not, return no_permission_callback_response and set permission_callback to true to display error message
         if (!is_callable($permission_callback)) {
-            $callback = self::permission_error($route);
-        }
+            $callback = function() use($method, $route) { return Permission_Interface::no_permission_callback_response($method, $route);};
+            $permission_callback = function() { return true; };
+        } 
 
         self::$routes[] = [
             'method' => strtoupper($method),
@@ -114,7 +104,7 @@ final class Router
                 register_rest_route(Config::BASE_API_ROUTE, $route['route'], [
                     'methods' => $route['method'],
                     'callback' => $route['callback'],
-                    'permission_callback' => $route['permission_callback'] ? $route['permission_callback'] : '__return_true'
+                    'permission_callback' => $route['permission_callback']
                 ]);
             }
         });

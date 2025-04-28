@@ -2,7 +2,7 @@
 
 namespace WP_Custom_API\Includes;
 
-use \WP_Error;
+use WP_Error;
 
 /** 
  * Prevent direct access from sources other than the Wordpress environment
