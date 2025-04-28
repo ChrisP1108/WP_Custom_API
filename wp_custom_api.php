@@ -5,7 +5,7 @@
  * Description: This custom made plugin is meant for those seeking to utilize the Wordress REST API with their own custom PHP code.  This plugin provides a structure for routing, controllers, and models and a database helper for managing custom API routing.
  * Author: Chris Paschall
  * Version: 1.0.0
- * PHP Version Minimum: 8.0
+ * PHP Version Minimum: 8.1
  */
 
 /**
@@ -51,7 +51,7 @@ use WP_Custom_API\Includes\Init;
  * If so, plugin is initialized.  Otherwise the plugin doesn't run and an error notice message is shown in the Wordpress dashboard.
  */
 
-if (!version_compare(PHP_VERSION, '8.0.0', '>=')) {
+if (!version_compare(PHP_VERSION, '8.1.0', '>=')) {
     Error_Generator::generate('WP Custom API plugin is currently not running', 'This plugin requires PHP version 8.0 or higher to be installed.');
 } else {
     Init::run();

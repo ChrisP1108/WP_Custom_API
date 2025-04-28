@@ -5,10 +5,7 @@ declare(strict_types=1);
 namespace WP_Custom_API\Includes;
 
 use WP_Custom_API\Config;
-use WP_Custom_API\Includes\Permission_Interface;
 use WP_Custom_API\Includes\Error_Generator;
-use WP_Error as Error;
-use WP_REST_Response as Response;
 
 /** 
  * Prevent direct access from sources other than the Wordpress environment
@@ -54,7 +51,7 @@ final class Router
     /**
      * METHOD - register_rest_api_route
      * 
-     * Registers an API Route to the routes property to get registered through the Wordpress rest_api_init action.
+     * Registers an API Route to the routes property to get registered through the Wordpress rest_api_init action.  Checks that a permission callback has been passed in.  If no permission callback is passed in, the route won't be registered and an error will be thrown.
      * @param string $method - HTTP method ('GET', 'POST', etc.).
      * @param string $route - The specific route to register.  Handles parameters if passed in
      * @param callable $callback - The function that runs when the route is accessed.
@@ -68,11 +65,13 @@ final class Router
     {
 
         // Check that permission callback is callable.  If not, return no_permission_callback_response and set permission_callback to true to display error message
+
         if (!is_callable($permission_callback)) {
-            $callback = function() use($method, $route) { return Permission_Interface::no_permission_callback_response($method, $route);};
-            $permission_callback = function() { return true; };
             Error_Generator::generate('No Permission Callback', 'A permission callback must be registered for the ' . $method . ' route ' . $route . '.');
+            return;
         } 
+
+        // Register routes to $routes property
 
         self::$routes[] = [
             'method' => strtoupper($method),

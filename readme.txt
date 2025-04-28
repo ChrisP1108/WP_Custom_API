@@ -1,7 +1,7 @@
 === WP Custom API ===
 Contributors: Chris Paschall
 Tags: api, custom api, REST API, WordPress, plugin, authentication, database, security
-Requires at least: PHP version 8.0
+Requires at least: PHP version 8.1
 Tested up to: PHP 8.4
 License: None
 Github Repository: https://github.com/ChrisP1108/WP_Custom_API.git

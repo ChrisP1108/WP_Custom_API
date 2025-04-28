@@ -2,7 +2,7 @@
 
 namespace WP_Custom_API\Includes;
 
-use WP_Error;
+use WP_Error as Error;
 
 /** 
  * Prevent direct access from sources other than the Wordpress environment
@@ -35,7 +35,7 @@ final class Error_Generator
     /**
      * METHOD - generate
      * 
-     * Utilizes the WP_Error class for logging errors
+     * Utilizes the WP_Error as Error class for logging errors
      * 
      * @param string $code_msg - Code Message
      * @param string $description_msg - Description Message
@@ -48,7 +48,7 @@ final class Error_Generator
     {
         if ($code_msg && $description_msg) {
             error_log($description_msg);
-            self::$errors_list[] = new WP_Error($code_msg, $description_msg);
+            self::$errors_list[] = new Error($code_msg, $description_msg);
         }
     }
 

@@ -33,34 +33,17 @@ abstract class Permission_Interface
         return true;
     }
 
-
     /**
-     * Generates a WP_Error when a permission callback is not registered for a route.
+     * Generates a error response for unauthorized access.
      *
-     * @param string $method The HTTP method of the route.
-     * @param string $route The route path.
-     * @return WP_Error Returns an error indicating the absence of a permission callback.
-     */
-
-    public static function no_permission_callback_response(string $method, string $route): Error {
-        return new Error(
-            'no_permission_callback',
-            'A permission callback must be registered for the ' . $method . ' route ' . $route . '.',
-            500
-        );
-    }
-
-    /**
-     * Generates a WP_Error for unauthorized access.
-     *
-     * @return WP_Error Returns an error indicating unauthorized access.
+     * @return WP_Error as Error Returns an error indicating unauthorized access.
      */
     
     public static function unauthorized_response(): Error {
         return new Error(
             'unauthorized',
             'You are not authorized to access this resource.',
-            401
+            ['status' => 401]
         );
     }
 
