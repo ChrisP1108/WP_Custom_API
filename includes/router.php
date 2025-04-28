@@ -6,6 +6,7 @@ namespace WP_Custom_API\Includes;
 
 use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Permission_Interface;
+use WP_Custom_API\Includes\Error_Generator;
 use WP_Error as Error;
 use WP_REST_Response as Response;
 
@@ -70,6 +71,7 @@ final class Router
         if (!is_callable($permission_callback)) {
             $callback = function() use($method, $route) { return Permission_Interface::no_permission_callback_response($method, $route);};
             $permission_callback = function() { return true; };
+            Error_Generator::generate('No Permission Callback', 'A permission callback must be registered for the ' . $method . ' route ' . $route . '.');
         } 
 
         self::$routes[] = [

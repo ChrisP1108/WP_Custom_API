@@ -120,7 +120,7 @@ final class Init
     private static function load_file($file): void
     {
         if (!file_exists($file)) {
-            Error_Generator::generate('Error loading ' . $file . '.php file. The file does not exist');
+            Error_Generator::generate('File load error', 'Error loading ' . $file . '.php file. The file does not exist');
             return;
         }
 
@@ -189,7 +189,7 @@ final class Init
                     }
                 }
             } catch (Exception $e) {
-                Error_Generator::generate('Error loading ' . $filename . '.php file in "api" folder at ' . WP_CUSTOM_API_FOLDER_PATH . '/api: ' . $e->getMessage());
+                Error_Generator::generate('File load error', 'Error loading ' . $filename . '.php file in "api" folder at ' . WP_CUSTOM_API_FOLDER_PATH . '/api: ' . $e->getMessage());
             }
         }
 
