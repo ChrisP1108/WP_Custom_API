@@ -36,27 +36,24 @@ final class Auth_Token
      * @since 1.0.0
      */
 
-    public static function remove_token(string $token_name = null, string|int $id = null): void
+    public static function remove_token(string $token_name, string|int $id = 0): void
     {
-        if ($token_name) {
+        // Apply auth token prefix to token name if it doesn't exist
 
-            // Apply auth token prefix to token name if it doesn't exist
+        if (!str_starts_with($token_name, Config::AUTH_TOKEN_PREFIX)) {
+            $token_name = Config::AUTH_TOKEN_PREFIX . $token_name;
+        }
 
-            if (!str_starts_with($token_name, Config::AUTH_TOKEN_PREFIX)) {
-                $token_name = Config::AUTH_TOKEN_PREFIX . $token_name;
-            }
+        // Remove cookie
 
-            // Remove cookie
+        setcookie($token_name, '', time() - 300, '/');
 
-            setcookie($token_name, '', time() - 300, '/');
-
-            // Remove transient if id passed in and transient exists
-            
-            if ($id) {
-                $id = intval($id);
-                $stored_nonce = get_transient(Config::AUTH_TOKEN_PREFIX . $id);
-                if ($stored_nonce) delete_transient(Config::AUTH_TOKEN_PREFIX . $id);
-            }
+        // Remove transient if id passed in and transient exists
+        
+        if ($id !== 0) {
+            $id = intval($id);
+            $stored_nonce = get_transient(Config::AUTH_TOKEN_PREFIX . $id);
+            if ($stored_nonce) delete_transient(Config::AUTH_TOKEN_PREFIX . $id);
         }
     }
 
@@ -75,17 +72,17 @@ final class Auth_Token
      * @since 1.0.0
      */
 
-    private static function response(bool $ok = false, string|int $id = null, string $msg = null, int $issued_at = null, int $expires_at = null): array
+    private static function response(bool $ok, string|int|null $id, string $msg, int $issued_at = 0, int $expires_at = 0): array
     {
         $response = [
             'ok' => $ok,
-            'id' => $id ? intval($id) : null,
+            'id' => $id !== '' ? intval($id) : null,
             'msg' => $msg
         ];
-        if ($issued_at !== null) {
+        if ($issued_at !== 0) {
             $response['issued_at'] = date("Y-m-d H:i:s", $issued_at);
         }
-        if ($expires_at !== null) {
+        if ($expires_at !== 0) {
             $response['expires_at'] = date("Y-m-d H:i:s", $expires_at);
         }
         return $response;
@@ -102,7 +99,7 @@ final class Auth_Token
      * @since 1.0.0
      */
 
-    public static function generate(int $id = null, string $token_name = null, int $expiration = Config::TOKEN_EXPIRATION): array
+    public static function generate(int $id, string $token_name, int $expiration = Config::TOKEN_EXPIRATION): array
     {
         if (!$id || !$token_name) {
             return self::response(false, $id, "`id` and `token_name` parameters required to generate token.");
@@ -159,7 +156,7 @@ final class Auth_Token
      * @since 1.0.0
      */
 
-    public static function validate(string $token_name = null, int $logout_time = null): array
+    public static function validate(string $token_name, int $logout_time = 0): array
     {
         if (!$token_name) {
             return self::response(false, null, "A token name must be provided for validation.");
@@ -215,7 +212,7 @@ final class Auth_Token
         }
 
         // Check if token was issued before logout
-        if ($logout_time !== null && intval($issued_at) <= $logout_time) {
+        if ($logout_time !== 0 && intval($issued_at) <= $logout_time) {
             self::remove_token($token_name, $id);
             return self::response(false, null, "Token was issued before or at the last logout time.");
         }

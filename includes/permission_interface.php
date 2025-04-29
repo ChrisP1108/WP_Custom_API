@@ -36,10 +36,10 @@ abstract class Permission_Interface
     /**
      * Generates a error response for unauthorized access.
      *
-     * @return WP_Error as Error Returns an error indicating unauthorized access.
+     * @return WP_Error as Error - Returns an error indicating unauthorized access.
      */
     
-    public static function unauthorized_response(): Error {
+    final public static function unauthorized_response(): Error {
         return new Error(
             'unauthorized',
             'You are not authorized to access this resource.',

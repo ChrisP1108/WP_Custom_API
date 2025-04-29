@@ -19,12 +19,14 @@ final class Model extends Model_Interface
     public static function table_name():string {
         return 'sample';
     }
+
     public static function table_schema(): array {
         return
             [
 
             ];
     }
+
     public static function run_migration(): bool {
         return false;
     }

@@ -200,7 +200,7 @@ class Create
         $dependencies = [
             "WP_Custom_API\Includes\Model_Interface"
         ];
-        $class_content = "    public static function table_name():string {\n        return '" . strtolower(str_replace('/', '_', PATH)) . "';\n    }\n    public static function table_schema(): array {\n        return\n            [\n\n            ];\n    }\n    public static function run_migration(): bool {\n        return false;\n    }";
+        $class_content = "    public static function table_name():string {\n        return '" . strtolower(str_replace('/', '_', PATH)) . "';\n    }\n\n    public static function table_schema(): array {\n        return\n            [\n\n            ];\n    }\n\n    public static function run_migration(): bool {\n        return false;\n    }";
         self::create_file("model", $dependencies, $class_content);
     }
 
