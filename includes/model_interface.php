@@ -66,7 +66,7 @@ abstract class Model_Interface
      * @return array|object
      */
 
-    public static function create_table(): array|object
+    final public static function create_table(): array|object
     {
         return Database::create_table(static::table_name(), static::table_schema());
     }
@@ -77,7 +77,7 @@ abstract class Model_Interface
      * @return array|object
      */
 
-    public static function drop_table(): array|object
+    final public static function drop_table(): array|object
     {
         return Database::drop_table(static::table_name());
     }
@@ -88,7 +88,7 @@ abstract class Model_Interface
      * @return array|object
      */
 
-    public static function get_table_data(): array|object
+    final public static function get_table_data(): array|object
     {
         return Database::get_table_data(static::table_name());
     }
@@ -102,7 +102,7 @@ abstract class Model_Interface
      * @return array|object
      */
 
-    public static function get_rows_data(string $column, ?string $value, bool $multiple = true): array|object
+    final public static function get_rows_data(string $column, ?string $value, bool $multiple = true): array|object
     {
         return Database::get_rows_data(static::table_name(), $column, $value, $multiple);
     }
@@ -114,7 +114,7 @@ abstract class Model_Interface
      * @return array|object
      */
 
-    public static function insert_row(array $data): array|object
+    final public static function insert_row(array $data): array|object
     {
         return Database::insert_row(static::table_name(), $data);
     }
@@ -127,7 +127,7 @@ abstract class Model_Interface
      * @return array|object
      */
 
-    public static function update_row(int $id, array $data): array|object
+    final public static function update_row(int $id, array $data): array|object
     {
         return Database::update_row(static::table_name(), $id, $data);
     }
@@ -139,7 +139,7 @@ abstract class Model_Interface
      * @return array|object
      */
 
-    public static function delete_row(int $id): array|object
+    final public static function delete_row(int $id): array|object
     {
         return Database::delete_row(static::table_name(), $id);
     }
