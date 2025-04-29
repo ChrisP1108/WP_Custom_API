@@ -55,7 +55,7 @@ abstract class Model_Interface
      * @return bool
      */
 
-    public static function table_exists(): bool
+    final public static function table_exists(): bool
     {
         return Database::table_exists(static::table_name());
     }
