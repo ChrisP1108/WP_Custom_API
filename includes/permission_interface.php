@@ -29,7 +29,7 @@ abstract class Permission_Interface
      * @return bool Returns true to allow route to be public
      */
     
-    public static function public(): bool {
+    final public static function public(): bool {
         return true;
     }
 
