@@ -294,7 +294,7 @@ final class Database
 
     public static function update_row(string $table_name, int $id, array $data): array|object
     {
-        if (!self::table_exists($table_name)) return self::response(false, 'Table ".' . $table_name . '" does not exist and therefore the table row cannot be updated.');
+        if (!self::table_exists($table_name)) return self::response(false, 'Table "' . $table_name . '" does not exist and therefore the table row cannot be updated.');
 
         global $wpdb;
 

@@ -47,7 +47,7 @@ require_once WP_CUSTOM_API_FOLDER_PATH . '/includes/init.php';
 use WP_Custom_API\Includes\Init;
 
 /** 
- * Check that Wordpress is running PHP version 8.0 or higher.
+ * Check that Wordpress is running PHP version 8.1 or higher.
  * If so, plugin is initialized.  Otherwise the plugin doesn't run and an error notice message is shown in the Wordpress dashboard.
  */
 
