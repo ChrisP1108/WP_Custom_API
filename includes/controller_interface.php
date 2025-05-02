@@ -81,7 +81,7 @@ class Controller_Interface
      * @return WP_REST_Response A response object with the appropriate status code and data.
      */
 
-    final public static function response_handler(array $response, int $status_code = 200, string $message = ''): WP_REST_Response
+    final public static function response_handler($response, int $status_code = 200, string|null $message = null): WP_REST_Response
     {
 
         $parsed_response = [
@@ -90,6 +90,9 @@ class Controller_Interface
             'data' => isset($response['data']) ? $response['data'] : null
         ];
 
+        if (!isset($response['message']) && !isset($response['data'])) $parsed_response['data'] = $response;
+
+        if (isset($response['error_code'])) $parsed_response['error_code'] = $response['error_code'];
         if (isset($response['error_response'])) return $response['error_response'];
 
         return new WP_REST_Response($parsed_response, $status_code);

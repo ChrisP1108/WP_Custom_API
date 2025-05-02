@@ -25,12 +25,12 @@ final class Model extends Model_Interface
     {
         return
             [
-                'name' => 'varchar(255)',
+
             ];
     }
 
     public static function run_migration(): bool 
     {
-        return true;
+        return false;
     }
 }

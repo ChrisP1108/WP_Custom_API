@@ -50,12 +50,12 @@ abstract class Model_Interface
     abstract public static function run_migration(): bool;
 
     /**
-     * Get the table keys.
+     * Get the table schema columns.
      *
      * @return array
      */
     
-    final public static function table_keys(): array {
+    final public static function table_columns(): array {
         return array_keys(static::table_schema());
     }
 
