@@ -25,6 +25,10 @@ final class Controller extends Controller_Interface
 {
     public static function index(): Response 
     {
-        return self::response_handler(['message' => 'Sample route works'], 200);
+        $data = Model::get_table_data();
+        if (!$data['ok']) {
+            return self::response_handler($data, 400);
+        }
+        return self::response_handler($data, 200);
     }
 }

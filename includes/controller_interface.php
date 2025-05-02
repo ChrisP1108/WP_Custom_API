@@ -49,7 +49,10 @@ class Controller_Interface
         });
 
         $response_data = [
-            'data' => $all_request_data,
+            'data' => [
+                'params' => $params,
+                'json' => $json
+            ],
             'ok' => empty($missing_keys)
         ];
 
@@ -63,9 +66,7 @@ class Controller_Interface
                 ],
                 400
             );
-        } else {
-            $response_data['message'] = 'Success';
-        }
+        } else $response_data['message'] = 'Success';
 
         return $response_data;
     }
@@ -89,9 +90,7 @@ class Controller_Interface
             'data' => isset($response['data']) ? $response['data'] : null
         ];
 
-        if (isset($response['error_response'])) {
-            return $response['error_response'];
-        }
+        if (isset($response['error_response'])) return $response['error_response'];
 
         return new WP_REST_Response($parsed_response, $status_code);
     }

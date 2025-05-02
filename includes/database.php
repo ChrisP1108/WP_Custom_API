@@ -44,7 +44,7 @@ final class Database
         $return_data = ['ok' => $ok, 'message' => $message, 'data' => $data];
 
         do_action('wp_custom_api_database_response', $return_data);
-        
+
         return $return_data;
     }
 
@@ -59,6 +59,49 @@ final class Database
     private static function table_name_err_msg(): array|object
     {
         return self::response(false, 'Invalid table name. Only alphanumeric characters and underscores are allowed.');
+    }
+
+
+    /**
+     * METHOD - pagination
+     * 
+     * Handles pagination parameters for database queries.
+     * Retrieves 'per_page' and 'page' values from GET request, with defaults and validation.
+     * 
+     * @return array - Returns an array with pagination details: 'per_page', 'page', and 'offset'.
+     * @since 1.0.0
+     */
+
+    private static function pagination_data(): array
+    {
+        $pagination['per_page'] = isset($_GET['per_page'])
+            ? min(100, max(1, intval($_GET['per_page'])))
+            : 10;
+        $pagination['page'] = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+        $pagination['offset'] = ($pagination['page'] - 1) * $pagination['per_page'];
+
+        return $pagination;
+    }
+
+    /**
+     * METHOD - pagination_headers
+     * 
+     * Set pagination headers
+     * 
+     * @param int $total_rows - The total number of rows in the table.
+     * @param int $total_pages - The total number of pages.
+     * @param int $limit - The number of records per page.
+     * @param int $page - The current page number.
+     * 
+     * @since 1.0.0
+     */
+
+    private static function pagination_headers(string|int $total_rows, string|int $total_pages, string|int $limit, string|int $page): void
+    {
+        header('X-Total-Count: ' . intval($total_rows));
+        header('X-Total-Pages: ' . intval($total_pages));
+        header('X-Per-Page: ' . intval($limit));
+        header('X-Current-Page: ' . intval($page));
     }
 
     /**
@@ -176,6 +219,7 @@ final class Database
      * 
      * Retrieves all rows from a specified table created by this plugin.
      * Validates that the table exists and retrieves all data.
+     * * Has pagination with a limit of 10 row items by default, and a user can set a per_page url and page parameters, with per_page having a limit of 100.
      * 
      * @param string $table_name - The name of the table to retrieve data from.
      * @return array - Returns an array with a "found" key, "data" key, and a "message" key.
@@ -196,9 +240,18 @@ final class Database
 
         if (!$table_name_to_query) return self::table_name_err_msg();
 
-        $rows_data = $wpdb->get_results("SELECT * FROM $table_name_to_query", ARRAY_A);
+        $pagination = self::pagination_data();
+
+        $rows_data = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table_name_to_query LIMIT %d OFFSET %d", $pagination['per_page'], $pagination['offset']), ARRAY_A);
+
+        $total_rows = (int) $wpdb->get_var("SELECT COUNT(*) FROM $table_name_to_query");
+        $total_pages = (int) ceil($total_rows / $pagination['per_page']);
+
+        if ($pagination['page'] > $total_pages) return self::response(false, 'Page url param number provided for `' . $table_name . '` is greater than the total number of pages.');
 
         if (empty($rows_data)) return self::response(true, 'No table row data found. Table `' . $table_name . '` is empty.', []);
+
+        self::pagination_headers($total_rows, $total_pages, $pagination['per_page'], $pagination['page']);
 
         return self::response(true, count($rows_data) . ' table row(s) retrieved successfully from `' . $table_name . '`.', $rows_data);
     }
@@ -208,6 +261,7 @@ final class Database
      * 
      * Retrieves data from rows in a table created by this plugin that correspond to the same column and value.
      * Validates that the table exists and retrieves data for the specified ID.
+     * Has pagination with a limit of 10 row items by default, and a user can set a per_page url and page parameters, with per_page having a limit of 100.
      * 
      * @param string $table_name - The name of the table to retrieve data from.
      * @param string $column - Column name to search for based upon value
@@ -233,11 +287,21 @@ final class Database
 
         if (!preg_match('/^[a-zA-Z0-9_]+$/', $column)) return self::response(false, 'Invalid column name provided for `' . $table_name . '`.');
 
+        $pagination = self::pagination_data();
+
         $placeholder = is_numeric($value) ? "%d" : "%s";
 
-        $query = $wpdb->prepare("SELECT * FROM $table_name_to_query WHERE $column = $placeholder", $value);
+        $count_query = $wpdb->prepare("SELECT COUNT(*) FROM $table_name_to_query WHERE $column = $placeholder", $value);
+        $total_rows = (int) $wpdb->get_var($count_query);
+        $total_pages = (int) ceil($total_rows / $pagination['$per_page']);
+
+        $query = $wpdb->prepare("SELECT * FROM $table_name_to_query WHERE $column = $placeholder LIMIT %d OFFSET %d", $value, $pagination['per_page'], $pagination['offset']);
 
         $rows_data = $wpdb->get_results($query, ARRAY_A);
+
+        self::pagination_headers($total_rows, $total_pages, $pagination['per_page'], $pagination['page']);
+
+        if ($pagination['page'] > $total_pages) return self::response(false, 'Page url param number provided for `' . $table_name . '` is greater than the total number of pages.');
 
         if (empty($rows_data)) return self::response(false, 'No table rows found corresponding to the specified column name and value for `' . $table_name . '`.');
 
