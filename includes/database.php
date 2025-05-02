@@ -63,7 +63,7 @@ final class Database
 
 
     /**
-     * METHOD - pagination
+     * METHOD - pagination_data
      * 
      * Handles pagination parameters for database queries.
      * Retrieves 'per_page' and 'page' values from GET request, with defaults and validation.
