@@ -23,6 +23,17 @@ if (!defined('ABSPATH')) {
 
 abstract class Permission_Interface
 {
+
+    /**
+     * Check if a given user is authorized to access a route.
+     * 
+     * Implement this method in your permission class to check if a given user is authorized to access a route.
+     * 
+     * @return bool Returns true if the user is authorized to access the route, false otherwise.
+     */
+
+    abstract public static function authorized(): bool;
+    
     /**
      * Used to declare a route for public access.
      * 
@@ -43,20 +54,10 @@ abstract class Permission_Interface
         return new WP_Rest_Response(
             [
                 'ok' => false,
-                'msg' => 'You are not authorized to access this resource.',
+                'messsage' => 'You are not authorized to access this resource.',
                 'data' => null
             ],
             401    
         );
     }
-
-    /**
-     * Check if a given user is authorized to access a route.
-     * 
-     * Implement this method in your permission class to check if a given user is authorized to access a route.
-     * 
-     * @return bool Returns true if the user is authorized to access the route, false otherwise.
-     */
-
-    abstract public static function authorized(): bool;
 }
