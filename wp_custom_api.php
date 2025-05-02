@@ -52,7 +52,7 @@ use WP_Custom_API\Includes\Init;
  */
 
 if (!version_compare(PHP_VERSION, '8.1.0', '>=')) {
-    Error_Generator::generate('WP Custom API plugin is currently not running', 'This plugin requires PHP version 8.0 or higher to be installed.');
+    Error_Generator::generate('WP Custom API plugin is currently not running', 'This plugin requires PHP version 8.1 or higher to be installed.');
 } else {
     Init::run();
 }

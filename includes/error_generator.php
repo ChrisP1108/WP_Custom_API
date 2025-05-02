@@ -2,7 +2,7 @@
 
 namespace WP_Custom_API\Includes;
 
-use WP_Error as Error;
+use WP_Error;
 
 /** 
  * Prevent direct access from sources other than the Wordpress environment
@@ -48,7 +48,7 @@ final class Error_Generator
     {
         if ($code_msg && $description_msg) {
             error_log($description_msg);
-            self::$errors_list[] = new Error($code_msg, $description_msg);
+            self::$errors_list[] = new WP_Error($code_msg, $description_msg);
         }
     }
 
