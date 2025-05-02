@@ -137,6 +137,8 @@ class Create
 
             if ($type === 'permission') $file_content .= " extends Permission_Interface";
 
+            if ($type === 'controller') $file_content .= " extends Controller_Interface";
+
             $file_content .= "\n{\n";
 
             $file_content .= $class_content;
@@ -179,15 +181,14 @@ class Create
         $dependencies = [
             "WP_REST_Request as Request",
             "WP_REST_Response as Response",
-            "WP_Error as Error",
             "WP_Custom_API\Config",
+            "WP_Custom_API\Includes\Controller_Interface",
             "WP_Custom_API\Includes\Auth_Token",
             "WP_Custom_API\Includes\Password",
-            "WP_Custom_API\Includes\Permission_Interface",
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Model",
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Permission"
         ];
-        $class_content = "    public static function index() {\n        return new Response(\"" . ucfirst(PATH) . " route works\", 200);\n    }";
+        $class_content = "    public static function index(): Response \n    {\n        return self::response_handler(['msg' => '". ucfirst(PATH) . " route works'], true);\n    }";
         self::create_file("controller", $dependencies, $class_content);
     }
 
@@ -200,7 +201,7 @@ class Create
         $dependencies = [
             "WP_Custom_API\Includes\Model_Interface"
         ];
-        $class_content = "    public static function table_name():string {\n        return '" . strtolower(str_replace('/', '_', PATH)) . "';\n    }\n\n    public static function table_schema(): array {\n        return\n            [\n\n            ];\n    }\n\n    public static function run_migration(): bool {\n        return false;\n    }";
+        $class_content = "    public static function table_name():string \n    {\n        return '" . strtolower(str_replace('/', '_', PATH)) . "';\n    }\n\n    public static function table_schema(): array \n    {\n        return\n            [\n\n            ];\n    }\n\n    public static function run_migration(): bool \n    {\n        return false;\n    }";
         self::create_file("model", $dependencies, $class_content);
     }
 

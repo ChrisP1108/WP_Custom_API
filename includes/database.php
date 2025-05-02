@@ -32,16 +32,16 @@ final class Database
      * Response handler for MySql database interaction.  Allows action hooks to be fired.
      * 
      * @param bool $ok - True or false boolean value if request was handled successfully or not.
-     * @param string $msg - Message to return describing if request was successful or not and what request was performed.
+     * @param string $message - Message to return describing if request was successful or not and what request was performed.
      * @param array|null $data - Data to return.  If there is a data, then an object will be returned.  Otherwise null is returned.
      * 
      * @return object - Returns an object with a key name of "ok" with a value of true or false, a "message" key with a message indicating invalid table name
      * @since 1.0.0
      */
 
-    private static function response(bool $ok = false, string $msg = '', ?array $data = null): array
+    private static function response(bool $ok = false, string $message = '', ?array $data = null): array
     {
-        $return_data = ['ok' => $ok, 'msg' => $msg, 'data' => $data];
+        $return_data = ['ok' => $ok, 'message' => $message, 'data' => $data];
 
         do_action('wp_custom_api_database_response', $return_data);
         

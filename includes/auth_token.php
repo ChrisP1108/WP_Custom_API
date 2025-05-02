@@ -64,7 +64,7 @@ final class Auth_Token
      * 
      * @param bool $ok - Whether the token validation was successful.
      * @param string|int|null $id - The user ID from the token.
-     * @param string|null $msg - A descriptive response message.
+     * @param string|null $message - A descriptive response message.
      * @param int|null $issued_at - Timestamp when the token was issued.
      * @param int|null $expires_at - Timestamp when the token will expire.
      * @return array - Returns a structured response.
@@ -72,12 +72,12 @@ final class Auth_Token
      * @since 1.0.0
      */
 
-    private static function response(bool $ok, string|int|null $id, string $msg, int $issued_at = 0, int $expires_at = 0): array
+    private static function response(bool $ok, string|int|null $id, string $message, int $issued_at = 0, int $expires_at = 0): array
     {
         $response = [
             'ok' => $ok,
             'id' => $id !== '' ? intval($id) : null,
-            'msg' => $msg
+            'message' => $message
         ];
         if ($issued_at !== 0) {
             $response['issued_at'] = date("Y-m-d H:i:s", $issued_at);
@@ -94,7 +94,7 @@ final class Auth_Token
      * @param int $id - Id of user for token generation
      * @param string $token_name - Name of token to be stored.  Token name is also the cookie name
      * @param int $expiration - Set duration of token before expiring.
-     * @return array - Returns array with "ok", "id", and "msg" keys
+     * @return array - Returns array with "ok", "id", and "message" keys
      * 
      * @since 1.0.0
      */
@@ -151,7 +151,7 @@ final class Auth_Token
      * 
      * @param string $token_name - Name of token to verify. Stored as http only cookie with the same name
      * @param int|null $logout_time - Optional timestamp of the user's last logout.
-     * @return array - Returns array with "ok", "id", and "msg" keys
+     * @return array - Returns array with "ok", "id", and "message" keys
      * 
      * @since 1.0.0
      */

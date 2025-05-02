@@ -30,16 +30,16 @@ final class Password
      * Response handler for Password class methods.  Allows wordpress action hook integration.
      * 
      * @param bool $ok - True or false boolean value if hash was generated or validated successfully.
-     * @param string $msg - Message description.
+     * @param string $message - Message description.
      * @param string $hash - optional - Used only when hashing. Omitted on validation.
      * 
      * @return object - Returns an object with a key name of "ok" with a value of true or false, a "message" key, and an optional string of the password hash.
      * @since 1.0.0
      */
 
-    private static function response(bool $ok = false, string $msg = '', string $hash = ''): array
+    private static function response(bool $ok = false, string $message = '', string $hash = ''): array
     {
-        $output = ['ok' => $ok, 'msg' => $msg];
+        $output = ['ok' => $ok, 'message' => $message];
 
         if ($hash !== '') {
             $output['hash'] = $hash;

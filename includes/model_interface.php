@@ -50,6 +50,16 @@ abstract class Model_Interface
     abstract public static function run_migration(): bool;
 
     /**
+     * Get the table keys.
+     *
+     * @return array
+     */
+    
+    final public static function table_keys(): array {
+        return array_keys(static::table_schema());
+    }
+
+    /**
      * Check if the table exists in the database.
      *
      * @return bool
