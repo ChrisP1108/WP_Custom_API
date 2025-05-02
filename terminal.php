@@ -188,7 +188,7 @@ class Create
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Model",
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Permission"
         ];
-        $class_content = "    public static function index(): Response \n    {\n        return self::response_handler(['msg' => '". ucfirst(PATH) . " route works'], true);\n    }";
+        $class_content = "    public static function index(): Response \n    {\n        return self::response_handler(['message' => '". ucfirst(PATH) . " route works'], 200);\n    }";
         self::create_file("controller", $dependencies, $class_content);
     }
 

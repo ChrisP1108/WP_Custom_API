@@ -80,13 +80,11 @@ class Controller_Interface
      * @return WP_REST_Response A response object with the appropriate status code and data.
      */
 
-    final public static function response_handler(array $response, bool $ok = true, string $message = ''): WP_REST_Response
+    final public static function response_handler(array $response, int $status_code = 200, string $message = ''): WP_REST_Response
     {
-        $status_code_parser = isset($response['ok']) ? $response['ok'] : $ok;
-        $status_code = $status_code_parser ? 200 : 500;
 
         $parsed_response = [
-            'ok' => $ok,
+            'ok' => $status_code < 300 ? true : false,
             'message' => isset($response['message']) ? $response['message'] : $message,
             'data' => isset($response['data']) ? $response['data'] : null
         ];

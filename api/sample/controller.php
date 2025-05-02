@@ -25,6 +25,6 @@ final class Controller extends Controller_Interface
 {
     public static function index(): Response 
     {
-        return self::response_handler(['msg' => 'Sample route works'], true);
+        return self::response_handler(['message' => 'Sample route works'], 200);
     }
 }
