@@ -24,30 +24,41 @@ if (!defined('ABSPATH')) {
 final class Password 
 {
 
+
     /**
      * METHOD - response
      * 
-     * Response handler for Password class methods.  Allows wordpress action hook integration.
+     * Used to create standardized responses
      * 
-     * @param bool $ok - True or false boolean value if hash was generated or validated successfully.
-     * @param string $message - Message description.
-     * @param string $hash - optional - Used only when hashing. Omitted on validation.
+     * @param bool $ok - Whether the password hashing or validation was successful
+     * @param int $status_code - HTTP status code
+     * @param string $message - Message to be returned in the response
+     * @param string $hash - Hashed password string
      * 
-     * @return object - Returns an object with a key name of "ok" with a value of true or false, a "message" key, and an optional string of the password hash.
+     * @return array Response indicating success or failure, and the generated hash if successful.
      * @since 1.0.0
      */
 
-    private static function response(bool $ok = false, string $message = '', string $hash = ''): array
+    private static function response(bool $ok, int $status_code, string $message = '', string $hash = ''): array
     {
-        $output = ['ok' => $ok, 'message' => $message];
+        $output = [];
 
         if ($hash !== '') {
             $output['hash'] = $hash;
         }
 
-        do_action('wp_custom_api_password_response', $output);
+        $action_hook_data = Response_Handler::response($ok, $status_code, $message, $output);
 
-        return $output;
+        do_action('wp_custom_api_password_response', $action_hook_data);
+
+        if (!$ok) {
+            $message = 'Unauthorized';
+            $status_code = 401;
+        } else {
+            $message = 'Authentication successful.';
+        }
+
+        return Response_Handler::response($ok, $status_code, $message);
     }
 
     /**
@@ -61,10 +72,10 @@ final class Password
      * @since 1.0.0
      */
 
-    public static function hash(string $string = ''): array|object 
+    public static function hash(string $string): array|object 
     {
         if ($string === '') {
-            return self::response(false, 'String must be provided to hash in Password hash method.');
+            return self::response(false, 500, 'String must be provided to hash in Password hash method.');
         }
 
         $cost = (int) (Config::PASSWORD_HASH_ROUNDS ?? 12);
@@ -74,10 +85,10 @@ final class Password
         $hash = password_hash($string, PASSWORD_BCRYPT, ['cost' => $cost]);
 
         if ($hash === false) {
-            return self::response(false, 'Failed to hash the string.');
+            return self::response(false, 500, 'Failed to hash the string.');
         }
 
-        return self::response(true, 'Password hash successful', $hash);
+        return self::response(true, 200, 'Password hash successful', $hash);
     }
 
     /**
@@ -95,12 +106,13 @@ final class Password
     public static function verify(string $entered_password = '', string $hashed_password = ''): array|object 
     {
         if ($entered_password === '' || $hashed_password === '') {
-            return self::response(false, 'The entered plain text password and the hashed password must be passed in as parameters in the Password verify method.');
+            return self::response(false, 500, 'The entered plain text password and the hashed password must be passed in as parameters in the Password verify method.');
         }
         $result = password_verify($entered_password, $hashed_password);
 
         return self::response(
             $result, 
+            $result ? 200 : 401,
             'Password verification ' . ($result ? 'passed.' : 'failed.')
         );
     }

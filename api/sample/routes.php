@@ -17,7 +17,11 @@ if (!defined('ABSPATH')) {
 }
 
 /**
+* API Base Route - {url_origin}/wp-json/custom-api/v1/sample 
+*/
+
+/**
 * Sample GET route
 */
 
-Router::get("/sample", [Controller::class, "index"], [Permission::class, "public"]);
+Router::get("/", [Controller::class, "index"], [Permission::class, "public"]);

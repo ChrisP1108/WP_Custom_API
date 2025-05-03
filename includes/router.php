@@ -48,19 +48,22 @@ final class Router
 
     private static $routes_registered = false;
 
+
     /**
      * METHOD - register_rest_api_route
      * 
-     * Registers an API Route to the routes property to get registered through the Wordpress rest_api_init action.  Checks that a permission callback has been passed in.  If no permission callback is passed in, the route won't be registered and an error will be thrown.
-     * @param string $method - HTTP method ('GET', 'POST', etc.).
-     * @param string $route - The specific route to register.  Handles parameters if passed in
-     * @param callable $callback - The function that runs when the route is accessed.
-     * @param callable|null $permission_callback - Callback for checking permissions.
-     * @return void
+     * Register a REST API route
+     * 
+     * @param string $method The HTTP method to register the route for.  Accepted values are GET, POST, PUT, DELETE, OPTIONS, HEAD, and PATCH.
+     * @param string $route The route to register.  This is the path of the route relative to the wp-json endpoint.  Wildcards are supported.
+     * @param callable|null $callback The callback to run when the route is accessed.  If null, the method will throw an error.
+     * @param callable|null $permission_callback The permission callback to run before the route is accessed.  If null, the method will throw an error.
+     * 
+     * @throws Error_Generator
      * 
      * @since 1.0.0
      */
-
+    
     private static function register_rest_api_route(string $method, string $route, ?callable $callback, ?callable $permission_callback): void
     {
 
@@ -71,11 +74,21 @@ final class Router
             return;
         } 
 
+        // Gets folder name that Router class was called from to create base API route name
+
+        $router_trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+
+        $router_folder_path = dirname($router_trace[1]['file']);
+
+        $base_folder_path = str_replace("/", "\\",WP_CUSTOM_API_FOLDER_PATH) . "api\\";
+
+        $router_base_route = "/" . str_replace($base_folder_path, '', $router_folder_path);
+
         // Register routes to $routes property
 
         self::$routes[] = [
             'method' => strtoupper($method),
-            'route' => self::parse_wildcards($route),
+            'route' => self::parse_wildcards($router_base_route. $route),
             'callback' => $callback,
             'permission_callback' => $permission_callback
         ];

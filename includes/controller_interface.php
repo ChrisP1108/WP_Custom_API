@@ -6,6 +6,7 @@ namespace WP_Custom_API\Includes;
 
 use WP_REST_Request;
 use WP_REST_Response;
+use WP_Custom_API\Includes\Response_Handler;
 
 /** 
  * Prevent direct access from sources other than the Wordpress environment
@@ -26,6 +27,8 @@ class Controller_Interface
 {
 
     /**
+     * METHOD - request_parser
+     * 
      * A helper method to parse the request and extract any required keys.
      *
      * This method takes a WP_REST_Request and an array of required keys. It merges the request query parameters and body, and then
@@ -73,6 +76,8 @@ class Controller_Interface
 
 
     /**
+     * METHOD - response
+     * 
      * Handles the construction of a WP_REST_Response object.
      *
      * @param array $response An array containing response data including 'ok', 'message', and 'data'.
@@ -81,9 +86,8 @@ class Controller_Interface
      * @return WP_REST_Response A response object with the appropriate status code and data.
      */
 
-    final public static function response_handler($response, int $status_code = 200, string|null $message = null): WP_REST_Response
+    final public static function response($response, int $status_code = 200, string|null $message = null): WP_REST_Response
     {
-
         $parsed_response = [
             'ok' => $status_code < 300 ? true : false,
             'message' => isset($response['message']) ? $response['message'] : $message,
@@ -94,6 +98,7 @@ class Controller_Interface
 
         if (isset($response['error_code'])) $parsed_response['error_code'] = $response['error_code'];
         if (isset($response['error_response'])) return $response['error_response'];
+        if (isset($response['success_response'])) return $response['success_response'];
 
         return new WP_REST_Response($parsed_response, $status_code);
     }
