@@ -70,7 +70,7 @@ final class Init
      * 
      * Initializes the plugin by running spl_auto_load_register for class namespacing 
      *      and for loading files within the application folder from the FILES_TO_AUTOLOAD constant in the CONFIG class. 
-     *      run_migrations method is run to create tables in database for all models that have their RUN_MIGRATION property set to true.
+     *      create_tables method is run to create tables in database for all models that have their RUN_MIGRATION property set to true.
      *      It will then run the init method of the Router class to register all routes to the Wordpress REST API.
      * @return void
      * 
@@ -81,7 +81,7 @@ final class Init
     {
         self::namespaces_autoloader();
         self::files_autoloader();
-        self::run_migrations();
+        self::create_tables();
         Router::init();
     }
 
@@ -197,7 +197,7 @@ final class Init
     }
 
     /**
-     * METHOD - run_migrations
+     * METHOD - create_tables
      * 
      * Will iterate through all model classes in the model array from the Init::get_files_loaded() method and create tables 
      *      in the database for any in which the class constant RUN_MIGRATION is set to true if it hasn't been created yet.
@@ -208,7 +208,7 @@ final class Init
      * @since 1.0.0
      */
 
-    private static function run_migrations(): void
+    private static function create_tables(): void
     {
         $models_classes_names = [];
         $class_name = 'Model';
@@ -227,7 +227,7 @@ final class Init
             $model = new $model_class_name;
             $table_exists = Database::table_exists($model::table_name());
 
-            if (!$table_exists && $model::table_name() !== '' && method_exists($model, 'run_migration') && $model::run_migration() && !empty($model::table_schema())) {
+            if (!$table_exists && $model::table_name() !== '' && method_exists($model, 'create_table') && $model::create_table() && !empty($model::table_schema())) {
                 $table_creation_result = Database::create_table(
                     $model::table_name(),
                     $model::table_schema()

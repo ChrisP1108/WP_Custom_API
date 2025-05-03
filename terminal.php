@@ -197,7 +197,7 @@ class Create
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Model",
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Permission"
         ];
-        $class_content = "    public static function index(): Response \n    {\n        return self::response(['message' => '" . ucfirst(PATH) . " route works'], 200);\n    }";
+        $class_content = "    public static function index(): Response \n    {\n        return self::response(['message' => '" . ucfirst(PATH) . " route works']);\n    }";
         self::create_file("controller", $dependencies, $class_content);
     }
 
@@ -210,7 +210,7 @@ class Create
         $dependencies = [
             "WP_Custom_API\Includes\Model_Interface"
         ];
-        $class_content = "    public static function table_name():string \n    {\n        return '" . strtolower(str_replace('/', '_', PATH)) . "';\n    }\n\n    public static function table_schema(): array \n    {\n        return\n            [\n\n            ];\n    }\n\n    public static function run_migration(): bool \n    {\n        return false;\n    }";
+        $class_content = "    public static function table_name():string \n    {\n        return '" . strtolower(str_replace('/', '_', PATH)) . "';\n    }\n\n    public static function table_schema(): array \n    {\n        return\n            [\n\n            ];\n    }\n\n    public static function create_table(): bool \n    {\n        return false;\n    }";
         self::create_file("model", $dependencies, $class_content);
     }
 

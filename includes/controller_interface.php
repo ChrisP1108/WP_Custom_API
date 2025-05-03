@@ -96,7 +96,6 @@ class Controller_Interface
 
         if (!isset($response['message']) && !isset($response['data'])) $parsed_response['data'] = $response;
 
-        if (isset($response['error_code'])) $parsed_response['error_code'] = $response['error_code'];
         if (isset($response['error_response'])) return $response['error_response'];
         if (isset($response['success_response'])) return $response['success_response'];
 

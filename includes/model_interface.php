@@ -26,6 +26,8 @@ if (!defined('ABSPATH')) {
 abstract class Model_Interface
 {
     /**
+     * METHOD - table_name
+     * 
      * Get the name of the table.
      * 
      * @return string
@@ -34,6 +36,8 @@ abstract class Model_Interface
     abstract public static function table_name(): string;
 
     /**
+     * METHOD - table_schema
+     * 
      * Get the schema for the table.
      *
      * @return array
@@ -42,14 +46,18 @@ abstract class Model_Interface
     abstract public static function table_schema(): array;
 
     /**
-     * Run database migrations.
+     * METHOD - create_table
+     * 
+     * Create database table if table doesn't already exist.
      *
      * @return bool
      */
 
-    abstract public static function run_migration(): bool;
+    abstract public static function create_table(): bool;
 
     /**
+     * METHOD - table_columns
+     * 
      * Get the table schema columns.
      *
      * @return array
@@ -60,6 +68,8 @@ abstract class Model_Interface
     }
 
     /**
+     * METHOD - table_exists
+     * 
      * Check if the table exists in the database.
      *
      * @return bool
@@ -71,17 +81,21 @@ abstract class Model_Interface
     }
 
     /**
+     * METHOD - create_new_table
+     * 
      * Create the table in the database.
      *
      * @return array|object
      */
 
-    final public static function create_table(): array|object
+    final public static function create_new_table(): array|object
     {
         return Database::create_table(static::table_name(), static::table_schema());
     }
 
     /**
+     * METHOD - drop_table
+     * 
      * Drop the table from the database.
      *
      * @return array|object
@@ -93,6 +107,8 @@ abstract class Model_Interface
     }
 
     /**
+     * METHOD - get_table_data
+     * 
      * Retrieve all data from the table.
      *
      * @return array|object
@@ -104,6 +120,8 @@ abstract class Model_Interface
     }
 
     /**
+     * METHOD - get_rows_data
+     * 
      * Retrieve data from the table based on a specific column and value.
      *
      * @param string $column
@@ -118,6 +136,8 @@ abstract class Model_Interface
     }
 
     /**
+     * METHOD - get_row_data
+     * 
      * Insert a new row into the table.
      *
      * @param array $data
@@ -130,6 +150,8 @@ abstract class Model_Interface
     }
 
     /**
+     * METHOD - update_row
+     * 
      * Update a row in the table by ID.
      *
      * @param int $id
@@ -143,6 +165,8 @@ abstract class Model_Interface
     }
 
     /**
+     * METHOD - delete_row
+     * 
      * Delete a row from the table by ID.
      *
      * @param int $id

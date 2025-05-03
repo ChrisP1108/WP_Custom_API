@@ -29,7 +29,7 @@ final class Model extends Model_Interface
             ];
     }
 
-    public static function run_migration(): bool 
+    public static function create_table(): bool 
     {
         return false;
     }

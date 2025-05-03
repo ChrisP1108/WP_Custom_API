@@ -143,7 +143,11 @@ final class Database
 
         $table_search_name = self::get_table_full_name($table_name);
 
+        ob_start();
+
         $query = $wpdb->prepare("SHOW TABLES LIKE %s", $table_search_name);
+
+        ob_end_clean();
 
         return $wpdb->get_var($query) ? true : false;
     }
@@ -180,7 +184,12 @@ final class Database
         $create_table_query .= "created DATETIME DEFAULT CURRENT_TIMESTAMP, updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id)) $charset_collate;";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+
+        ob_start();
+
         dbDelta($create_table_query);
+
+        ob_end_clean();
 
         if ($wpdb->last_error) return self::response(false, 500, 'An error occurred when attempting to create the table `' . $table_name . '`: ' . $wpdb->last_error);
         return self::table_exists($table_name)
@@ -209,7 +218,11 @@ final class Database
 
         if (!$table_to_drop_name) return self::table_name_err_msg();
 
+        ob_start();
+
         $result = $wpdb->query("DROP TABLE IF EXISTS $table_to_drop_name");
+
+        ob_end_clean();
 
         if (!$result) return self::response(false, 500, 'An error occured when attempting to drop the table `' . $table_name . '`: ' . $wpdb->last_error);
 
@@ -246,12 +259,16 @@ final class Database
 
         $pagination = self::pagination_data();
 
+        ob_start();
+
         $rows_data = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table_name_to_query LIMIT %d OFFSET %d", $pagination['per_page'], $pagination['offset']), ARRAY_A);
 
         $total_rows = (int) $wpdb->get_var("SELECT COUNT(*) FROM $table_name_to_query");
         $total_pages = (int) ceil($total_rows / $pagination['per_page']);
 
-        if ($pagination['page'] > $total_pages) return self::response(false, 400, 'Page url param number provided for `' . $table_name . '` is greater than the total number of pages.');
+        ob_end_clean();
+
+        if ($pagination['page'] > $total_pages && $total_rows > 0) return self::response(false, 400, 'Page url param number provided for `' . $table_name . '` is greater than the total number of pages.');
 
         if (empty($rows_data)) return self::response(true, 200, 'No table row data found. Table `' . $table_name . '` is empty.', []);
 
@@ -295,6 +312,8 @@ final class Database
 
         $placeholder = is_numeric($value) ? "%d" : "%s";
 
+        ob_start();
+
         $count_query = $wpdb->prepare("SELECT COUNT(*) FROM $table_name_to_query WHERE $column = $placeholder", $value);
         $total_rows = (int) $wpdb->get_var($count_query);
         $total_pages = (int) ceil($total_rows / $pagination['$per_page']);
@@ -303,9 +322,11 @@ final class Database
 
         $rows_data = $wpdb->get_results($query, ARRAY_A);
 
+        ob_end_clean();
+
         self::pagination_headers($total_rows, $total_pages, $pagination['per_page'], $pagination['page']);
 
-        if ($pagination['page'] > $total_pages) return self::response(false, 400, 'Page url param number provided for `' . $table_name . '` is greater than the total number of pages.');
+        if ($pagination['page'] > $total_pages && $total_rows > 0) return self::response(false, 400, 'Page url param number provided for `' . $table_name . '` is greater than the total number of pages.');
 
         if (empty($rows_data)) return self::response(true, 200, 'No table rows found corresponding to the specified column name and value for `' . $table_name . '`.');
 
@@ -339,9 +360,13 @@ final class Database
 
         if (!$table_name_to_insert) return self::table_name_err_msg();
 
+        ob_start();
+
         $result = $wpdb->insert($table_name_to_insert, $data);
 
-        if (!$result || $wpdb->insert_id === 0) return self::response(false, 500, 'An error occurred while inserting data into row for `' . $table_name . '`: ' . $wpdb->last_error);
+        ob_end_clean();
+
+        if (!$result || $wpdb->insert_id === 0) return self::response(false, 500, 'An error occurred while inserting data into row for table `' . $table_name . '`: ' . $wpdb->last_error);
 
         return self::response(true, 201, 'Table row for `' . $table_name . '` successfully inserted.', ['id' => $wpdb->insert_id]);
     }
@@ -372,7 +397,11 @@ final class Database
 
         $where = ['id' => intval($id)];
 
+        ob_start();
+
         $result = $wpdb->update($table_name_to_update, $data, $where);
+
+        ob_end_clean();
 
         if ($result === false) return self::response(false, 500, 'An error occurred while updating the table row for `' . $table_name . '`: ' . $wpdb->last_error);
 
@@ -408,7 +437,11 @@ final class Database
 
         $where = ['id' => intval($id)];
 
+        ob_start();
+
         $result = $wpdb->delete($table_name_to_delete_row, $where);
+
+        ob_end_clean();
 
         if ($result === false) return self::response(false, 500, 'An error occurred while attempting to delete the row for `' . $table_name . '`: ' . $wpdb->last_error);
 
