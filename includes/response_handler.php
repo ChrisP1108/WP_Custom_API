@@ -31,13 +31,13 @@ final class Response_Handler
      * @param array|null $data
      * @return array
      */
-    public static function response(bool $ok, int $status_code, string $message = '', ?array $data = null): array
+    public static function response(bool $ok, int $status_code, string $message = '', ?array $data = null, bool $parse_responses = true): array
     {
         $return_data = ['ok' => $ok, 'message' => $message, 'data' => $data];
 
-        if (!$ok) {
+        if (!$ok && $parse_responses) {
             $return_data['error_response'] = new WP_REST_Response($return_data, $status_code);
-        } else {
+        } else if ($parse_responses){
             $return_data['success_response'] = new WP_REST_Response($return_data, $status_code);
         }
 

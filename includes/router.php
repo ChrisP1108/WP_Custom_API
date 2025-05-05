@@ -6,6 +6,9 @@ namespace WP_Custom_API\Includes;
 
 use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Error_Generator;
+use WP_Custom_API\Includes\Response_Handler;
+use WP_Custom_API\Includes\Permission_Interface as Permission;
+use WP_REST_Response;
 
 /** 
  * Prevent direct access from sources other than the Wordpress environment
@@ -66,23 +69,34 @@ final class Router
     
     private static function register_rest_api_route(string $method, string $route, ?callable $callback, ?callable $permission_callback): void
     {
-
-        // Check that permission callback is callable.  If not, return no_permission_callback_response and set permission_callback to true to display error message
-
-        if (!is_callable($permission_callback)) {
-            Error_Generator::generate('No Permission Callback', 'A permission callback must be registered for the ' . $method . ' route ' . $route . '.');
-            return;
-        } 
-
         // Gets folder name that Router class was called from to create base API route name
 
         $router_trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
 
-        $router_folder_path = dirname($router_trace[1]['file']);
+        $router_folder_path = str_replace("/", "\\", dirname($router_trace[1]['file']));
 
         $base_folder_path = str_replace("/", "\\",WP_CUSTOM_API_FOLDER_PATH) . "api\\";
 
         $router_base_route = "/" . str_replace($base_folder_path, '', $router_folder_path);
+
+        $router_base_route = str_replace("\\", "/", $router_base_route);
+
+        // Check that permission callback is callable.  If not, return no_permission_callback_response and set permission_callback to true to display error message
+
+        if (!is_callable($permission_callback)) {
+            $no_permission_err_msg = 'A permission callback must be registered for the ' . $method . ' route ' . $router_base_route . $route . '.';
+            Error_Generator::generate('No Permission Callback', $no_permission_err_msg);
+            $callback = function() use ($no_permission_err_msg) { return new WP_Rest_Response(Response_Handler::response(false, 500, $no_permission_err_msg, null, false), 500); };
+            $permission_callback = function () { Permission::public(); };
+        } else if ($permission_callback() !== false && $permission_callback() !== true) {
+
+        // Check that permission callback returns a boolean.  If not, return non_bool_callback_response and set permission_callback to true to display error message
+            
+            $non_bool_callback_err_msg = 'A permission callback registered for the ' . $method . ' route ' . $router_base_route . $route . ' method must return a boolean for its permission callback.';
+            Error_Generator::generate('Permission Callback No Returning A Boolean', $non_bool_callback_err_msg);
+            $callback = function() use ($non_bool_callback_err_msg) { return new WP_Rest_Response(Response_Handler::response(false, 500, $non_bool_callback_err_msg, null, false), 500); };
+            $permission_callback = function() { Permission::public(); };
+        }
 
         // Register routes to $routes property
 
@@ -97,7 +111,8 @@ final class Router
     /**
      * METHOD - init
      * 
-     * Loops through routes that were registered and registers them to Wordpress REST API through the rest_api_init action.
+     * Loops through routes that were registered, runs theirs permission callbacks and registers them to Wordpress REST API through the rest_api_init action.
+     * If permission callback returned false, an unauthrorized response is set for the callback.
      * Developers can utilize the Wordpress action and filter hooks to customize routes from outside of thie plugin.
      * After routes are registered, the routes_registered property is set to true to prevent duplicate registrations.
      * @return void
@@ -115,10 +130,15 @@ final class Router
 
         add_action('rest_api_init', function () {
             foreach (self::$routes as $route) {
+
+                if ($route['permission_callback']() === false) {
+                    $route['callback'] = function () { return new WP_Rest_Response(Permission::unauthorized_response(), 401); };
+                }
+
                 register_rest_route(Config::BASE_API_ROUTE, $route['route'], [
                     'methods' => $route['method'],
                     'callback' => $route['callback'],
-                    'permission_callback' => $route['permission_callback']
+                    'permission_callback' => '__return_true'
                 ]);
             }
         });

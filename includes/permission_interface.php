@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace WP_Custom_API\Includes;
 
 use WP_REST_Response;
+use WP_Custom_API\Includes\Response_Handler;
 
 /** 
  * Prevent direct access from sources other than the Wordpress environment
@@ -50,14 +51,7 @@ abstract class Permission_Interface
      * @return WP_Error as Error - Returns an error indicating unauthorized access.
      */
     
-    final public static function unauthorized_response(): WP_Rest_Response {
-        return new WP_Rest_Response(
-            [
-                'ok' => false,
-                'messsage' => 'You are not authorized to access this resource.',
-                'data' => null
-            ],
-            401    
-        );
+    final public static function unauthorized_response(): array {
+        return Response_Handler::response(false, 401, 'You are not authorized to access this route.', null, false);
     }
 }
