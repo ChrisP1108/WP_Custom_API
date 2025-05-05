@@ -33,7 +33,8 @@ class Controller_Interface
      *
      * This method takes a WP_REST_Request and an array of required keys. It merges the request query parameters and body, and then
      * checks if all required keys are present. If any required keys are missing, the method returns an associative array with the
-     * parsed data, an 'ok' flag set to false, an error message, and an error response object.
+     * parsed data, an 'ok' flag set to false, an error message, and an error response object.  If successful, the method returns an
+     * associative array with the parsed data, an 'ok' flag set to true, with a success response.
      *
      * @param WP_REST_Request $req The request object to parse.
      * @param array $required_keys The required keys to check for.
@@ -69,7 +70,14 @@ class Controller_Interface
                 ],
                 400
             );
-        } else $response_data['message'] = 'Success';
+        } else {
+            $response_data['success_response'] = new WP_Rest_Response([
+                'ok' => true,
+                'message' => 'Success',
+                'data' => $all_request_data
+            ]); 
+            $response_data['message'] = 'Success';
+        }
 
         return $response_data;
     }

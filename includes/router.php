@@ -55,7 +55,7 @@ final class Router
     /**
      * METHOD - register_rest_api_route
      * 
-     * Register a REST API route
+     * Register a REST API route.  Finds a route folder that the method was called from and registers the route relative to that folder name.
      * 
      * @param string $method The HTTP method to register the route for.  Accepted values are GET, POST, PUT, DELETE, OPTIONS, HEAD, and PATCH.
      * @param string $route The route to register.  This is the path of the route relative to the wp-json endpoint.  Wildcards are supported.
@@ -69,7 +69,7 @@ final class Router
     
     private static function register_rest_api_route(string $method, string $route, ?callable $callback, ?callable $permission_callback): void
     {
-        // Gets folder name that Router class was called from to create base API route name
+        // Gets folder name that Router class was called from to create the base API route name
 
         $router_trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
 
@@ -93,7 +93,7 @@ final class Router
         // Check that permission callback returns a boolean.  If not, return non_bool_callback_response and set permission_callback to true to display error message
             
             $non_bool_callback_err_msg = 'A permission callback registered for the ' . $method . ' route ' . $router_base_route . $route . ' method must return a boolean for its permission callback.';
-            Error_Generator::generate('Permission Callback No Returning A Boolean', $non_bool_callback_err_msg);
+            Error_Generator::generate('Permission Callback Not Returning A Boolean', $non_bool_callback_err_msg);
             $callback = function() use ($non_bool_callback_err_msg) { return new WP_Rest_Response(Response_Handler::response(false, 500, $non_bool_callback_err_msg, null, false), 500); };
             $permission_callback = function() { Permission::public(); };
         }
