@@ -66,9 +66,13 @@ class Controller_Interface
 
         if (!empty($missing_keys)) {
             $response_data['missing_keys'] = $missing_keys;
-            $response_data['error_response'] = Response_Handler::response(false, 400, 'The following keys are required: `' . implode(', ', $missing_keys) .'`.')['error_response'];
+            $err_msg = 'The following keys are required: `' . implode(', ', $missing_keys) .'`.';
+            $response_data['message'] = $err_msg;
+            $response_data['error_response'] = Response_Handler::response(false, 400, $err_msg)['error_response'];
         } else {
-            $response_data['message'] = 'Success';
+            $success_msg = 'Success.';
+            $response_data['message'] = $success_msg;
+            $response_data['success_response'] = Response_Handler::response(true, 200, $success_msg)['success_response'];
         }
 
         return $response_data;
