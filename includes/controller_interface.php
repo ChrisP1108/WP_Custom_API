@@ -70,9 +70,7 @@ class Controller_Interface
             $response_data['message'] = $err_msg;
             $response_data['error_response'] = Response_Handler::response(false, 400, $err_msg)['error_response'];
         } else {
-            $success_msg = 'Success.';
-            $response_data['message'] = $success_msg;
-            $response_data['success_response'] = Response_Handler::response(true, 200, $success_msg)['success_response'];
+            $response_data['message'] = 'Success.';
         }
 
         return $response_data;
@@ -95,7 +93,7 @@ class Controller_Interface
         $parsed_response = [
             'ok' => $status_code < 300 ? true : false,
             'message' => isset($response['message']) ? $response['message'] : $message,
-            'data' => isset($response['data']) ? $response['data'] : null
+            'data' => isset($response['data']) ? $response['data'] : $response
         ];
 
         if (!isset($response['message']) && !isset($response['data'])) $parsed_response['data'] = $response;
