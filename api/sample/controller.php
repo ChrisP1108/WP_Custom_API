@@ -23,8 +23,8 @@ if (!defined('ABSPATH')) {
 
 final class Controller extends Controller_Interface
 {
-    public static function index(Request $request): Response 
+    public static function index(): Response 
     {
-        return self::response(self::request_parser($request));
+        return self::response(['message' => 'Sample route works']);
     }
 }
