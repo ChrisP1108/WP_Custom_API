@@ -62,20 +62,9 @@ class Controller_Interface
 
         if (!empty($missing_keys)) {
             $response_data['missing_keys'] = $missing_keys;
-            $response_data['error_response'] = new WP_REST_Response(
-                [
-                    'ok' => false,
-                    'message' => 'The following keys are required: `' . implode(', ', $missing_keys) .'`.',
-                    'data' => null
-                ],
-                400
-            );
+            $response_data['error_response'] = Response_Handler::response(false, 400, 'The following keys are required: `' . implode(', ', $missing_keys) .'`.')['error_response'];
         } else {
-            $response_data['success_response'] = new WP_Rest_Response([
-                'ok' => true,
-                'message' => 'Success',
-                'data' => $all_request_data
-            ]); 
+            $response_data['success_response'] = Response_Handler::response(true, 200, 'Success', $all_request_data)['success_response'];
             $response_data['message'] = 'Success';
         }
 
