@@ -45,8 +45,10 @@ class Controller_Interface
     {
         $params = $req->get_params() ?? [];
         $json = json_decode($req->get_body(), true) ?? [];
+        $form = $req->get_body_params() ?? [];
+        $files = $req->get_file_params() ??[];
 
-        $all_request_data = array_merge($params, $json);
+        $all_request_data = array_merge($params, $json, $files);
 
         $missing_keys = array_filter($required_keys, function ($key) use ($all_request_data) {
             return !array_key_exists($key, $all_request_data);
@@ -54,8 +56,10 @@ class Controller_Interface
 
         $response_data = [
             'data' => [
-                'params' => $params,
-                'json' => $json
+                'params' => !empty($params) ? $params : null,
+                'json' => !empty($json) ? $json : null,
+                'form' => !empty($form) ? $form : null,
+                'files' => !empty($files) ? $files : null
             ],
             'ok' => empty($missing_keys)
         ];
@@ -64,7 +68,6 @@ class Controller_Interface
             $response_data['missing_keys'] = $missing_keys;
             $response_data['error_response'] = Response_Handler::response(false, 400, 'The following keys are required: `' . implode(', ', $missing_keys) .'`.')['error_response'];
         } else {
-            $response_data['success_response'] = Response_Handler::response(true, 200, 'Success', $all_request_data)['success_response'];
             $response_data['message'] = 'Success';
         }
 
