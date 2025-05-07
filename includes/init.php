@@ -119,6 +119,9 @@ final class Init
 
     private static function load_file(string $file, string|null $class = null): void
     {
+        $file = str_replace('\\', '/', $file);
+        $file = preg_replace('#/+#', '/', $file);
+
         if (!file_exists($file)) {
             Error_Generator::generate('File load error', 'Error loading ' . $file . '.php file. The file does not exist');
             return;
@@ -164,8 +167,7 @@ final class Init
                 return;
             }
             $relative_class = str_replace('WP_Custom_API\\', '', $class);
-            $file_path = str_replace('/', '\\', WP_CUSTOM_API_FOLDER_PATH);
-            $file = strtolower($file_path . $relative_class . '.php');
+            $file = strtolower(WP_CUSTOM_API_FOLDER_PATH . '/' . $relative_class . '.php');
             self::load_file($file, $class);
         });
     }
@@ -192,7 +194,7 @@ final class Init
                 $iterator = new RecursiveIteratorIterator($directory);
                 foreach ($iterator as $file) {
                     if ($file->isFile() && $file->getExtension() === 'php' && $file->getFilename() === $filename . '.php') {
-                        self::load_file(str_replace("//", '\\', $file->getPathname()));
+                        self::load_file($file->getPathname());
                     }
                 }
             } catch (Exception $e) {
