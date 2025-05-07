@@ -103,7 +103,7 @@ final class Init
             new self();
             self::$instantiated = true;
 
-            do_action('wp_custom_api_loaded');
+            do_action('wp_custom_api_loaded', self::$files_loaded);
         }
     }
 
@@ -117,7 +117,7 @@ final class Init
      * @since 1.0.0
      */
 
-    private static function load_file($file): void
+    private static function load_file(string $file, string|null $class = null): void
     {
         if (!file_exists($file)) {
             Error_Generator::generate('File load error', 'Error loading ' . $file . '.php file. The file does not exist');
@@ -135,11 +135,17 @@ final class Init
 
         $file_name = strtolower(pathinfo($file, PATHINFO_FILENAME));
 
-        self::$files_loaded[] = [
+        $file_data = [
             'name' => $file_name,
             'path' => $file,
             'namespace' => $namespace
         ];
+
+        if ($class) {
+            $file_data['class'] = $class;
+        }
+
+        self::$files_loaded[] = $file_data;
     }
 
     /**
@@ -158,8 +164,9 @@ final class Init
                 return;
             }
             $relative_class = str_replace('WP_Custom_API\\', '', $class);
-            $file = WP_CUSTOM_API_FOLDER_PATH . '/' . str_replace('\\', '/', $relative_class) . '.php';
-            self::load_file($file);
+            $file_path = str_replace('/', '\\', WP_CUSTOM_API_FOLDER_PATH);
+            $file = strtolower($file_path . $relative_class . '.php');
+            self::load_file($file, $class);
         });
     }
 
@@ -185,7 +192,7 @@ final class Init
                 $iterator = new RecursiveIteratorIterator($directory);
                 foreach ($iterator as $file) {
                     if ($file->isFile() && $file->getExtension() === 'php' && $file->getFilename() === $filename . '.php') {
-                        self::load_file($file->getPathname());
+                        self::load_file(str_replace("//", '\\', $file->getPathname()));
                     }
                 }
             } catch (Exception $e) {

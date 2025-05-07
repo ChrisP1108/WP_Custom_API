@@ -46,7 +46,7 @@ class Controller_Interface
         $params = $req->get_params() ?? [];
         $json = json_decode($req->get_body(), true) ?? [];
         $form = $req->get_body_params() ?? [];
-        $files = $req->get_file_params() ??[];
+        $files = $req->get_file_params() ?? [];
 
         $all_request_data = array_merge($params, $json, $files);
 
@@ -66,7 +66,7 @@ class Controller_Interface
 
         if (!empty($missing_keys)) {
             $response_data['missing_keys'] = $missing_keys;
-            $err_msg = 'The following keys are required: `' . implode(', ', $missing_keys) .'`.';
+            $err_msg = 'The following keys are required: `' . implode(', ', $missing_keys) . '`.';
             $response_data['message'] = $err_msg;
             $response_data['error_response'] = Response_Handler::response(false, 400, $err_msg)['error_response'];
         } else {
@@ -93,7 +93,7 @@ class Controller_Interface
         $parsed_response = [
             'ok' => $status_code < 300 ? true : false,
             'message' => isset($response['message']) ? $response['message'] : $message,
-            'data' => isset($response['data']) ? $response['data'] : $response
+            'data' => isset($response['data']) ? $response['data'] : null
         ];
 
         if (!isset($response['message']) && !isset($response['data'])) $parsed_response['data'] = $response;
