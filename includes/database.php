@@ -67,7 +67,7 @@ final class Database
 
 
     /**
-     * METHOD - pagination_data
+     * METHOD - pagination_params
      * 
      * Handles pagination parameters for database queries.
      * Retrieves 'per_page' and 'page' values from GET request, with defaults and validation.
@@ -76,7 +76,7 @@ final class Database
      * @since 1.0.0
      */
 
-    private static function pagination_data(): array
+    public static function pagination_params(): array
     {
         $pagination['per_page'] = isset($_GET['per_page'])
             ? min(100, max(1, intval($_GET['per_page'])))
@@ -100,7 +100,7 @@ final class Database
      * @since 1.0.0
      */
 
-    private static function pagination_headers(string|int $total_rows, string|int $total_pages, string|int $limit, string|int $page): void
+    public static function pagination_headers(string|int $total_rows, string|int $total_pages, string|int $limit, string|int $page): void
     {
         header('X-Total-Count: ' . intval($total_rows));
         header('X-Total-Pages: ' . intval($total_pages));
@@ -257,7 +257,7 @@ final class Database
 
         if (!$table_name_to_query) return self::table_name_err_msg();
 
-        $pagination = self::pagination_data();
+        $pagination = self::pagination_params();
 
         ob_start();
 
@@ -308,7 +308,7 @@ final class Database
 
         if (!preg_match('/^[a-zA-Z0-9_]+$/', $column)) return self::response(false, 400, 'Invalid column name provided for `' . $table_name . '`.');
 
-        $pagination = self::pagination_data();
+        $pagination = self::pagination_params();
 
         $placeholder = is_numeric($value) ? "%d" : "%s";
 

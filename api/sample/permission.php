@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace WP_Custom_API\Api\Sample;
 
-use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Permission_Interface;
-use WP_Custom_API\Includes\Auth_Token;
-use WP_Custom_API\Includes\Password;
+use WP_Custom_API\Api\Sample\Controller;
 
 /**
 * Prevent direct access from sources other than the Wordpress environment
@@ -25,6 +23,6 @@ final class Permission extends Permission_Interface
     {
         // Replace code in this method with logic for protecting a route from unauthorized access. 
 
-        return Auth_Token::validate(self::TOKEN_NAME)['ok'];
+        return Controller::token_validate(self::TOKEN_NAME)['ok'];
     }
 }

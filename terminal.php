@@ -190,10 +190,7 @@ class Create
         $dependencies = [
             "WP_REST_Request as Request",
             "WP_REST_Response as Response",
-            "WP_Custom_API\Config",
             "WP_Custom_API\Includes\Controller_Interface",
-            "WP_Custom_API\Includes\Auth_Token",
-            "WP_Custom_API\Includes\Password",
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Model",
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Permission"
         ];
@@ -221,12 +218,10 @@ class Create
     public static function permission()
     {
         $dependencies = [
-            "WP_Custom_API\Config",
             "WP_Custom_API\Includes\Permission_Interface",
-            "WP_Custom_API\Includes\Auth_Token",
-            "WP_Custom_API\Includes\Password"
+            "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Controller",
         ];
-        $class_content = "    public const TOKEN_NAME = '" . strtolower(str_replace('/', '_', PATH)) . "_token';\n\n    public static function authorized(): bool\n    {\n        // Replace code in this method with logic for protecting a route from unauthorized access. \n\n        return Auth_Token::validate(self::TOKEN_NAME)['ok'];\n    }";
+        $class_content = "    public const TOKEN_NAME = '" . strtolower(str_replace('/', '_', PATH)) . "_token';\n\n    public static function authorized(): bool\n    {\n        // Replace code in this method with logic for protecting a route from unauthorized access. \n\n        return Controller::token_validate(self::TOKEN_NAME)['ok'];\n    }";
         self::create_file("permission", $dependencies, $class_content);
     }
 

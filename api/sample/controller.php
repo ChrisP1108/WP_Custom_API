@@ -6,10 +6,7 @@ namespace WP_Custom_API\Api\Sample;
 
 use WP_REST_Request as Request;
 use WP_REST_Response as Response;
-use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Controller_Interface;
-use WP_Custom_API\Includes\Auth_Token;
-use WP_Custom_API\Includes\Password;
 use WP_Custom_API\Api\Sample\Model;
 use WP_Custom_API\Api\Sample\Permission;
 
