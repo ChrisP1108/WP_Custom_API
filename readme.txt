@@ -1,14 +1,18 @@
 === WP Custom API ===
 Contributors: Chris Paschall
 Tags: api, custom api, REST API, WordPress, plugin, authentication, database, security
-Requires at least: PHP version 8.1
-Tested up to: PHP 8.4
-License: None
-Github Repository: https://github.com/ChrisP1108/WP_Custom_API.git
+Requires at least: 6.0
+Tested up to: 6.5
+Requires PHP: 8.1
+License: GPLv2 or later
+Stable tag: 1.0.0
+GitHub Plugin URI: https://github.com/ChrisP1108/WP_Custom_API.git
 
 == Description ==
 
-WP Custom API is a WordPress plugin designed to make custom API development easier and more streamlined. It allows you to manage your API resources, including controllers, models, permissions, and routes, through simple CLI commands. In addition to the basic API management functionality, the plugin includes classes to handle database interactions, user authentication, token management, and password security, ensuring a complete and secure solution for building custom APIs in WordPress.
+WP Custom API is a WordPress plugin designed to make custom API development easier and more streamlined. 
+It allows you to manage your API resources, including controllers, models, permissions, and routes, through simple CLI commands. 
+In addition to the basic API management functionality, the plugin includes classes to handle database interactions, user authentication, token management, and password security, ensuring a complete and secure solution for building custom APIs in WordPress.
 
 ### Key Features:
 - **Create Custom API Resources**: Automatically generate API controllers, models, permissions, and routes.
@@ -23,6 +27,19 @@ WP Custom API is a WordPress plugin designed to make custom API development easi
 1. Upload the plugin folder to the `/wp-content/plugins/` directory.
 2. Activate the plugin through the 'Plugins' menu in WordPress.
 3. Optionally, use the CLI commands to create and manage your API resources.
+
+== How It Works ==
+
+The plugin starts with the root wp_custom_api.php file.  From there it makes sure that the PHP version requirement is met.
+It will then import a class named `Init` from the /includes/init.php path.
+From there, it will load all the files needed for the plugin to work. 
+It includes an autoloader as well as a file loader for loading specific files specified in the config.php file.
+The config.php file is where much of the plugins custom functionality can be configured, such as password hash rounds, secret keys, token expiration, files to autoload, etc.
+
+== IMPORTANT ==
+
+Avoid modifying any files in the `includes` folder, as these are core files for the plugin.
+All files that you will be working with will be inside the `api` folder.
 
 == Usage ==
 
@@ -47,70 +64,6 @@ Once the plugin is installed and activated, you can use the following commands t
 A sample interface with the name of `sample` has already been created for better illustration.  Feel free to delete this interface with the `wp custom-api delete:interface sample` command
 
 **Note**: All commands should be executed from the command line in the root directory of your WordPress installation.
-
-== Classes Overview ==
-
-This plugin includes several core classes, each designed to handle specific aspects of custom API development:
-
-### 1. **CLI Class**
-   - **Purpose**: Defines the command-line interface for interacting with the plugin. It parses the provided arguments and runs appropriate commands to create or delete API resources.
-   - **Main Methods**:
-     - `create_file()`: Creates a file (controller, model, permission, or routes).
-     - `controller()`: Creates a controller file for a resource.
-     - `model()`: Creates a model file for a resource.
-     - `permission()`: Creates a permission file for a resource.
-     - `routes()`: Creates a routes file for a resource.
-     - `interface()`: Creates all necessary files (controller, model, permission, routes) for a resource.
-
-### 2. **Create Class**
-   - **Purpose**: Handles the creation of various API components (controller, model, permission, routes) for custom API resources.
-   - **Main Methods**:
-     - `create_file()`: Generates PHP file content and creates the specified file.
-     - `controller()`: Creates a controller file for a resource.
-     - `model()`: Creates a model file for a resource.
-     - `permission()`: Creates a permission file for a resource.
-     - `routes()`: Creates a routes file for a resource.
-     - `interface()`: Generates a complete API interface, including the controller, model, permission, and routes files.
-
-### 3. **Delete Class**
-   - **Purpose**: Manages the deletion of API resource files.
-   - **Main Methods**:
-     - `delete_file()`: Deletes a specific file (controller, model, permission, routes).
-     - `interface()`: Deletes the entire interface (controller, model, permission, routes) and the folder containing the files.
-
-### 4. **Database Class**
-   - **Purpose**: Provides an interface for interacting with the WordPress database. It allows you to create, read, update, and delete data in custom tables created by the plugin.
-   - **Main Methods**:
-     - `create_table()`: Creates a new table in the WordPress database.
-     - `insert()`: Inserts a new record into the database.
-     - `update()`: Updates an existing record.
-     - `delete()`: Deletes a record from the database.
-     - `get()`: Retrieves data from the database.
-   - **Usage**: Use this class to interact with the database directly from your API model or controller classes.
-
-### 5. **Model Interface Class**
-   - **Purpose**: Defines the structure that all model classes must adhere to. It ensures consistency across all models, making it easier to manage database interactions and API responses.
-   - **Main Methods**:
-     - `get_data()`: Retrieves data from the model.
-     - `save()`: Saves data to the model.
-     - `delete()`: Deletes data from the model.
-     - `update()`: Updates data in the model.
-   - **Usage**: Any custom API model should implement this interface to ensure the necessary methods are available for data interaction.
-
-### 6. **Password Class**
-   - **Purpose**: Handles password hashing and validation. This class ensures that passwords are stored securely using modern hashing algorithms.
-   - **Main Methods**:
-     - `hash()`: Hashes a password.
-     - `validate()`: Validates a password by comparing the provided input to the stored hash.
-   - **Usage**: Use this class to handle user passwords securely when creating or managing user-related API endpoints.
-
-### 7. **Auth Token Class**
-   - **Purpose**: Manages token-based authentication for API endpoints. It helps generate, verify, and validate authentication tokens for secure API access.
-   - **Main Methods**:
-     - `generate()`: Generates a new authentication token.
-     - `validate()`: Validates an existing token to ensure it is still valid.
-     - `expire()`: Expires a token when a user logs out or the token is no longer valid.
-   - **Usage**: Use this class to implement token-based authentication for your API endpoints, ensuring only authorized users can access sensitive data.
 
 == Changelog ==
 

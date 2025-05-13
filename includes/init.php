@@ -167,7 +167,7 @@ final class Init
                 return;
             }
             $relative_class = str_replace('WP_Custom_API\\', '', $class);
-            $file = strtolower(WP_CUSTOM_API_FOLDER_PATH . '/' . $relative_class . '.php');
+            $file = WP_CUSTOM_API_FOLDER_PATH . '/' . strtolower($relative_class) . '.php';
             self::load_file($file, $class);
         });
     }
