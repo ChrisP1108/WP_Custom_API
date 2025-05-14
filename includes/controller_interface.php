@@ -8,6 +8,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_Custom_API\Includes\Database;
 use WP_Custom_API\Includes\Response_Handler;
+use WP_Custom_API\Includes\Param_Sanitizer;
 
 /** 
  * Prevent direct access from sources other than the Wordpress environment
@@ -27,39 +28,47 @@ if (!defined('ABSPATH')) {
 class Controller_Interface
 {
 
+    
+
     /**
      * METHOD - request_parser
      * 
-     * A helper method to parse the request and extract any required keys.
-     *
-     * This method takes a WP_REST_Request and an array of required keys. It merges the request query parameters and body, and then
-     * checks if all required keys are present. If any required keys are missing, the method returns an associative array with the
-     * parsed data, an 'ok' flag set to false, an error message, and an error response object.  If successful, the method returns an
-     * associative array with the parsed data, an 'ok' flag set to true, with a success response.
-     *
+     * Parse a WP_REST_Request object and apply required key checks and type sanitization.
+     * 
      * @param WP_REST_Request $req The request object to parse.
-     * @param array $required_keys The required keys to check for.
-     * @return array An associative array containing the parsed data, an 'ok' flag, an error message, and an error response object.
+     * @param array $required_keys An array of required keys to check for.
+     * @param array $schema An array with required key-value pairs of key => type.
+     * @return array A parsed request data array with 'ok' and 'message' keys and an 'error_response' if applicable.
      */
 
-    final public static function request_parser(WP_REST_Request $req, array $required_keys = []): array
+    final public static function request_parser(WP_REST_Request $req, array $required_keys = [], array $schema = []): array
     {
         $params = $req->get_params() ?? [];
         $json = json_decode($req->get_body(), true) ?? [];
         $form = $req->get_body_params() ?? [];
         $files = $req->get_file_params() ?? [];
 
-        $all_request_data = array_merge($params, $json, $files);
+        $sanitized_params = [
+            'params' => Param_Sanitizer::sanitize($params, $schema),
+            'json'   => Param_Sanitizer::sanitize($json, $schema),
+            'form'   => Param_Sanitizer::sanitize($form, $schema),
+        ];
 
-        $missing_keys = array_filter($required_keys, function ($key) use ($all_request_data) {
-            return !array_key_exists($key, $all_request_data);
+        $merged_sanitized = array_merge(
+            $sanitized_params['params'],
+            $sanitized_params['json'],
+            $sanitized_params['form']
+        );
+
+        $missing_keys = array_filter($required_keys, function ($key) use ($merged_sanitized) {
+            return !array_key_exists($key, $merged_sanitized);
         });
 
         $response_data = [
             'data' => [
-                'params' => !empty($params) ? $params : null,
-                'json' => !empty($json) ? $json : null,
-                'form' => !empty($form) ? $form : null,
+                'params' => !empty($params) ? $sanitized_params['params'] : null,
+                'json' => !empty($json) ? $sanitized_params['json'] : null,
+                'form' => !empty($form) ? $sanitized_params['form'] : null,
                 'files' => !empty($files) ? $files : null
             ],
             'ok' => empty($missing_keys)
