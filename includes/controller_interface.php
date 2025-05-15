@@ -105,7 +105,7 @@ class Controller_Interface
             $response_data['error_response'] = Response_Handler::response(false, 400, $err_msg)['error_response'];
         } else if ($invalid_type) {
             $response_data['message'] = $invalid_type_error_response;
-            $response_data['error_response'] = $invalid_type_error_response;
+            $response_data['error_response'] = Response_Handler::response(false, 400, $invalid_type_error_response)['error_response'];
         } else {
             $response_data['message'] = 'Success.';
         }
