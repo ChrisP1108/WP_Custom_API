@@ -21,6 +21,8 @@ if (!defined('ABSPATH')) {
 class Param_Sanitizer {
 
     /**
+     * METHOD - sanitize
+     * 
      * Sanitize an array of parameters using a provided schema.
      *
      * @param array $params Associative array of request parameters.
@@ -50,15 +52,41 @@ class Param_Sanitizer {
         return $sanitized;
     }
 
-    /**
-     * Sanitize a single value based on its expected type.
-     *
-     * @param mixed $value
-     * @param string $type Supported: text, int, bool, email, url, raw
-     * @return mixed
-     */
     
-    public static function sanitize_value($value, string $type) {
+    /**
+     * METHOD - sanitize_value
+     * 
+     * Sanitize a value according to its expected type.  Will return an array with an error key and message if type didn't match actual value type.
+     *
+     * @param mixed $value The value to be sanitized.
+     * @param string $type The expected type of the value.
+     * @return mixed The sanitized value.
+     */
+
+    public static function sanitize_value($value, string $type): string|int|array {
+        
+        // Check that the value type matches the expected type
+        switch (gettype($value)) {
+            case 'integer':
+                if ($type !== 'int') {
+                    return ['error_response' => "Expected type `$type` does not match provided value type `integer`."];
+                }
+                break;
+            case 'boolean':
+                if ($type !== 'bool') {
+                    return ['error_response' => "Expected type `$type` does not match provided value type `boolean`."];
+                }
+                break;
+            case 'string':
+                if (!in_array($type, ['text', 'email', 'url', 'raw'])) {
+                    return ['error_response' => "Expected type `$type` does not match provided value type `string`."];
+                }
+                break;
+            default:
+                return ['error' => 'Unsupported value type `' . gettype($value) . '`.'];
+        }
+
+        // Sanitize the value according to the expected type
         switch ($type) {
             case 'int':
                 return absint($value);

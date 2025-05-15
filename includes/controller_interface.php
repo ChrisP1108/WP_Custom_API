@@ -33,37 +33,60 @@ class Controller_Interface
     /**
      * METHOD - request_parser
      * 
-     * Parse a WP_REST_Request object and apply required key checks and type sanitization.
+     * Parse the request data and sanitize it according to the provided schema.
+     * 
+     * This method will take the request data from the request object, and sanitize it according to the provided schema.
+     * It will also check if the required keys are present in the sanitized data.
      * 
      * @param WP_REST_Request $req The request object to parse.
-     * @param array $required_keys An array of required keys to check for.
-     * @param array $schema An array with required key-value pairs of key => type.
-     * @return array A parsed request data array with 'ok' and 'message' keys and an 'error_response' if applicable.
+     * @param array $schema The schema to use for sanitizing the request data.
+     * @param array $required_keys The required keys to check if they are present in the sanitized data.
+     * 
+     * @return array An array containing the sanitized request data and a flag indicating if the operation was successful.
      */
-
-    final public static function request_parser(WP_REST_Request $req, array $required_keys = [], array $schema = []): array
+    final public static function request_parser(WP_REST_Request $req, array $schema = [], array $required_keys = []): array
     {
         $params = $req->get_params() ?? [];
         $json = json_decode($req->get_body(), true) ?? [];
         $form = $req->get_body_params() ?? [];
         $files = $req->get_file_params() ?? [];
 
+        // Sanitize the request data according to the schema
         $sanitized_params = [
             'params' => Param_Sanitizer::sanitize($params, $schema),
             'json'   => Param_Sanitizer::sanitize($json, $schema),
             'form'   => Param_Sanitizer::sanitize($form, $schema),
         ];
 
+        // Merge the sanitized data
         $merged_sanitized = array_merge(
             $sanitized_params['params'],
             $sanitized_params['json'],
             $sanitized_params['form']
         );
 
-        $missing_keys = array_filter($required_keys, function ($key) use ($merged_sanitized) {
-            return !array_key_exists($key, $merged_sanitized);
-        });
+        // Check if the sanitized data contains any invalid types
+        $invalid_type = false;
+        $invalid_type_error_response = null;
 
+        foreach($merged_sanitized as $key => $value) {
+            if (isset($value['error_response'])) {
+                $invalid_type = true;
+                $invalid_type_error_response = "Error in key `$key`: " . $value['error_response'];
+                break;
+            }
+        }
+
+        // Check if the required keys are present in the sanitized data
+        $missing_keys = [];
+
+        if (!$invalid_type) {
+            $missing_keys = array_filter($required_keys, function ($key) use ($merged_sanitized) {
+                return !array_key_exists($key, $merged_sanitized);
+            });
+        }
+
+        // Construct the response data
         $response_data = [
             'data' => [
                 'params' => !empty($params) ? $sanitized_params['params'] : null,
@@ -71,14 +94,18 @@ class Controller_Interface
                 'form' => !empty($form) ? $sanitized_params['form'] : null,
                 'files' => !empty($files) ? $files : null
             ],
-            'ok' => empty($missing_keys)
+            'ok' => empty($missing_keys) && !$invalid_type
         ];
 
-        if (!empty($missing_keys)) {
+        // Handle the case where the required keys are missing
+        if (!empty($missing_keys) && !$invalid_type) {
             $response_data['missing_keys'] = $missing_keys;
             $err_msg = 'The following keys are required: `' . implode(', ', $missing_keys) . '`.';
             $response_data['message'] = $err_msg;
             $response_data['error_response'] = Response_Handler::response(false, 400, $err_msg)['error_response'];
+        } else if ($invalid_type) {
+            $response_data['message'] = $invalid_type_error_response;
+            $response_data['error_response'] = $invalid_type_error_response;
         } else {
             $response_data['message'] = 'Success.';
         }
@@ -103,10 +130,8 @@ class Controller_Interface
         $parsed_response = [
             'ok' => $status_code < 300 ? true : false,
             'message' => isset($response['message']) ? $response['message'] : $message,
-            'data' => isset($response['data']) ? $response['data'] : null
+            'data' => isset($response['data']) ? $response['data'] : $response
         ];
-
-        if (!isset($response['message']) && !isset($response['data'])) $parsed_response['data'] = $response;
 
         if (isset($response['error_response'])) return $response['error_response'];
         if (isset($response['success_response'])) return $response['success_response'];
