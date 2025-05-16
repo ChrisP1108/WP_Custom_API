@@ -59,54 +59,57 @@ class Controller_Interface
         ];
 
         // Merge the sanitized data
-        $merged_sanitized = array_merge(
+        $merged_sanitized_params = array_merge(
             $sanitized_params['params'],
             $sanitized_params['json'],
             $sanitized_params['form']
         );
 
         // Check if the sanitized data contains any invalid types
-        $invalid_type = false;
-        $invalid_type_error_response = null;
+        $invalid_types = [];
 
-        foreach($merged_sanitized as $key => $value) {
+        foreach($merged_sanitized_params as $key => $value) {
             if (isset($value['error_response'])) {
-                $invalid_type = true;
-                $invalid_type_error_response = "Error in key `$key`: " . $value['error_response'];
-                break;
+                $invalid_types[] = [
+                    'key' => $key,
+                    'error_response' => $value['error_response']
+                ];
             }
         }
 
         // Check if the required keys are present in the sanitized data
         $missing_keys = [];
 
-        if (!$invalid_type) {
-            $missing_keys = array_filter($required_keys, function ($key) use ($merged_sanitized) {
-                return !array_key_exists($key, $merged_sanitized);
-            });
-        }
+        $missing_keys = array_filter($required_keys, function ($key) use ($merged_sanitized_params) {
+            return !array_key_exists($key, $merged_sanitized_params);
+        });
 
         // Construct the response data
         $response_data = [
-            'data' => [
-                'params' => !empty($params) ? $sanitized_params['params'] : null,
-                'json' => !empty($json) ? $sanitized_params['json'] : null,
-                'form' => !empty($form) ? $sanitized_params['form'] : null,
-                'files' => !empty($files) ? $files : null
-            ],
-            'ok' => empty($missing_keys) && !$invalid_type
+            'ok' => empty($missing_keys) && empty($invalid_types)
         ];
 
-        // Handle the case where the required keys are missing
-        if (!empty($missing_keys) && !$invalid_type) {
+        // Handle the case where missing keys or invalid data types are present
+        if (!empty($missing_keys)) {
             $response_data['missing_keys'] = $missing_keys;
             $err_msg = 'The following keys are required: `' . implode(', ', $missing_keys) . '`.';
             $response_data['message'] = $err_msg;
             $response_data['error_response'] = Response_Handler::response(false, 400, $err_msg)['error_response'];
-        } else if ($invalid_type) {
-            $response_data['message'] = $invalid_type_error_response;
-            $response_data['error_response'] = Response_Handler::response(false, 400, $invalid_type_error_response)['error_response'];
+
+        // Handle the case where there are invalid data types
+        } else if (!empty($invalid_types)) {
+            $response_data['invalid_types'] = $invalid_types;
+            $invalid_keys = array_map(function($item) {
+                return $item['key'];
+            }, $invalid_types);
+            $err_msg = 'Invalid data types found for `' . implode(', ', $invalid_keys) . '`.';
+            $response_data['message'] = $err_msg;
+            $response_data['error_response'] = Response_Handler::response(false, 422, $err_msg)['error_response'];
         } else {
+            $response_data['data'] = [
+                'params' => $merged_sanitized_params,
+                'files' => $files
+            ];
             $response_data['message'] = 'Success.';
         }
 

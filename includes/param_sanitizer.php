@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace WP_Custom_API\Includes;
 
-
 /** 
  * Prevent direct access from sources other than the Wordpress environment
  */
@@ -12,7 +11,6 @@ namespace WP_Custom_API\Includes;
 if (!defined('ABSPATH')) {
     exit;
 }
-
 
 /**
  * Class for sanitizing parameters based on a predefined schema.
@@ -52,54 +50,60 @@ class Param_Sanitizer {
         return $sanitized;
     }
 
-    
     /**
-     * METHOD - sanitize_value
+     * Sanitize a value according to its type.
      * 
-     * Sanitize a value according to its expected type.  Will return an array with an error key and message if type didn't match actual value type.
-     *
-     * @param mixed $value The value to be sanitized.
+     * @param string|int|array $value The value to be sanitized.
      * @param string $type The expected type of the value.
-     * @return mixed The sanitized value.
+     * @return string|int|array The sanitized value.
      */
 
     public static function sanitize_value($value, string $type): string|int|array {
-        
-        // Check that the value type matches the expected type
-        switch (gettype($value)) {
-            case 'integer':
-                if ($type !== 'int') {
-                    return ['error_response' => "Expected type `$type` does not match provided value type `integer`."];
-                }
-                break;
-            case 'boolean':
-                if ($type !== 'bool') {
-                    return ['error_response' => "Expected type `$type` does not match provided value type `boolean`."];
-                }
-                break;
-            case 'string':
-                if (!in_array($type, ['text', 'email', 'url', 'raw'])) {
-                    return ['error_response' => "Expected type `$type` does not match provided value type `string`."];
-                }
-                break;
-            default:
-                return ['error' => 'Unsupported value type `' . gettype($value) . '`.'];
-        }
-
-        // Sanitize the value according to the expected type
         switch ($type) {
             case 'int':
-                return absint($value);
+                // Sanitize integers
+                // If the value is numeric, cast it to an integer and return it.
+                // Otherwise, return an error message.
+                if (is_numeric($value)) {
+                    return absint((int)$value);
+                }
+                return ['error_response' => "Expected type `int`, got `" . gettype($value) . "` with value `$value`."];
             case 'bool':
-                return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+                // Sanitize booleans
+                // If the value is a boolean, or a string that can be interpreted as a boolean, return it.
+                // Otherwise, return an error message.
+                if (is_bool($value) || in_array(strtolower((string)$value), ['true', 'false', '0', '1'], true)) {
+                    return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+                }
+                return ['error_response' => "Expected type `bool`, got `" . gettype($value) . "` with value `$value`."];
             case 'email':
+                // Sanitize emails
+                // If the value is not a string, return an error message.
+                // Otherwise, sanitize the email using the sanitize_email function and return it.
+                if (!is_string($value)) {
+                    return ['error_response' => "Expected type `email` as string, got `" . gettype($value) . "`."];
+                }
                 return sanitize_email($value);
             case 'url':
+                // Sanitize URLs
+                // If the value is not a string, return an error message.
+                // Otherwise, sanitize the URL using the esc_url_raw function and return it.
+                if (!is_string($value)) {
+                    return ['error_response' => "Expected type `url` as string, got `" . gettype($value) . "`."];
+                }
                 return esc_url_raw($value);
             case 'raw':
+                // Return the value as is
+                // No sanitization is done.
                 return $value;
             case 'text':
             default:
+                // Sanitize text
+                // If the value is not a string, return an error message.
+                // Otherwise, sanitize the text using the sanitize_text_field function and return it.
+                if (!is_string($value)) {
+                    return ['error_response' => "Expected type `text` as string, got `" . gettype($value) . "`."];
+                }
                 return sanitize_text_field($value);
         }
     }
