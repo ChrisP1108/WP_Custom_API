@@ -79,19 +79,29 @@ class Param_Sanitizer {
             case 'email':
                 // Sanitize emails
                 // If the value is not a string, return an error message.
-                // Otherwise, sanitize the email using the sanitize_email function and return it.
+                // Otherwise, sanitize the email using the sanitize_email function.
+                // If the sanitized email is not a valid email, return an error message, otherwise return the value.
                 if (!is_string($value)) {
                     return ['error_response' => "Expected type `email` as string, got `" . gettype($value) . "`."];
                 }
-                return sanitize_email($value);
+                $sanitized = sanitize_email($value);
+                if (!is_email($sanitized)) {
+                    return ['error_response' => "Invalid email format for value `$value`."];
+                }
+                return $sanitized;
             case 'url':
                 // Sanitize URLs
                 // If the value is not a string, return an error message.
-                // Otherwise, sanitize the URL using the esc_url_raw function and return it.
+                // Otherwise, sanitize the URL using the esc_url_raw function.
+                // If the sanitized URL is not a valid URL, return an error message, otherwise return the value.
                 if (!is_string($value)) {
                     return ['error_response' => "Expected type `url` as string, got `" . gettype($value) . "`."];
                 }
-                return esc_url_raw($value);
+                $sanitized = esc_url_raw($value);
+                if (!filter_var($sanitized, FILTER_VALIDATE_URL)) {
+                    return ['error_response' => "Invalid URL format for value `$value`."];
+                }
+                return $sanitized;
             case 'raw':
                 // Return the value as is
                 // No sanitization is done.
