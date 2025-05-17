@@ -28,8 +28,6 @@ if (!defined('ABSPATH')) {
 class Controller_Interface
 {
 
-    
-
     /**
      * METHOD - request_parser
      * 
@@ -44,6 +42,7 @@ class Controller_Interface
      * 
      * @return array An array containing the sanitized request data and a flag indicating if the operation was successful.
      */
+
     final public static function request_parser(WP_REST_Request $req, array $schema = [], array $required_keys = []): array
     {
         $params = $req->get_params() ?? [];
@@ -80,9 +79,11 @@ class Controller_Interface
         // Check if the required keys are present in the sanitized data
         $missing_keys = [];
 
-        $missing_keys = array_filter($required_keys, function ($key) use ($merged_sanitized_params) {
-            return !array_key_exists($key, $merged_sanitized_params);
-        });
+        foreach($required_keys as $key) {
+            if (!array_key_exists($key, $merged_sanitized_params)) {
+                $missing_keys[] = $key;
+            }
+        }
 
         // Construct the response data
         $response_data = [
@@ -94,7 +95,7 @@ class Controller_Interface
             $response_data['missing_keys'] = $missing_keys;
             $err_msg = 'The following keys are required: `' . implode(', ', $missing_keys) . '`.';
             $response_data['message'] = $err_msg;
-            $response_data['error_response'] = Response_Handler::response(false, 400, $err_msg)['error_response'];
+            $response_data['validation_error_status'] = 400;
 
         // Handle the case where there are invalid data types
         } else if (!empty($invalid_types)) {
@@ -104,11 +105,11 @@ class Controller_Interface
             }, $invalid_types);
             $err_msg = 'Invalid data types found for `' . implode(', ', $invalid_keys) . '`.';
             $response_data['message'] = $err_msg;
-            $response_data['error_response'] = Response_Handler::response(false, 422, $err_msg)['error_response'];
+            $response_data['validation_error_status'] = 422;
         } else {
             $response_data['data'] = [
-                'params' => $merged_sanitized_params,
-                'files' => $files
+                'data_params' => $merged_sanitized_params,
+                'file_params' => $files
             ];
             $response_data['message'] = 'Success.';
         }
@@ -128,16 +129,30 @@ class Controller_Interface
      * @return WP_REST_Response A response object with the appropriate status code and data.
      */
 
-    final public static function response($response, int $status_code = 200, string|null $message = null): WP_REST_Response
+    final public static function response(array|null|string|int|bool $response, int $status_code = 200, string|null $message = null): WP_REST_Response
     {
-        $parsed_response = [
-            'ok' => $status_code < 300 ? true : false,
-            'message' => isset($response['message']) ? $response['message'] : $message,
-            'data' => isset($response['data']) ? $response['data'] : $response
-        ];
+        // Parse response message
+        $parsed_response = ['message' => isset($response['message']) ? $response['message'] : $message];
 
+        // Check if the response contains a validation error and return appropriate response.
+        if (isset($response['validation_error_status'])) {
+            $status_code = $response['validation_error_status'];
+            unset($response['validation_error_status']);
+            unset($response['ok']);
+            return new WP_REST_Response($response, $status_code);
+        }
+
+        // Check if the response contains an error or success response and return it
         if (isset($response['error_response'])) return $response['error_response'];
         if (isset($response['success_response'])) return $response['success_response'];
+
+        // Parse response data
+        if ($response !== null) {
+            $parsed_response['data'] = isset($response['data']) ? $response['data'] : $response;
+            if (isset($parsed_response['data']['data_params'])) {
+                $parsed_response['data'] = $parsed_response['data']['data_params'];
+            }
+        }
 
         return new WP_REST_Response($parsed_response, $status_code);
     }

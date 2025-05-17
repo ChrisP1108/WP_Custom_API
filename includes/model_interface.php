@@ -38,7 +38,7 @@ abstract class Model_Interface
     /**
      * METHOD - table_schema
      * 
-     * Get the schema for the table.
+     * Set the schema for the table to create in the database.
      *
      * @return array
      */
@@ -54,6 +54,26 @@ abstract class Model_Interface
      */
 
     abstract public static function create_table(): bool;
+
+    /**
+     * METHOD - data_schema
+     * 
+     * Set the data schema for validation data types.
+     *
+     * @return bool
+     */
+
+    abstract public static function data_schema(): array;
+
+    /**
+     * METHOD - required_keys
+     * 
+     * Set the required keys for validation requirements.
+     *
+     * @return bool
+     */
+
+    abstract public static function required_keys(): array;
 
     /**
      * METHOD - table_columns

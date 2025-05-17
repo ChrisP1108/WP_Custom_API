@@ -33,4 +33,20 @@ final class Model extends Model_Interface
     {
         return false;
     }
+
+    public static function data_schema(): array 
+    {
+        return 
+            [
+
+            ];
+    }
+
+    public static function required_keys(): array 
+    {
+        return 
+            [
+
+            ];
+    }
 }
