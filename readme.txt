@@ -38,6 +38,7 @@ The config.php file is where much of the plugins custom functionality can be con
 
 == IMPORTANT ==
 
+Make sure you update the SECRET_KEY constant in the Config.php file for security prior to use.
 Avoid modifying any files in the `includes` folder, as these are core files for the plugin.
 All files that you will be working with will be inside the `api` folder.
 
