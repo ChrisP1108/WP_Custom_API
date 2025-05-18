@@ -62,7 +62,7 @@ final class Config
      * @since 1.0.0
      */
 
-    public const SECRET_KEY = WP_CUSTOM_API_SECRET_KEY;
+    public const SECRET_KEY = 'acc0b1fe4f9bc2bff8c978cf215e42176895228abfae40df16db6e6d82bcb420';
 
     /**
      * CONSTANT
@@ -106,7 +106,7 @@ final class Config
      * @since 1.0.0
      */
 
-    public const TOKEN_OVER_HTTPS_ONLY = IN_PRODUCTION_MODE;
+    public const TOKEN_OVER_HTTPS_ONLY = true;
 
     /**
      * CONSTANT

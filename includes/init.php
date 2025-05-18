@@ -209,7 +209,7 @@ final class Init
      * METHOD - create_tables
      * 
      * Will iterate through all model classes in the model array from the Init::get_files_loaded() method and create tables 
-     *      in the database for any in which the class constant RUN_MIGRATION is set to true if it hasn't been created yet.
+     *      in the database for any model class fiels that have its create_table method return true if it hasn't been created yet.
      * Calls a Wordpress action hook after migrations are finished
      * 
      * @return void
