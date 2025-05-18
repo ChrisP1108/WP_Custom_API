@@ -44,7 +44,6 @@ final class Database
 
     private static function response(bool $ok, int $status_code, string $message = '', ?array $data = null): array
     {
-
         $return_data = Response_Handler::response($ok, $status_code, $message, $data);
 
         do_action('wp_custom_api_database_response', $return_data);

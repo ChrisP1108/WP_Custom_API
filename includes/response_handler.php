@@ -35,6 +35,10 @@ final class Response_Handler
     {
         $return_data = ['message' => $message];
 
+        if ($data !== null) {
+            $return_data['data'] = $data;
+        }
+
         if (!$ok && $parse_responses) {
             $return_data['error_response'] = new WP_REST_Response($return_data, $status_code);
         } else if ($parse_responses){
@@ -42,7 +46,6 @@ final class Response_Handler
         }
 
         $return_data['ok'] = $ok;
-        $return_data['message'] = $message;
 
         return $return_data;
     }
