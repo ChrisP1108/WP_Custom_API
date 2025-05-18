@@ -21,7 +21,7 @@ class Param_Sanitizer {
     /**
      * METHOD - sanitize
      * 
-     * Sanitize an array of parameters using a provided schema.
+     * Sanitize an array of parameters using a provided schema.  Also checks that no keys are missing from the schema.
      *
      * @param array $params Associative array of request parameters.
      * @param array $schema Associative array where key = param name, value = expected type.
@@ -32,7 +32,7 @@ class Param_Sanitizer {
         $sanitized = [];
 
         foreach ($schema as $key => $type) {
-            if (!isset($params[$key])) {
+            if (!isset($params[$key]) && !isset($required_keys[$key])) {
                 continue;
             }
 
@@ -42,9 +42,7 @@ class Param_Sanitizer {
                 $sanitized[$key] = array_map(function ($v) use ($type) {
                     return self::sanitize_value($v, $type);
                 }, $value);
-            } else {
-                $sanitized[$key] = self::sanitize_value($value, $type);
-            }
+            } else $sanitized[$key] = self::sanitize_value($value, $type);
         }
 
         return $sanitized;

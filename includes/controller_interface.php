@@ -29,7 +29,7 @@ class Controller_Interface
 {
 
     /**
-     * METHOD - request_parser
+     * METHOD - request_handler
      * 
      * Parse the request data and sanitize it according to the provided schema.
      * 
@@ -43,7 +43,7 @@ class Controller_Interface
      * @return array An array containing the sanitized request data and a flag indicating if the operation was successful.
      */
 
-    final public static function request_parser(WP_REST_Request $req, array $schema = [], array $required_keys = []): array
+    final public static function request_handler(WP_REST_Request $req, array $schema = [], array $required_keys = []): array
     {
         $params = $req->get_params() ?? [];
         $json = json_decode($req->get_body(), true) ?? [];
@@ -54,7 +54,7 @@ class Controller_Interface
         $sanitized_params = [
             'params' => Param_Sanitizer::sanitize($params, $schema),
             'json'   => Param_Sanitizer::sanitize($json, $schema),
-            'form'   => Param_Sanitizer::sanitize($form, $schema),
+            'form'   => Param_Sanitizer::sanitize($form, $schema)
         ];
 
         // Merge the sanitized data
@@ -76,22 +76,33 @@ class Controller_Interface
             }
         }
 
-        // Check if the required keys are present in the sanitized data
+        // Check if the required keys are present in the sanitized data and check it against the schema to make sure no required keys are missing from the schema.
         $missing_keys = [];
+        $missing_schema_keys = [];
 
         foreach($required_keys as $key) {
-            if (!array_key_exists($key, $merged_sanitized_params)) {
+            if (!isset($schema[$key])) {
+                $missing_schema_keys[] = ['key' => $key, 'error_response' => 'The `' . $key . '` needs to be defined in the schema.'];
+            } else if (!array_key_exists($key, $merged_sanitized_params)) {
                 $missing_keys[] = $key;
             }
         }
 
         // Construct the response data
         $response_data = [
-            'ok' => empty($missing_keys) && empty($invalid_types)
+            'ok' => empty($missing_keys) && empty($invalid_types) && empty($missing_schema_keys)
         ];
 
+        // Handle the case where required keys are missing from the schema
+        if (!empty($missing_schema_keys)) {
+            $response_data['missing_schema_keys'] = $missing_schema_keys;
+            $missing_schema_key_names = array_map(function($item) { return $item['key']; }, $missing_schema_keys); 
+            $err_msg = 'The following keys must be defined in the schema: `' . implode(', ', $missing_schema_key_names) . '`.';
+            $response_data['message'] = $err_msg;
+            $response_data['validation_error_status'] = 500;
+
         // Handle the case where missing keys or invalid data types are present
-        if (!empty($missing_keys)) {
+        } else if (!empty($missing_keys)) {
             $response_data['missing_keys'] = $missing_keys;
             $err_msg = 'The following keys are required: `' . implode(', ', $missing_keys) . '`.';
             $response_data['message'] = $err_msg;
@@ -117,6 +128,31 @@ class Controller_Interface
         return $response_data;
     }
 
+    /**
+     * METHOD - get_param_data
+     * 
+     * Returns the sanitized and merged parameter data that was generated from a successful request handling from the request_handler method.
+     * 
+     * @param array $params A request object containing parameter data.
+     * @return array|null The sanitized and merged parameter data.
+     */
+
+    final public static function get_param_data($params): array|null {
+        return isset($params['data']['data_params']) ? $params['data']['data_params'] : null;
+    }
+
+    /**
+     * METHOD - get_file_data
+     * 
+     * Returns the sanitized and merged file data that was generated from a successful request handling from the request_handler method.
+     * 
+     * @param array $params A request object containing file data.
+     * @return array|null The sanitized and merged file data.
+     */
+
+    final public static function get_file_data($params): array|null {
+        return isset($params['data']['file_params']) ? $params['data']['file_params'] : null;
+    }
 
     /**
      * METHOD - response
@@ -131,8 +167,12 @@ class Controller_Interface
 
     final public static function response(array|null|string|int|bool $response, int $status_code = 200, string|null $message = null): WP_REST_Response
     {
+        $parsed_response = [];
+        
         // Parse response message
-        $parsed_response = ['message' => isset($response['message']) ? $response['message'] : $message];
+        if ($message !== null || isset($response['message'])) {
+            $parsed_response['message'] =  isset($response['message']) ? $response['message'] : $message;
+        }
 
         // Check if the response contains a validation error and return appropriate response.
         if (isset($response['validation_error_status'])) {
