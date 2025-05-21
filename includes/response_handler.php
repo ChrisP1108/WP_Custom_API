@@ -86,8 +86,10 @@ final class Response_Handler
         } else if ($parse_responses){
             $success_response_data = [
                 'message' => $message,
-                'data' => $data
             ];
+            if (!isset($data['hash'])) {
+                $success_response_data['data'] = $data;
+            }
             $return_data->success_response = new WP_REST_Response($success_response_data, $status_code);
         }
 
