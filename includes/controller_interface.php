@@ -43,6 +43,14 @@ class Controller_Interface
     readonly protected array $request_files;
 
     /**
+     * PROPERTY - request_headers
+     * 
+     * @var array The request headers.
+     */
+
+    readonly protected array $request_headers;
+
+    /**
      * PROPERTY - status_code
      * 
      * @var int The status code of the response.
@@ -111,6 +119,7 @@ class Controller_Interface
         $json = json_decode($req->get_body(), true) ?? [];
         $form = $req->get_body_params() ?? [];
         $files = $req->get_file_params() ?? [];
+        $headers = $req->get_headers() ?? [];
 
         // Sanitize the request data according to the schema
         $sanitized_params = [
@@ -129,7 +138,7 @@ class Controller_Interface
         // Check if the sanitized data contains any invalid types
         $invalid_types = [];
 
-        foreach($merged_sanitized_params as $key => $value) {
+        foreach ($merged_sanitized_params as $key => $value) {
             if (isset($value['error_response'])) {
                 $invalid_types[] = [
                     'key' => $key,
@@ -142,7 +151,7 @@ class Controller_Interface
         $missing_keys = [];
         $missing_schema_keys = [];
 
-        foreach($required_keys as $key) {
+        foreach ($required_keys as $key) {
             if (!isset($schema[$key])) {
                 $missing_schema_keys[] = ['key' => $key, 'error_response' => 'The `' . $key . '` needs to be defined in the schema.'];
             } else if (!array_key_exists($key, $merged_sanitized_params)) {
@@ -158,18 +167,20 @@ class Controller_Interface
         // Handle the case where required keys are missing from the schema
         if (!empty($missing_schema_keys)) {
             $response_data->missing_schema_keys = $missing_schema_keys;
-            $missing_schema_key_names = array_map(function($item) { return $item['key']; }, $missing_schema_keys); 
+            $missing_schema_key_names = array_map(function ($item) {
+                return $item['key'];
+            }, $missing_schema_keys);
             $response_data->message = 'The following keys must be defined in the schema: `' . implode(', ', $missing_schema_key_names) . '`.';
             $response_data->status_code = 500;
-        // Handle the case where missing keys or invalid data types are present
+            // Handle the case where missing keys or invalid data types are present
         } else if (!empty($missing_keys)) {
             $response_data->missing_keys = $missing_keys;
             $response_data->message = 'The following keys are required: `' . implode(', ', $missing_keys) . '`.';
             $response_data->status_code = 400;
-        // Handle the case where there are invalid data types
+            // Handle the case where there are invalid data types
         } else if (!empty($invalid_types)) {
             $response_data->invalid_types = $invalid_types;
-            $invalid_keys = array_map(function($item) {
+            $invalid_keys = array_map(function ($item) {
                 return $item['key'];
             }, $invalid_types);
             $response_data->message = 'Invalid data types found for `' . implode(', ', $invalid_keys) . '`.';
@@ -177,10 +188,29 @@ class Controller_Interface
         } else {
             $response_data->request_data = $merged_sanitized_params;
             $response_data->request_files = $files;
+            $response_data->request_headers = $headers;
             $response_data->message = 'Success';
         }
 
         return $response_data;
+    }
+
+    /**
+     * METHOD - set_headers
+     * 
+     * Sets HTTP headers.
+     * 
+     * @param array $headers A key-value array of headers to be set.
+     * 
+     * @return void
+     */
+    
+    final public static function set_headers(array $headers): void
+    {
+        // Loop through the headers and set them using the header() function
+        foreach ($headers as $key => $value) {
+            header($key . ': ' . $value);
+        }
     }
 
     /**
@@ -197,7 +227,7 @@ class Controller_Interface
     final public static function response(object|null|array $response, int $status_code = 200, string|null $message = null): WP_REST_Response
     {
         $parsed_response = [];
-        
+
         // Parse response message
         if ($message !== null || isset($response->message)) {
             $parsed_response['message'] =  isset($response->message) ? $response->message : $message;
@@ -245,7 +275,7 @@ class Controller_Interface
      * @return array An associative array containing pagination parameters.
      */
 
-    final public static function pagination_params(): array 
+    final public static function pagination_params(): array
     {
         return Database::pagination_params();
     }
@@ -265,7 +295,7 @@ class Controller_Interface
      * @return void
      */
 
-    final public static function pagination_headers(string|int $total_rows, string|int $total_pages, string|int $limit, string|int $page): void 
+    final public static function pagination_headers(string|int $total_rows, string|int $total_pages, string|int $limit, string|int $page): void
     {
         Database::pagination_headers($total_rows, $total_pages, $limit, $page);
     }
