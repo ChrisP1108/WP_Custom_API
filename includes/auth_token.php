@@ -60,7 +60,7 @@ final class Auth_Token
             $status_code = 401;
         }
 
-        return Response_Handler::response($ok, $status_code, $message);
+        return Response_Handler::response($ok, $status_code, $message, $data);
     }
 
     /**

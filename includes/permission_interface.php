@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace WP_Custom_API\Includes;
 
 use WP_Custom_API\Config;
+use WP_REST_Request;
 use WP_Custom_API\Includes\Password;
 use WP_Custom_API\Includes\Auth_Token;
 use WP_Custom_API\Includes\Response_Handler;
@@ -35,7 +36,7 @@ abstract class Permission_Interface
      * @return bool Returns true if the user is authorized to access the route, false otherwise.
      */
 
-    abstract public static function authorized(): bool;
+    abstract public static function authorized(WP_REST_Request $request): bool;
     
     /**
      * Used to declare a route for public access.

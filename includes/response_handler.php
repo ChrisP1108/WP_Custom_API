@@ -72,7 +72,7 @@ final class Response_Handler
      * @param array|null $data
      * @return object
      */
-    public static function response(bool $ok, int $status_code, string $message = '', ?array $data = null, bool $parse_responses = true): object
+    public static function response(bool $ok, int $status_code, string $message = '', array|null|string|bool $data = null, bool $parse_responses = true): object
     {
         $return_data = new self();
         $return_data->message = $message;;

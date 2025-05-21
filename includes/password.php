@@ -58,7 +58,7 @@ final class Password
             $message = 'Authentication successful.';
         }
 
-        return Response_Handler::response($ok, $status_code, $message);
+        return Response_Handler::response($ok, $status_code, $message, ['hash' => $output['hash']]);
     }
 
     /**
