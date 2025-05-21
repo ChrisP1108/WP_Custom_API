@@ -53,8 +53,8 @@ abstract class Permission_Interface
      * @return WP_Error as Error - Returns an error indicating unauthorized access.
      */
     
-    final public static function unauthorized_response(): array {
-        return Response_Handler::response(false, 401, 'You are not authorized to access this route.', null, false);
+    final public static function unauthorized_response(): object {
+        return Response_Handler::response(false, 401, 'Unauthorized.', null, false);
     }
 
     /**

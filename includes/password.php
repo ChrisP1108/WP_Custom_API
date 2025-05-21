@@ -35,11 +35,11 @@ final class Password
      * @param string $message - Message to be returned in the response
      * @param string $hash - Hashed password string
      * 
-     * @return array Response indicating success or failure, and the generated hash if successful.
+     * @return object Response indicating success or failure, and the generated hash if successful.
      * @since 1.0.0
      */
 
-    private static function response(bool $ok, int $status_code, string $message = '', string $hash = ''): array
+    private static function response(bool $ok, int $status_code, string $message = '', string $hash = ''): object
     {
         $output = [];
 

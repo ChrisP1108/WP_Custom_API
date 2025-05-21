@@ -7,7 +7,6 @@ namespace WP_Custom_API\Includes;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_Custom_API\Includes\Database;
-use WP_Custom_API\Includes\Response_Handler;
 use WP_Custom_API\Includes\Param_Sanitizer;
 
 /** 
@@ -27,6 +26,69 @@ if (!defined('ABSPATH')) {
 
 class Controller_Interface
 {
+    /**
+     * PROPERTY - request_data
+     * 
+     * @var array The request data that has been sanitized according to the provided schema.
+     */
+
+    readonly protected array $request_data;
+
+    /**
+     * PROPERTY - request_files
+     * 
+     * @var array The request files.
+     */
+
+    readonly protected array $request_files;
+
+    /**
+     * PROPERTY - status_code
+     * 
+     * @var int The status code of the response.
+     */
+
+    readonly protected int $status_code;
+
+    /**
+     * PROPERTY - ok
+     * 
+     * @var bool Whether the request was successful or not.
+     */
+
+    readonly protected bool $ok;
+
+    /**
+     * PROPERTY - message
+     * 
+     * @var string The message of the response.
+     */
+
+    readonly protected string $message;
+
+    /**
+     * PROPERTY - missing_keys
+     * 
+     * @var array The missing keys from the request data.
+     */
+
+    readonly protected array $missing_keys;
+
+    /**
+     * PROPERTY - invalid_types
+     * 
+     * @var array The invalid types from the request data.
+     */
+
+    readonly protected array $invalid_types;
+
+    /**
+     * PROPERTY - missing_schema_keys
+     * 
+     * @var array The missing schema keys from the request data.
+     */
+
+    readonly protected array $missing_schema_keys;
 
     /**
      * METHOD - request_handler
@@ -40,10 +102,10 @@ class Controller_Interface
      * @param array $schema The schema to use for sanitizing the request data.
      * @param array $required_keys The required keys to check if they are present in the sanitized data.
      * 
-     * @return array An array containing the sanitized request data and a flag indicating if the operation was successful.
+     * @return Controller_Interface An object containing the sanitized request data and a flag indicating if the operation was successful.
      */
 
-    final public static function request_handler(WP_REST_Request $req, array $schema = [], array $required_keys = []): array
+    final public static function request_handler(WP_REST_Request $req, array $schema = [], array $required_keys = []): Controller_Interface
     {
         $params = $req->get_params() ?? [];
         $json = json_decode($req->get_body(), true) ?? [];
@@ -89,69 +151,36 @@ class Controller_Interface
         }
 
         // Construct the response data
-        $response_data = [
-            'ok' => empty($missing_keys) && empty($invalid_types) && empty($missing_schema_keys)
-        ];
+
+        $response_data = new self();
+        $response_data->ok = empty($missing_keys) && empty($invalid_types) && empty($missing_schema_keys);
 
         // Handle the case where required keys are missing from the schema
         if (!empty($missing_schema_keys)) {
-            $response_data['missing_schema_keys'] = $missing_schema_keys;
+            $response_data->missing_schema_keys = $missing_schema_keys;
             $missing_schema_key_names = array_map(function($item) { return $item['key']; }, $missing_schema_keys); 
-            $err_msg = 'The following keys must be defined in the schema: `' . implode(', ', $missing_schema_key_names) . '`.';
-            $response_data['message'] = $err_msg;
-            $response_data['validation_error_status'] = 500;
-
+            $response_data->message = 'The following keys must be defined in the schema: `' . implode(', ', $missing_schema_key_names) . '`.';
+            $response_data->status_code = 500;
         // Handle the case where missing keys or invalid data types are present
         } else if (!empty($missing_keys)) {
-            $response_data['missing_keys'] = $missing_keys;
-            $err_msg = 'The following keys are required: `' . implode(', ', $missing_keys) . '`.';
-            $response_data['message'] = $err_msg;
-            $response_data['validation_error_status'] = 400;
-
+            $response_data->missing_keys = $missing_keys;
+            $response_data->message = 'The following keys are required: `' . implode(', ', $missing_keys) . '`.';
+            $response_data->status_code = 400;
         // Handle the case where there are invalid data types
         } else if (!empty($invalid_types)) {
-            $response_data['invalid_types'] = $invalid_types;
+            $response_data->invalid_types = $invalid_types;
             $invalid_keys = array_map(function($item) {
                 return $item['key'];
             }, $invalid_types);
-            $err_msg = 'Invalid data types found for `' . implode(', ', $invalid_keys) . '`.';
-            $response_data['message'] = $err_msg;
-            $response_data['validation_error_status'] = 422;
+            $response_data->message = 'Invalid data types found for `' . implode(', ', $invalid_keys) . '`.';
+            $response_data->status_code = 422;
         } else {
-            $response_data['data'] = [
-                'data_params' => $merged_sanitized_params,
-                'file_params' => $files
-            ];
-            $response_data['message'] = 'Success.';
+            $response_data->request_data = $merged_sanitized_params;
+            $response_data->request_files = $files;
+            $response_data->message = 'Success';
         }
 
         return $response_data;
-    }
-
-    /**
-     * METHOD - get_param_data
-     * 
-     * Returns the sanitized and merged parameter data that was generated from a successful request handling from the request_handler method.
-     * 
-     * @param array $params A request object containing parameter data.
-     * @return array|null The sanitized and merged parameter data.
-     */
-
-    final public static function get_param_data($params): array|null {
-        return isset($params['data']['data_params']) ? $params['data']['data_params'] : null;
-    }
-
-    /**
-     * METHOD - get_file_data
-     * 
-     * Returns the sanitized and merged file data that was generated from a successful request handling from the request_handler method.
-     * 
-     * @param array $params A request object containing file data.
-     * @return array|null The sanitized and merged file data.
-     */
-
-    final public static function get_file_data($params): array|null {
-        return isset($params['data']['file_params']) ? $params['data']['file_params'] : null;
     }
 
     /**
@@ -159,42 +188,50 @@ class Controller_Interface
      * 
      * Handles the construction of a WP_REST_Response object.
      *
-     * @param array $response An array containing response data including 'ok', 'message', and 'data'.
+     * @param object|null|array $response An object (or null) containing response data including 'ok', 'message', and 'data'.
      * @param bool $ok A default flag indicating if the operation was successful.
      * @param string $message A default message to return in the response.
      * @return WP_REST_Response A response object with the appropriate status code and data.
      */
 
-    final public static function response(array|null|string|int|bool $response, int $status_code = 200, string|null $message = null): WP_REST_Response
+    final public static function response(object|null|array $response, int $status_code = 200, string|null $message = null): WP_REST_Response
     {
         $parsed_response = [];
         
         // Parse response message
-        if ($message !== null || isset($response['message'])) {
-            $parsed_response['message'] =  isset($response['message']) ? $response['message'] : $message;
+        if ($message !== null || isset($response->message)) {
+            $parsed_response['message'] =  isset($response->message) ? $response->message : $message;
         }
 
+        // Parse response status code
+        $response_status_code = isset($response->status_code) && $response->status_code !== null ? $response->status_code : $status_code;
+
         // Check if the response contains a validation error and return appropriate response.
-        if (isset($response['validation_error_status'])) {
-            $status_code = $response['validation_error_status'];
-            unset($response['validation_error_status']);
-            unset($response['ok']);
-            return new WP_REST_Response($response, $status_code);
+        if (isset($response->ok) && !$response->ok) {
+
+            if (isset($response->missing_schema_keys)) {
+                $parsed_response['missing_schema_keys'] = $response->missing_schema_keys;
+            }
+            if (isset($response->missing_keys)) {
+                $parsed_response['missing_keys'] = $response->missing_keys;
+            }
+            if (isset($response->invalid_types)) {
+                $parsed_response['invalid_types'] = $response->invalid_types;
+            }
+
+            return new WP_REST_Response($parsed_response, $response_status_code);
         }
 
         // Check if the response contains an error or success response and return it
-        if (isset($response['error_response'])) return $response['error_response'];
-        if (isset($response['success_response'])) return $response['success_response'];
+        if (isset($response->error_response)) return $response->error_response;
+        if (isset($response->success_response)) return $response->success_response;
 
         // Parse response data
         if ($response !== null) {
-            $parsed_response['data'] = isset($response['data']) ? $response['data'] : $response;
-            if (isset($parsed_response['data']['data_params'])) {
-                $parsed_response['data'] = $parsed_response['data']['data_params'];
-            }
+            $parsed_response['data'] = isset($response->data) && $response->data !== null ? $response->data : $response;
         }
 
-        return new WP_REST_Response($parsed_response, $status_code);
+        return new WP_REST_Response($parsed_response, $response_status_code);
     }
 
     /**

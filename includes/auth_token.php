@@ -35,12 +35,12 @@ final class Auth_Token
      * @param string|null $message - A descriptive response message.
      * @param int|null $issued_at - Timestamp when the token was issued.
      * @param int|null $expires_at - Timestamp when the token will expire.
-     * @return array - Returns a structured response.
+     * @return object - Returns a structured response.
      * 
      * @since 1.0.0
      */
 
-    private static function response(bool $ok, int $status_code, string|int|null $id, string $message, int $issued_at = 0, int $expires_at = 0): array
+    private static function response(bool $ok, int $status_code, string|int|null $id, string $message, int $issued_at = 0, int $expires_at = 0): object
     {
         $data = ['id' => $id !== '' ? intval($id) : null];
 
@@ -102,12 +102,12 @@ final class Auth_Token
      * @param int $id - Id of user for token generation
      * @param string $token_name - Name of token to be stored.  Token name is also the cookie name
      * @param int $expiration - Set duration of token before expiring.
-     * @return array - Returns array with "ok", "id", and "message" keys
+     * @return object - Returns array with "ok", "id", and "message" keys
      * 
      * @since 1.0.0
      */
 
-    public static function generate(int $id, string $token_name, int $expiration = Config::TOKEN_EXPIRATION): array
+    public static function generate(int $id, string $token_name, int $expiration = Config::TOKEN_EXPIRATION): object
     {
         if (!$id || !$token_name) {
             return self::response(false, 500, $id, "`id` and `token_name` parameters required to generate auth token.");
@@ -159,12 +159,12 @@ final class Auth_Token
      * 
      * @param string $token_name - Name of token to verify. Stored as http only cookie with the same name
      * @param int|null $logout_time - Optional timestamp of the user's last logout.
-     * @return array - Returns array with "ok", "id", and "message" keys
+     * @return object - Returns array with "ok", "id", and "message" keys
      * 
      * @since 1.0.0
      */
 
-    public static function validate(string $token_name, int $logout_time = 0): array
+    public static function validate(string $token_name, int $logout_time = 0): object
     {
         if (!$token_name) {
             return self::response(false, 500, null, "A token name must be provided for validation.");
