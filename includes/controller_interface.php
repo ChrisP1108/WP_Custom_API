@@ -20,8 +20,6 @@ if (!defined('ABSPATH')) {
 /** 
  * Interface for controller classes. 
  * This acts as a parent class for controller classes to provide request and response helper methods.
- * 
- * @since 1.0.0
  */
 
 class Controller_Interface
@@ -102,10 +100,11 @@ class Controller_Interface
             }
         }
 
-        // Check if the required keys are present in the sanitized data and check it against the schema to make sure no required keys are missing from the schema.
+        // Set to chekc if required keys are present in the sanitized data and check it against the schema to make sure no required keys are missing from the schema.
         $missing_keys = [];
         $missing_schema_keys = [];
 
+        // Loop through required keys and check if they are present in the sanitized data and check it against the schema to make sure no required keys are missing from the schema.
         foreach ($required_keys as $key) {
             if (!isset($schema[$key])) {
                 $missing_schema_keys[] = ['key' => $key, 'error_response' => 'The `' . $key . '` needs to be defined in the schema.'];
@@ -115,40 +114,44 @@ class Controller_Interface
         }
 
         // Set if ok
-
         $ok = empty($missing_keys) && empty($invalid_types) && empty($missing_schema_keys);
 
         // Set for message 
-
         $message = null;
 
         // Set for status code
-
         $status_code = null;
-
-        // Handle the case where required keys are missing from the schema
+        
         if (!empty($missing_schema_keys)) {
+
+            // Handle the case where required keys are missing from the schema
             $missing_schema_key_names = array_map(function ($item) {
                 return $item['key'];
             }, $missing_schema_keys);
             $message = 'The following keys must be defined in the schema: `' . implode(', ', $missing_schema_key_names) . '`.';
             $status_code = 500;
-            // Handle the case where missing keys or invalid data types are present
+
         } else if (!empty($missing_keys)) {
-            $missing_keys = $missing_keys;
+
+            // Handle the case where missing keys or invalid data types are present
             $message = 'The following keys are required: `' . implode(', ', $missing_keys) . '`.';
             $status_code = 400;
-            // Handle the case where there are invalid data types
+
         } else if (!empty($invalid_types)) {
-            $invalid_types = $invalid_types;
+
+            // Handle the case where there are invalid data types
             $invalid_keys = array_map(function ($item) {
                 return $item['key'];
             }, $invalid_types);
             $message = 'Invalid data types found for `' . implode(', ', $invalid_keys) . '`.';
             $status_code = 422;
+
         } else {
+
+            // Handle the case where everything is ok
             $status_code = 200;
             $message = 'Success';
+
         }
 
         return new static(
@@ -175,9 +178,14 @@ class Controller_Interface
     
     final public static function set_headers(array $headers): void
     {
-        // Loop through the headers and set them using the header() function
-        foreach ($headers as $key => $value) {
-            header($key . ': ' . $value);
+        // Check if headers are set
+        if (!headers_sent()) {
+
+            // Loop through the headers and set them using the header() function
+            foreach ($headers as $key => $value) {
+                header($key . ': ' . $value);
+            }
+
         }
     }
 
@@ -189,6 +197,7 @@ class Controller_Interface
      * @param object|null|array $response An object (or null) containing response data including 'ok', 'message', and 'data'.
      * @param bool $ok A default flag indicating if the operation was successful.
      * @param string $message A default message to return in the response.
+     * 
      * @return WP_REST_Response A response object with the appropriate status code and data.
      */
 
@@ -231,22 +240,25 @@ class Controller_Interface
 
         // Parse response data
         if ($response !== null) {
+
             // Check that response wasn't an associative array, if so, add it to data.  Otherwise use the data key from an object
             if (!is_object($response)) {
+
+                // Set data if response is an associaitve array
                 $parsed_response['data'] = $response;
+
             } else {
+
                 // Prevent password hash in response
                 if (isset($response->data) && isset($response->data['hash'])) {
                     unset($response->data['hash']);
                 }
+
                 // Set data if data key exists as an object in response data
                 if (isset($response->data) && $response->data !== null) {
                     $parsed_response['data'] = $response->data;
                 }
-                // Set data if response is an associaitve array
-                if (!is_object($response)) {
-                    $parsed_response['data'] = $response;
-                }
+
             }
         }
 
@@ -281,6 +293,7 @@ class Controller_Interface
      * @param string|int $total_pages The total number of pages.
      * @param string|int $limit The number of items per page.
      * @param string|int $page The current page number.
+     * 
      * @return void
      */
 

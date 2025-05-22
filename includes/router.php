@@ -44,9 +44,7 @@ final class Router
      * PROPERTY
      * 
      * @bool routes_registered
-     * USed to determine if routes have already been registered.
-     * 
-     * @since 1.0.0
+     * Used to determine if routes have already been registered.
      */
 
     private static $routes_registered = false;
@@ -63,8 +61,6 @@ final class Router
      * @param callable|null $permission_callback The permission callback to run before the route is accessed.  If null, the method will throw an error.
      * 
      * @throws Error_Generator
-     * 
-     * @since 1.0.0
      */
     
     private static function register_rest_api_route(string $method, string $route, ?callable $callback, ?callable $permission_callback): void
@@ -115,9 +111,8 @@ final class Router
      * If permission callback returned false, an unauthrorized response is set for the callback.
      * Developers can utilize the Wordpress action and filter hooks to customize routes from outside of thie plugin.
      * After routes are registered, the routes_registered property is set to true to prevent duplicate registrations.
-     * @return void
      * 
-     * @since 1.0.0
+     * @return void
      */
 
     public static function init(): void
@@ -152,9 +147,8 @@ final class Router
      * Extracts any wildcards in route wrapped in {} and formats the route as a url parameter for the Wordpress REST API.
      * This will match either numeric IDs or alphanumeric values (slugs, etc.)
      * @param string $route The route URL to be converted if wildcards exist.
-     * @return string
      * 
-     * @since 1.0.0
+     * @return string
      */
 
     private static function parse_wildcards(string $route): string
@@ -171,9 +165,8 @@ final class Router
      * @param string $route The route URL.
      * @param callable|null $callback - The function that runs when the route is accessed.
      * @param callable|null $permission_callback - Callback for checking permissions.
-     * @return void
      * 
-     * @since 1.0.0
+     * @return void
      */
 
     public static function get(string $route = '', ?callable $callback = null, ?callable $permission_callback = null): void
@@ -188,9 +181,8 @@ final class Router
      * @param string $route The route URL.
      * @param callable|null $callback - The function that runs when the route is accessed.
      * @param callable|null $permission_callback - Callback for checking permissions.
-     * @return void
      * 
-     * @since 1.0.0
+     * @return void
      */
 
     public static function post(string $route = '', ?callable $callback = null, ?callable $permission_callback = null): void
@@ -205,9 +197,8 @@ final class Router
      * @param string $route The route URL.
      * @param callable|null $callback - The function that runs when the route is accessed.
      * @param callable|null $permission_callback - Callback for checking permissions.
-     * @return void
      * 
-     * @since 1.0.0
+     * @return void
      */
 
     public static function put(string $route = '', ?callable $callback = null, ?callable $permission_callback = null): void
@@ -222,9 +213,8 @@ final class Router
      * @param string $route The route URL.
      * @param callable|null $callback - The function that runs when the route is accessed.
      * @param callable|null $permission_callback - Callback for checking permissions.
-     * @return void
      * 
-     * @since 1.0.0
+     * @return void
      */
 
     public static function delete(string $route = '', ?callable $callback = null, ?callable $permission_callback = null): void
@@ -240,9 +230,8 @@ final class Router
      * @param string $route The route URL.
      * @param callable|null $callback - The function that runs when the route is accessed.
      * @param callable|null $permission_callback - Callback for checking permissions.
-     * @return void
      * 
-     * @since 1.0.0
+     * @return void
      */
 
     public static function match(array $methods, string $route, ?callable $callback, ?callable $permission_callback = null): void

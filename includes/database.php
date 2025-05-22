@@ -39,7 +39,6 @@ final class Database
      * @param array|null $data Optional data to include in the response.
      * 
      * @return object The standardized response object.
-     * @since 1.0.0
      */
 
     private static function response(bool $ok, int $status_code, string $message = '', ?array $data = null): object
@@ -55,8 +54,8 @@ final class Database
      * METHOD - table_name_err_msg
      * 
      * Provides table name error message response.
+     * 
      * @return array - Returns an object from response method with a key name of "ok" with a value of false, and a "message" key with a message indicating invalid table name, and a "data" key with value of null
-     * @since 1.0.0
      */
 
     private static function table_name_err_msg(): array|object
@@ -72,7 +71,6 @@ final class Database
      * Retrieves 'per_page' and 'page' values from GET request, with defaults and validation.
      * 
      * @return array - Returns an array with pagination details: 'per_page', 'page', and 'offset'.
-     * @since 1.0.0
      */
 
     public static function pagination_params(): array
@@ -96,7 +94,7 @@ final class Database
      * @param int $limit - The number of records per page.
      * @param int $page - The current page number.
      * 
-     * @since 1.0.0
+     * @return void
      */
 
     public static function pagination_headers(string|int $total_rows, string|int $total_pages, string|int $limit, string|int $page): void
@@ -114,7 +112,6 @@ final class Database
      * @param string $table_name - The name of the table to search for
      * 
      * @return string|null - Returns null if regex fails.  Returns string for table name otherwise.
-     * @since 1.0.0
      */
 
     public static function get_table_full_name(string $table_name): ?string
@@ -131,9 +128,8 @@ final class Database
      * 
      * Checks Wordpress database if a specific table by name exists
      * @param string $table_name - The name of the table to search for
-     * @return bool - Returns true if table name exists, false if it doesn't
      * 
-     * @since 1.0.0
+     * @return bool - Returns true if table name exists, false if it doesn't
      */
 
     public static function table_exists(string $table_name): bool
@@ -158,9 +154,8 @@ final class Database
      * Checks that a table of the same name does not exist, otherwise the method will return an array key "created" of a value of false, and a "message" key with a value "Table already exists in database".
      * @param string $table_name - The name of the table to check if exists and if not, create it
      * @param array $table_schema - An array consisting of keys for the column names, and their corresponding values indicating the data type 
-     * @return array - Returns an array, with a "created" key, and a "message" key.  "created" key will have either a true or false value, and "message" key will have a message associated with it.
      * 
-     * @since 1.0.0
+     * @return array - Returns an array, with a "created" key, and a "message" key.  "created" key will have either a true or false value, and "message" key will have a message associated with it.
      */
 
     public static function create_table(string $table_name, array $table_schema): array|object
@@ -202,9 +197,8 @@ final class Database
      * Drops Wordpress table.
      * This method only checks for tables that were created utilizing this plugin.  It will not check other tables that were created from other plugins or from Wordpress directly.
      * @param string $table_name - The name of the table to drop.
-     * @return array - Returns an array, with a "dropped" key, and a "message" key.  "dropped" key will have either a true or false value, and "message" key will have a message associated with it.
      * 
-     * @since 1.0.0
+     * @return array - Returns an array, with a "dropped" key, and a "message" key.  "dropped" key will have either a true or false value, and "message" key will have a message associated with it.
      */
 
     public static function drop_table(string $table_name): array|object
@@ -238,12 +232,11 @@ final class Database
      * * Has pagination with a limit of 10 row items by default, and a user can set a per_page url and page parameters, with per_page having a limit of 100.
      * 
      * @param string $table_name - The name of the table to retrieve data from.
+     * 
      * @return array - Returns an array with a "found" key, "data" key, and a "message" key.
      *                 "found" will have either a true or false value,
      *                 "message" will have an associated message,
      *                 and "data" will contain the retrieved rows data if found.
-     * 
-     * @since 1.0.0
      */
 
     public static function get_table_data(string $table_name): array|object
@@ -287,12 +280,11 @@ final class Database
      * @param string $column - Column name to search for based upon value
      * @param string|int $value - The value of the column to search for
      * @param bool $multiple - Boolean to determine if more than one table row should be returned.
+     * 
      * @return array - Returns an array with a "found" key, "data" key, and a "message" key. 
      *                "found" will have either a true or false value, 
      *                "message" will have an associated message,
      *                and "data" will contain the retrieved data of rows corresponding to the same column and value 
-     * 
-     * @since 1.0.0
      */
 
     public static function get_rows_data(string $table_name, string $column, ?string $value, bool $multiple = true): array|object
@@ -344,9 +336,8 @@ final class Database
      * 
      * @param string $table_name - The name of the table to insert the data into.
      * @param array $data - An associative array of column names and their corresponding values.
-     * @return array - Returns an array with a "inserted" key and a "message" key. "inserted" will have either a true of false value, and "message" key will have a message associated with it.  If insert was successful, a key of "id" with its value will be included.
      * 
-     * @since 1.0.0
+     * @return array - Returns an array with a "inserted" key and a "message" key. "inserted" will have either a true of false value, and "message" key will have a message associated with it.  If insert was successful, a key of "id" with its value will be included.
      */
 
     public static function insert_row(string $table_name, array $data): array|object
@@ -379,9 +370,8 @@ final class Database
      * @param string $table_name - The name of the table to update the row in.
      * @param int $id - Id of table row to update.
      * @param array $data - An associative array of column names and their corresponding values to update.
-     * @return array - Returns an array with an "updated" key and a "message" key. "updated" will have either a true or false value, and "message" key will have a message associated with it.
      * 
-     * @since 1.0.0
+     * @return array - Returns an array with an "updated" key and a "message" key. "updated" will have either a true or false value, and "message" key will have a message associated with it.
      */
 
     public static function update_row(string $table_name, int $id, array $data): array|object
@@ -417,11 +407,10 @@ final class Database
      * 
      * @param string $table_name - The name of the table to delete the row from.
      * @param int $id - The ID of the row to delete.
+     * 
      * @return array - Returns an array with a "deleted" key and a "message" key. 
      *                 "deleted" will have either a true or false value,
      *                 and "message" will provide an associated message.
-     * 
-     * @since 1.0.0
      */
 
     public static function delete_row(string $table_name, int $id): array|object

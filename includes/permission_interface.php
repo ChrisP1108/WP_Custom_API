@@ -29,6 +29,8 @@ abstract class Permission_Interface
 {
 
     /**
+     * ABSTRACT METHOD - authorized
+     * 
      * Check if a given user is authorized to access a route.
      * 
      * Implement this method in your permission class to check if a given user is authorized to access a route.
@@ -39,6 +41,8 @@ abstract class Permission_Interface
     abstract public static function authorized(WP_REST_Request $request): bool;
     
     /**
+     * ABSTRACT METHOD - public
+     * 
      * Used to declare a route for public access.
      * 
      * @return bool Returns true to allow route to be public
@@ -49,6 +53,8 @@ abstract class Permission_Interface
     }
 
     /**
+     * ABSTRACT METHOD - unauthorized_response
+     * 
      * Generates a error response for unauthorized access.
      *
      * @return WP_Error as Error - Returns an error indicating unauthorized access.
@@ -67,6 +73,7 @@ abstract class Permission_Interface
      * The resulting hash is returned as part of an array or object response.
      *
      * @param string $string The password string to hash.
+     * 
      * @return array|object The response containing the hash and status information.
      */
 
@@ -86,6 +93,7 @@ abstract class Permission_Interface
      *
      * @param string $entered_password The plain text password to compare.
      * @param string $hashed_password The hashed password to verify against.
+     * 
      * @return array|object The response containing the verification result and status information.
      */
 
@@ -106,6 +114,7 @@ abstract class Permission_Interface
     * @param int $id The user ID.
     * @param string $token_name The token name.
     * @param int $expiration The expiration time in seconds.
+
     * @return array|object The response containing the generated token and status information.
     */
 
@@ -125,6 +134,7 @@ abstract class Permission_Interface
     *
     * @param string $token_name The token name to validate.
     * @param int $logout_time The time when the token should be invalidated (optional).
+
     * @return array|object The response containing the validation result and status information.
     */
 
@@ -143,6 +153,7 @@ abstract class Permission_Interface
     *
     * @param string $token_name The name of the token to remove.
     * @param string|int $id The user ID associated with the token (optional).
+
     * @return void
     */
 

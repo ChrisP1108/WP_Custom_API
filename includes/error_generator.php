@@ -26,8 +26,6 @@ final class Error_Generator
      * 
      * @array errors_list
      * Stores a list of error message to log and output to the Wordpress dashboard
-     * 
-     * @since 1.0.0
      */
 
     private static $errors_list = [];
@@ -39,9 +37,8 @@ final class Error_Generator
      * 
      * @param string $code_msg - Code Message
      * @param string $description_msg - Description Message
-     * @return void
      * 
-     * @since 1.0.0
+     * @return void
      */
 
     public static function generate($code_msg = null, $description_msg = null)
@@ -58,9 +55,8 @@ final class Error_Generator
      * Outputs error messages to the WordPress admin dashboard.  Styling is applied for better readability.
      * 
      * @return void
-     * 
-     * @since 1.0.0
      */
+    
     public static function display_errors()
     {
 

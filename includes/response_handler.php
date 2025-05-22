@@ -14,10 +14,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-
 /**
- * Used to create standardized responses
+ * Used to create standardized responses throughtout the plugin.
  */
+
 final class Response_Handler
 {
 
@@ -57,19 +57,11 @@ final class Response_Handler
     {
         $error_response = null;
         $success_response = null;
+
         if (!$ok && $parse_responses) {
-            $error_response_data = [
-                'message' => $message
-            ];
-            $error_response = new WP_REST_Response($error_response_data, $status_code);
+            $error_response = self::build_error_response($message, $status_code);
         } else if ($parse_responses){
-            $success_response_data = [
-                'message' => $message,
-            ];
-            if (!isset($data['hash'])) {
-                $success_response_data['data'] = $data;
-            }
-            $success_response = new WP_REST_Response($success_response_data, $status_code);
+            $success_response = self::build_success_response($message, $status_code, $data);
         }
 
         return new static(
@@ -79,5 +71,38 @@ final class Response_Handler
             $error_response, 
             $success_response
         );
+    }
+
+    /**
+     * METHOD - build_error_response
+     * 
+     * Builds and returns a WP_REST_Response with an error message and status code
+     * 
+     * @param string $message - The error message to return
+     * @param int $status_code - The status code to return
+     * @return WP_REST_Response - The WP_REST_Response object
+     */
+
+    private static function build_error_response(string $message, int $status_code): WP_REST_Response {
+        return new WP_REST_Response(['message' => $message], $status_code);
+    }
+
+    /**
+     * METHOD - build_success_response
+     * 
+     * Builds and returns a WP_REST_Response with a success message and status code
+     * 
+     * @param string $message - The success message to return
+     * @param int $status_code - The status code to return
+     * @param array|null|string|bool $data - The data to return
+     * @return WP_REST_Response - The WP_REST_Response object
+     */
+
+    private static function build_success_response(string $message, int $status_code, array|null|string|bool $data): WP_REST_Response {
+        $response = ['message' => $message];
+        if (!is_array($data) || !isset($data['hash'])) {
+            $response['data'] = $data;
+        }
+        return new WP_REST_Response($response, $status_code);
     }
 }

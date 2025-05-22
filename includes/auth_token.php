@@ -35,9 +35,8 @@ final class Auth_Token
      * @param string|null $message - A descriptive response message.
      * @param int|null $issued_at - Timestamp when the token was issued.
      * @param int|null $expires_at - Timestamp when the token will expire.
-     * @return object - Returns a structured response.
      * 
-     * @since 1.0.0
+     * @return object - Returns a structured response.
      */
 
     private static function response(bool $ok, int $status_code, string|int|null $id, string $message, int $issued_at = 0, int $expires_at = 0): object
@@ -70,9 +69,8 @@ final class Auth_Token
      * 
      * @param string $token_name - Name of token to remove
      * @param string|int|null $id - The user ID from the token.
-     * @return void
      * 
-     * @since 1.0.0
+     * @return void
      */
 
     public static function remove_token(string $token_name, string|int $id = 0): void
@@ -102,9 +100,8 @@ final class Auth_Token
      * @param int $id - Id of user for token generation
      * @param string $token_name - Name of token to be stored.  Token name is also the cookie name
      * @param int $expiration - Set duration of token before expiring.
-     * @return object - Returns array with "ok", "id", and "message" keys
      * 
-     * @since 1.0.0
+     * @return object - Returns array with "ok", "id", and "message" keys
      */
 
     public static function generate(int $id, string $token_name, int $expiration = Config::TOKEN_EXPIRATION): object
@@ -159,9 +156,8 @@ final class Auth_Token
      * 
      * @param string $token_name - Name of token to verify. Stored as http only cookie with the same name
      * @param int|null $logout_time - Optional timestamp of the user's last logout.
-     * @return object - Returns array with "ok", "id", and "message" keys
      * 
-     * @since 1.0.0
+     * @return object - Returns array with "ok", "id", and "message" keys
      */
 
     public static function validate(string $token_name, int $logout_time = 0): object
@@ -242,7 +238,6 @@ final class Auth_Token
         }
 
         // Token is valid
-        
         return self::response(true, 200, $id, "Token authenticated.", intval($issued_at), intval($expiration));
     }
 }

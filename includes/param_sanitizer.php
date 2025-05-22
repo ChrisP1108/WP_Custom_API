@@ -25,6 +25,7 @@ class Param_Sanitizer {
      *
      * @param array $params Associative array of request parameters.
      * @param array $schema Associative array where key = param name, value = expected type.
+     * 
      * @return array Sanitized parameters.
      */
 
@@ -49,10 +50,13 @@ class Param_Sanitizer {
     }
 
     /**
+     * METHOD - sanitize_value
+     * 
      * Sanitize a value according to its type.
      * 
      * @param string|int|array $value The value to be sanitized.
      * @param string $type The expected type of the value.
+     * 
      * @return string|int|array The sanitized value.
      */
 

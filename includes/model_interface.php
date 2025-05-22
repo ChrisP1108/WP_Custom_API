@@ -26,7 +26,7 @@ if (!defined('ABSPATH')) {
 abstract class Model_Interface
 {
     /**
-     * METHOD - table_name
+     * ABSTRACT METHOD - table_name
      * 
      * Get the name of the table.
      * 
@@ -36,7 +36,7 @@ abstract class Model_Interface
     abstract public static function table_name(): string;
 
     /**
-     * METHOD - table_schema
+     * ABSTRACT METHOD - table_schema
      * 
      * Set the schema for the table to create in the database.
      *
@@ -46,7 +46,7 @@ abstract class Model_Interface
     abstract public static function table_schema(): array;
 
     /**
-     * METHOD - create_table
+     * ABSTRACT METHOD - create_table
      * 
      * Create database table if table doesn't already exist.
      *
@@ -56,7 +56,7 @@ abstract class Model_Interface
     abstract public static function create_table(): bool;
 
     /**
-     * METHOD - data_schema
+     * ABSTRACT METHOD - data_schema
      * 
      * Set the data schema for validation data types.
      *
@@ -66,7 +66,7 @@ abstract class Model_Interface
     abstract public static function data_schema(): array;
 
     /**
-     * METHOD - required_keys
+     * ABSTRACT METHOD - required_keys
      * 
      * Set the required keys for validation requirements.
      *
@@ -147,6 +147,7 @@ abstract class Model_Interface
      * @param string $column
      * @param string|null $value
      * @param bool $multiple
+     * 
      * @return array|object
      */
 
@@ -176,6 +177,7 @@ abstract class Model_Interface
      *
      * @param int $id
      * @param array $data
+     * 
      * @return array|object
      */
 
@@ -190,6 +192,7 @@ abstract class Model_Interface
      * Delete a row from the table by ID.
      *
      * @param int $id
+     * 
      * @return array|object
      */
 

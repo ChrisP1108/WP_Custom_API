@@ -34,8 +34,6 @@ final class Init
      * 
      * @bool instantiated
      * Determines if Init class has been instantiated.
-     * 
-     * @since 1.0.0
      */
 
     private static $instantiated = false;
@@ -45,8 +43,6 @@ final class Init
      * 
      * @array files_loaded
      * Stores a list of files that were autoloaded in the plugin
-     * 
-     * @since 1.0.0
      */
 
     private static $files_loaded = [];
@@ -55,9 +51,8 @@ final class Init
      * METHOD - get_files_loaded
      * 
      * Returns list of files loaded as an array
-     * @return array
      * 
-     * @since 1.0.0
+     * @return array
      */
 
     public static function get_files_loaded(): array
@@ -72,9 +67,8 @@ final class Init
      *      and for loading files within the application folder from the FILES_TO_AUTOLOAD constant in the CONFIG class. 
      *      create_tables method is run to create tables in database for all models that have their RUN_MIGRATION property set to true.
      *      It will then run the init method of the Router class to register all routes to the Wordpress REST API.
-     * @return void
      * 
-     * @since 1.0.0
+     * @return void
      */
 
     private function __construct()
@@ -93,8 +87,6 @@ final class Init
      * This helps prevent more than one instance of the Init class from being loaded.
      * 
      * @return void
-     * 
-     * @since 1.0.0
      */
 
     public static function run(): void
@@ -113,8 +105,6 @@ final class Init
      * Loads file and adds its path to $files_loaded property array
      * 
      * @return void
-     * 
-     * @since 1.0.0
      */
 
     private static function load_file(string $file, string|null $class = null): void
@@ -155,9 +145,8 @@ final class Init
      * METHOD - namespaces_autoloader
      * 
      * Runs spl_auto_load_register for class importing based upon namespace
-     * @return void
      * 
-     * @since 1.0.0
+     * @return void
      */
 
     private static function namespaces_autoloader(): void
@@ -180,8 +169,6 @@ final class Init
      * Wordpress action hook is called at the end for other custom code to run after files are loaded.
      * 
      * @return void
-     * 
-     * @since 1.0.0
      */
 
     private static function files_autoloader(): void
@@ -213,8 +200,6 @@ final class Init
      * Calls a Wordpress action hook after migrations are finished
      * 
      * @return void
-     * 
-     * @since 1.0.0
      */
 
     private static function create_tables(): void
