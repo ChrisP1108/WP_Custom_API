@@ -26,77 +26,32 @@ if (!defined('ABSPATH')) {
 
 class Controller_Interface
 {
-    /**
-     * PROPERTY - request_data
-     * 
-     * @var array The request data that has been sanitized according to the provided schema.
-     */
-
-    readonly protected array $request_data;
 
     /**
-     * PROPERTY - request_files
+     * The constructor is declared private to prevent instantiation of this class.
      * 
-     * @var array The request files.
+     * @param array $request_data The sanitized request data.
+     * @param array $request_files The request files.
+     * @param array $request_headers The request headers.
+     * @param int $status_code The HTTP status code to return.
+     * @param bool $ok Indicates if the operation was successful.
+     * @param string $message The message to return.
+     * @param array $missing_keys The missing keys from the request data.
+     * @param array $invalid_types The invalid types found in the request data.
+     * @param array $missing_schema_keys The missing schema keys.
      */
 
-    readonly protected array $request_files;
-
-    /**
-     * PROPERTY - request_headers
-     * 
-     * @var array The request headers.
-     */
-
-    readonly protected array $request_headers;
-
-    /**
-     * PROPERTY - status_code
-     * 
-     * @var int The status code of the response.
-     */
-
-    readonly protected int $status_code;
-
-    /**
-     * PROPERTY - ok
-     * 
-     * @var bool Whether the request was successful or not.
-     */
-
-    readonly protected bool $ok;
-
-    /**
-     * PROPERTY - message
-     * 
-     * @var string The message of the response.
-     */
-
-    readonly protected string $message;
-
-    /**
-     * PROPERTY - missing_keys
-     * 
-     * @var array The missing keys from the request data.
-     */
-
-    readonly protected array $missing_keys;
-
-    /**
-     * PROPERTY - invalid_types
-     * 
-     * @var array The invalid types from the request data.
-     */
-
-    readonly protected array $invalid_types;
-
-    /**
-     * PROPERTY - missing_schema_keys
-     * 
-     * @var array The missing schema keys from the request data.
-     */
-
-    readonly protected array $missing_schema_keys;
+    private function __construct(
+        protected readonly array $request_data,
+        protected readonly array $request_files,
+        protected readonly array $request_headers,
+        protected readonly int $status_code,
+        protected readonly bool $ok,
+        protected readonly string $message,
+        protected readonly array $missing_keys,
+        protected readonly array $invalid_types,
+        protected readonly array $missing_schema_keys
+    ) {}
 
     /**
      * METHOD - request_handler
@@ -110,10 +65,10 @@ class Controller_Interface
      * @param array $schema The schema to use for sanitizing the request data.
      * @param array $required_keys The required keys to check if they are present in the sanitized data.
      * 
-     * @return Controller_Interface An object containing the sanitized request data and a flag indicating if the operation was successful.
+     * @return static An object containing the sanitized request data and a flag indicating if the operation was successful.
      */
 
-    final public static function request_handler(WP_REST_Request $req, array $schema = [], array $required_keys = []): Controller_Interface
+    final public static function request_handler(WP_REST_Request $req, array $schema = [], array $required_keys = []): static
     {
         $params = $req->get_params() ?? [];
         $json = json_decode($req->get_body(), true) ?? [];
@@ -159,40 +114,53 @@ class Controller_Interface
             }
         }
 
-        // Construct the response data
+        // Set if ok
 
-        $response_data = new self();
-        $response_data->ok = empty($missing_keys) && empty($invalid_types) && empty($missing_schema_keys);
+        $ok = empty($missing_keys) && empty($invalid_types) && empty($missing_schema_keys);
+
+        // Set for message 
+
+        $message = null;
+
+        // Set for status code
+
+        $status_code = null;
 
         // Handle the case where required keys are missing from the schema
         if (!empty($missing_schema_keys)) {
-            $response_data->missing_schema_keys = $missing_schema_keys;
             $missing_schema_key_names = array_map(function ($item) {
                 return $item['key'];
             }, $missing_schema_keys);
-            $response_data->message = 'The following keys must be defined in the schema: `' . implode(', ', $missing_schema_key_names) . '`.';
-            $response_data->status_code = 500;
+            $message = 'The following keys must be defined in the schema: `' . implode(', ', $missing_schema_key_names) . '`.';
+            $status_code = 500;
             // Handle the case where missing keys or invalid data types are present
         } else if (!empty($missing_keys)) {
-            $response_data->missing_keys = $missing_keys;
-            $response_data->message = 'The following keys are required: `' . implode(', ', $missing_keys) . '`.';
-            $response_data->status_code = 400;
+            $missing_keys = $missing_keys;
+            $message = 'The following keys are required: `' . implode(', ', $missing_keys) . '`.';
+            $status_code = 400;
             // Handle the case where there are invalid data types
         } else if (!empty($invalid_types)) {
-            $response_data->invalid_types = $invalid_types;
+            $invalid_types = $invalid_types;
             $invalid_keys = array_map(function ($item) {
                 return $item['key'];
             }, $invalid_types);
-            $response_data->message = 'Invalid data types found for `' . implode(', ', $invalid_keys) . '`.';
-            $response_data->status_code = 422;
+            $message = 'Invalid data types found for `' . implode(', ', $invalid_keys) . '`.';
+            $status_code = 422;
         } else {
-            $response_data->request_data = $merged_sanitized_params;
-            $response_data->request_files = $files;
-            $response_data->request_headers = $headers;
-            $response_data->message = 'Success';
+            $status_code = 200;
+            $message = 'Success';
         }
 
-        return $response_data;
+        return new static(
+            $merged_sanitized_params, 
+            $files, 
+            $headers, 
+            $status_code, 
+            $ok, $message, 
+            $missing_keys, 
+            $invalid_types, 
+            $missing_schema_keys
+        );
     }
 
     /**
@@ -237,28 +205,49 @@ class Controller_Interface
         $response_status_code = isset($response->status_code) && $response->status_code !== null ? $response->status_code : $status_code;
 
         // Check if the response contains a validation error and return appropriate response.
+        $validation_error = false;
+        
         if (isset($response->ok) && !$response->ok) {
 
-            if (isset($response->missing_schema_keys)) {
+            if (isset($response->missing_schema_keys) && !empty($response->missing_schema_keys) && !$validation_error) {
                 $parsed_response['missing_schema_keys'] = $response->missing_schema_keys;
+                $validation_error = true;
             }
-            if (isset($response->missing_keys)) {
+            if (isset($response->missing_keys) && !empty($response->missing_keys) && !$validation_error) {
                 $parsed_response['missing_keys'] = $response->missing_keys;
+                $validation_error = true;
             }
-            if (isset($response->invalid_types)) {
+            if (isset($response->invalid_types) && !empty($response->invalid_types) && !$validation_error) {
                 $parsed_response['invalid_types'] = $response->invalid_types;
+                $validation_error = true;
             }
 
             return new WP_REST_Response($parsed_response, $response_status_code);
         }
 
         // Check if the response contains an error or success response and return it
-        if (isset($response->error_response)) return $response->error_response;
-        if (isset($response->success_response)) return $response->success_response;
+        if (isset($response->error_response) && $response->error_response) return $response->error_response;
+        if (isset($response->success_response)&& $response->success_response) return $response->success_response;
 
         // Parse response data
         if ($response !== null) {
-            $parsed_response['data'] = isset($response->data) && $response->data !== null ? $response->data : $response;
+            // Check that response wasn't an associative array, if so, add it to data.  Otherwise use the data key from an object
+            if (!is_object($response)) {
+                $parsed_response['data'] = $response;
+            } else {
+                // Prevent password hash in response
+                if (isset($response->data) && isset($response->data['hash'])) {
+                    unset($response->data['hash']);
+                }
+                // Set data if data key exists as an object in response data
+                if (isset($response->data) && $response->data !== null) {
+                    $parsed_response['data'] = $response->data;
+                }
+                // Set data if response is an associaitve array
+                if (!is_object($response)) {
+                    $parsed_response['data'] = $response;
+                }
+            }
         }
 
         return new WP_REST_Response($parsed_response, $response_status_code);
