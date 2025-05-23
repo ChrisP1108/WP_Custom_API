@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace WP_Custom_API\Includes;
 
-use WP;
 use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Error_Generator;
 use WP_Custom_API\Includes\Permission_Interface as Permission;
