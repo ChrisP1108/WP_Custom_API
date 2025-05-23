@@ -50,6 +50,7 @@ final class Response_Handler
      * @param int $status_code
      * @param string $message
      * @param array|null $data
+     * 
      * @return static
      */
 
@@ -80,6 +81,7 @@ final class Response_Handler
      * 
      * @param string $message - The error message to return
      * @param int $status_code - The status code to return
+     * 
      * @return WP_REST_Response - The WP_REST_Response object
      */
 
@@ -95,6 +97,7 @@ final class Response_Handler
      * @param string $message - The success message to return
      * @param int $status_code - The status code to return
      * @param array|null|string|bool $data - The data to return
+     * 
      * @return WP_REST_Response - The WP_REST_Response object
      */
 

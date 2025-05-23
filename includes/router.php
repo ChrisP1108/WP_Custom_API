@@ -60,7 +60,7 @@ final class Router
      * @param callable|null $callback The callback to run when the route is accessed.  If null, the method will throw an error.
      * @param callable|null $permission_callback The permission callback to run before the route is accessed.  If null, the method will throw an error.
      * 
-     * @throws Error_Generator
+     * @return void
      */
     
     private static function register_rest_api_route(string $method, string $route, ?callable $callback, ?callable $permission_callback): void

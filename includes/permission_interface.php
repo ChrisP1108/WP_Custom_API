@@ -114,7 +114,7 @@ abstract class Permission_Interface
     * @param int $id The user ID.
     * @param string $token_name The token name.
     * @param int $expiration The expiration time in seconds.
-
+    *
     * @return array|object The response containing the generated token and status information.
     */
 
@@ -134,7 +134,7 @@ abstract class Permission_Interface
     *
     * @param string $token_name The token name to validate.
     * @param int $logout_time The time when the token should be invalidated (optional).
-
+    *
     * @return array|object The response containing the validation result and status information.
     */
 
