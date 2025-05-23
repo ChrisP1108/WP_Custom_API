@@ -127,6 +127,7 @@ final class Router
 
                     if (!is_bool($ok)) {
                         $non_bool_message = 'The permission callback registered for the ' . $route['method'] . ' route `' . $route['route'] . '` returned a non-boolean value.  It must return true or false.';
+                        Error_Generator::generate('Non-Bool Return Value For Permission Callback', $non_bool_message);
                         return new WP_Rest_Response(['message' => $non_bool_message], 500);
                     }
                         
