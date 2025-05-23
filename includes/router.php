@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace WP_Custom_API\Includes;
 
+use WP;
 use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Error_Generator;
 use WP_Custom_API\Includes\Permission_Interface as Permission;
@@ -80,12 +81,12 @@ final class Router
         // Check that permission callback is callable.  If not, return no_permission_callback_response and set permission_callback to true to display error message
 
         if (!is_callable($permission_callback)) {
-            $no_permission_err_msg = 'A permission callback must be registered for the ' . $method . ' route ' . $router_base_route . $route . '.';
+            $no_permission_err_msg = 'A permission callback must be registered for the ' . $method . ' route `' . $router_base_route . $route . '`.';
             Error_Generator::generate('No Permission Callback', $no_permission_err_msg);
             $callback = function() use ($no_permission_err_msg) { 
                 return new WP_Rest_Response(['message' => $no_permission_err_msg], 500);
             };
-            $permission_callback = function () { Permission::public(); };
+            $permission_callback = function () { return Permission::public(); };
         }
 
         // Register routes to $routes property
@@ -121,13 +122,15 @@ final class Router
             foreach (self::$routes as $route) {
 
                 // Callback wrapper to allow custom Permission callback unauthorized response to be set by running the main callback and checking if it returned true or false
-
                 $wrapped_callback = function (WP_REST_Request $request) use ($route) {
                     $ok = call_user_func( $route['permission_callback'], $request );
 
-                    if ($ok === false) {
-                        return new WP_Rest_Response(['message' => 'Unauthorized'], 401);
+                    if (!is_bool($ok)) {
+                        $non_bool_message = 'The permission callback registered for the ' . $route['method'] . ' route `' . $route['route'] . '` returned a non-boolean value.  It must return true or false.';
+                        return new WP_Rest_Response(['message' => $non_bool_message], 500);
                     }
+                        
+                    if (!$ok) return new WP_Rest_Response(['message' => 'Unauthorized'], 401);
 
                     return call_user_func($route['callback'], $request);
                 };
