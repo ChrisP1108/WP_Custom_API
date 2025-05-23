@@ -25,23 +25,11 @@ if (!defined('ABSPATH')) {
  * @since 1.0.0
  */
 
-abstract class Permission_Interface
+class Permission_Interface
 {
-
-    /**
-     * ABSTRACT METHOD - authorized
-     * 
-     * Check if a given user is authorized to access a route.
-     * 
-     * Implement this method in your permission class to check if a given user is authorized to access a route.
-     * 
-     * @return bool Returns true if the user is authorized to access the route, false otherwise.
-     */
-
-    abstract public static function authorized(WP_REST_Request $request): bool;
     
     /**
-     * ABSTRACT METHOD - public
+     * METHOD - public
      * 
      * Used to declare a route for public access.
      * 
@@ -53,15 +41,16 @@ abstract class Permission_Interface
     }
 
     /**
-     * ABSTRACT METHOD - unauthorized_response
+     * METHOD - unauthorized_response
      * 
      * Generates a error response for unauthorized access.
+     * This is primarily used for the controller classes parent controller_interface response helper.
      *
      * @return WP_Error as Error - Returns an error indicating unauthorized access.
      */
     
     final public static function unauthorized_response(): object {
-        return Response_Handler::response(false, 401, 'Unauthorized.', null, false);
+        return Response_Handler::response(false, 401, 'Unauthorized', null, false);
     }
 
     /**

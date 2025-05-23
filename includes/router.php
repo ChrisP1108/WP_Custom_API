@@ -6,8 +6,8 @@ namespace WP_Custom_API\Includes;
 
 use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Error_Generator;
-use WP_Custom_API\Includes\Response_Handler;
 use WP_Custom_API\Includes\Permission_Interface as Permission;
+use WP_REST_Request;
 use WP_REST_Response;
 
 /** 
@@ -82,16 +82,10 @@ final class Router
         if (!is_callable($permission_callback)) {
             $no_permission_err_msg = 'A permission callback must be registered for the ' . $method . ' route ' . $router_base_route . $route . '.';
             Error_Generator::generate('No Permission Callback', $no_permission_err_msg);
-            $callback = function() use ($no_permission_err_msg) { return new WP_Rest_Response(Response_Handler::response(false, 500, $no_permission_err_msg, null, false), 500); };
+            $callback = function() use ($no_permission_err_msg) { 
+                return new WP_Rest_Response(['message' => $no_permission_err_msg], 500);
+            };
             $permission_callback = function () { Permission::public(); };
-        } else if ($permission_callback() !== false && $permission_callback() !== true) {
-
-        // Check that permission callback returns a boolean.  If not, return non_bool_callback_response and set permission_callback to true to display error message
-            
-            $non_bool_callback_err_msg = 'A permission callback registered for the ' . $method . ' route ' . $router_base_route . $route . ' method must return a boolean for its permission callback.';
-            Error_Generator::generate('Permission Callback Not Returning A Boolean', $non_bool_callback_err_msg);
-            $callback = function() use ($non_bool_callback_err_msg) { return new WP_Rest_Response(Response_Handler::response(false, 500, $non_bool_callback_err_msg, null, false), 500); };
-            $permission_callback = function() { Permission::public(); };
         }
 
         // Register routes to $routes property
@@ -126,13 +120,21 @@ final class Router
         add_action('rest_api_init', function () {
             foreach (self::$routes as $route) {
 
-                if ($route['permission_callback']() === false) {
-                    $route['callback'] = function () { return new WP_Rest_Response(Permission::unauthorized_response(), 401); };
-                }
+                // Callback wrapper to allow custom Permission callback unauthorized response to be set by running the main callback and checking if it returned true or false
+
+                $wrapped_callback = function (WP_REST_Request $request) use ($route) {
+                    $ok = call_user_func( $route['permission_callback'], $request );
+
+                    if ($ok === false) {
+                        return new WP_Rest_Response(['message' => 'Unauthorized'], 401);
+                    }
+
+                    return call_user_func($route['callback'], $request);
+                };
 
                 register_rest_route(Config::BASE_API_ROUTE, $route['route'], [
                     'methods' => $route['method'],
-                    'callback' => $route['callback'],
+                    'callback' => $wrapped_callback,
                     'permission_callback' => '__return_true'
                 ]);
             }

@@ -151,7 +151,7 @@ abstract class Model_Interface
      * @return array|object
      */
 
-    final public static function get_rows_data(string $column, ?string $value, bool $multiple = true): array|object
+    final public static function get_rows_data(string $column, int|string $value, bool $multiple = true): array|object
     {
         return Database::get_rows_data(static::table_name(), $column, $value, $multiple);
     }

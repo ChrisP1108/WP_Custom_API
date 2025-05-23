@@ -68,7 +68,8 @@ final class Response_Handler
         return new static(
             $ok, 
             $status_code, 
-            $message, $data, 
+            $message, 
+            $data, 
             $error_response, 
             $success_response
         );

@@ -287,7 +287,7 @@ final class Database
      *                and "data" will contain the retrieved data of rows corresponding to the same column and value 
      */
 
-    public static function get_rows_data(string $table_name, string $column, ?string $value, bool $multiple = true): array|object
+    public static function get_rows_data(string $table_name, string $column, int|string $value, bool $multiple = true): array|object
     {
         if (!self::table_exists($table_name)) return self::response(false, 500, 'Table `' . $table_name . '` does not exist and therefore no table rows data can be retrieved.');
 
