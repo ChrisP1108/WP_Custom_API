@@ -49,7 +49,6 @@ final class Router
 
     private static $routes_registered = false;
 
-
     /**
      * METHOD - register_rest_api_route
      * 
@@ -69,12 +68,13 @@ final class Router
 
         $router_trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
 
-        $router_folder_path = str_replace("/", "\\", dirname($router_trace[1]['file']));
+        $router_folder_path = str_replace("\\", "/", dirname($router_trace[1]['file']));
+        $router_folder_path = preg_replace('#/+#', '/', $router_folder_path);
 
-        $base_folder_path = str_replace("/", "\\",WP_CUSTOM_API_FOLDER_PATH) . "api\\";
+        $base_folder_path = str_replace("\\", "/", WP_CUSTOM_API_FOLDER_PATH) . "/api/";
+        $base_folder_path = preg_replace('#/+#', '/', $base_folder_path);
 
         $router_base_route = "/" . str_replace($base_folder_path, '', $router_folder_path);
-
         $router_base_route = str_replace("\\", "/", $router_base_route);
 
         // Check that permission callback is callable.  If not, return no_permission_callback_response and set permission_callback to true to display error message
