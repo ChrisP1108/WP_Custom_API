@@ -121,18 +121,30 @@ final class Router
             foreach (self::$routes as $route) {
 
                 // Callback wrapper to allow custom Permission callback unauthorized response to be set by running the main callback and checking if it returned true or false
-                $wrapped_callback = function (WP_REST_Request $request) use ($route) {
-                    $ok = call_user_func( $route['permission_callback'], $request );
 
+                $wrapped_callback = function (WP_REST_Request $request) use ($route) {
+
+                    // The permission callback can also run the permission_params_callback to pass data into the controller callback.
+                    $permission_data = null;
+                    $permission_params_callback = function ($data) use (&$permission_data) {
+                        $permission_data = $data;
+                    };
+                    
+                    // Run permission callback
+                    $ok = call_user_func( $route['permission_callback'], $request, $permission_params_callback);
+
+                    // Check if permission callback returned true or false.  If not, return error response message.
                     if (!is_bool($ok)) {
                         $non_bool_message = 'The permission callback registered for the ' . $route['method'] . ' route `' . $route['route'] . '` returned a non-boolean value.  It must return true or false.';
                         Error_Generator::generate('Non-Bool Return Value For Permission Callback', $non_bool_message);
                         return new WP_Rest_Response(['message' => $non_bool_message], 500);
                     }
                         
+                    // Return an unauthorized response if permission callback returned false
                     if (!$ok) return new WP_Rest_Response(['message' => 'Unauthorized'], 401);
 
-                    return call_user_func($route['callback'], $request);
+                    // Run controller callback if permission callback returned true and pass in permission_data from permission callback
+                    return call_user_func($route['callback'], $request, $permission_data);
                 };
 
                 register_rest_route(Config::BASE_API_ROUTE, $route['route'], [

@@ -194,7 +194,7 @@ class Create
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Model",
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Permission"
         ];
-        $class_content = "    public static function index(): Response \n    {\n        return self::response(null, 200, '" . ucfirst(PATH) . " route works');\n    }";
+        $class_content = "    public static function index(Request \$request, \$permission_params): Response \n    {\n        return self::response(null, 200, '" . ucfirst(PATH) . " route works');\n    }";
         self::create_file("controller", $dependencies, $class_content);
     }
 
@@ -222,7 +222,7 @@ class Create
             "WP_Custom_API\Includes\Permission_Interface",
             "WP_Custom_API\Api\Sample\Model"
         ];
-        $class_content = "    public const TOKEN_NAME = '" . strtolower(str_replace('/', '_', PATH)) . "_token';\n\n    public static function authorized(Request \$request): bool\n    {\n        // Replace code in this method with logic for protecting a route from unauthorized access. \n\n        return self::token_validate(self::TOKEN_NAME)->ok;\n    }";
+        $class_content = "    public const TOKEN_NAME = '" . strtolower(str_replace('/', '_', PATH)) . "_token';\n\n    public static function authorized(Request \$request, \$controller_params): bool\n    {\n        // Replace code in this method with logic for protecting a route from unauthorized access. \n\n        return self::token_validate(self::TOKEN_NAME)->ok;\n    }";
         self::create_file("permission", $dependencies, $class_content);
     }
 
