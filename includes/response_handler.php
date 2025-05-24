@@ -86,7 +86,8 @@ final class Response_Handler
      * @return WP_REST_Response - The WP_REST_Response object
      */
 
-    private static function build_error_response(string $message, int $status_code): WP_REST_Response {
+    private static function build_error_response(string $message, int $status_code): WP_REST_Response 
+    {
         return new WP_REST_Response(['message' => $message], $status_code);
     }
 
@@ -102,7 +103,8 @@ final class Response_Handler
      * @return WP_REST_Response - The WP_REST_Response object
      */
 
-    private static function build_success_response(string $message, int $status_code, array|null|string|bool $data): WP_REST_Response {
+    private static function build_success_response(string $message, int $status_code, array|null|string|bool $data): WP_REST_Response 
+    {
         $response = ['message' => $message];
         if (!is_array($data) || !isset($data['hash'])) {
             $response['data'] = $data;
