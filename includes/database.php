@@ -55,10 +55,10 @@ final class Database
      * 
      * Provides table name error message response.
      * 
-     * @return array - Returns an object from response method with a key name of "ok" with a value of false, and a "message" key with a message indicating invalid table name, and a "data" key with value of null
+     * @return object - Returns an object from response method with a key name of "ok" with a value of false, and a "message" key with a message indicating invalid table name, and a "data" key with value of null
      */
 
-    private static function table_name_err_msg(): array|object
+    private static function table_name_err_msg(): object
     {
         return self::response(false, 500, 'Invalid table name. Only alphanumeric characters and underscores are allowed.');
     }
@@ -151,14 +151,14 @@ final class Database
      * METHOD - create_table
      * 
      * Creates a Wordpress database table.
-     * Checks that a table of the same name does not exist, otherwise the method will return an array key "created" of a value of false, and a "message" key with a value "Table already exists in database".
+     * Checks that a table of the same name does not exist.
      * @param string $table_name - The name of the table to check if exists and if not, create it
      * @param array $table_schema - An array consisting of keys for the column names, and their corresponding values indicating the data type 
      * 
-     * @return array - Returns an array, with a "created" key, and a "message" key.  "created" key will have either a true or false value, and "message" key will have a message associated with it.
+     * @return object - Returns an object from the self::response() method.
      */
 
-    public static function create_table(string $table_name, array $table_schema): array|object
+    public static function create_table(string $table_name, array $table_schema): object
     {
         if (self::table_exists($table_name)) return self::response(false, 500, 'Table `' . $table_name . '` already exists in database.');
 
@@ -185,7 +185,7 @@ final class Database
 
         ob_end_clean();
 
-        if ($wpdb->last_error) return self::response(false, 500, 'An error occurred when attempting to create the table `' . $table_name . '`: ' . $wpdb->last_error);
+        if ($wpdb->last_error) return self::response(false, 500, 'An error occurred when attempting to create the table `' . $table_name . '`.');
         return self::table_exists($table_name)
             ? self::response(true, 201, 'Table `' . $table_name . '` successfully created.')
             : self::response(false, 500, 'An error occurred when attempting to create the table `' . $table_name . '`.');
@@ -198,10 +198,10 @@ final class Database
      * This method only checks for tables that were created utilizing this plugin.  It will not check other tables that were created from other plugins or from Wordpress directly.
      * @param string $table_name - The name of the table to drop.
      * 
-     * @return array - Returns an array, with a "dropped" key, and a "message" key.  "dropped" key will have either a true or false value, and "message" key will have a message associated with it.
+     * @return object - Returns an object from the self::response() method.
      */
 
-    public static function drop_table(string $table_name): array|object
+    public static function drop_table(string $table_name): object
     {
         if (!self::table_exists($table_name)) return self::response(false, 500, 'Table `' . $table_name . '` does not exist and therefore cannot be dropped.');
 
@@ -217,7 +217,7 @@ final class Database
 
         ob_end_clean();
 
-        if (!$result) return self::response(false, 500, 'An error occured when attempting to drop the table `' . $table_name . '`: ' . $wpdb->last_error);
+        if (!$result) return self::response(false, 500, 'An error occured when attempting to drop the table `' . $table_name . '`.');
 
         return !self::table_exists($table_name)
             ? self::response(true, 200, 'Table `' . $table_name . '` was successfully dropped.')
@@ -233,13 +233,10 @@ final class Database
      * 
      * @param string $table_name - The name of the table to retrieve data from.
      * 
-     * @return array - Returns an array with a "found" key, "data" key, and a "message" key.
-     *                 "found" will have either a true or false value,
-     *                 "message" will have an associated message,
-     *                 and "data" will contain the retrieved rows data if found.
+     * @return object - Returns an object from the self::response() method.
      */
 
-    public static function get_table_data(string $table_name): array|object
+    public static function get_table_data(string $table_name): object
     {
         if (!self::table_exists($table_name)) return self::response(false, 500, 'Table `' . $table_name . '` does not exist and therefore no table rows data can be retrieved.');
 
@@ -281,13 +278,10 @@ final class Database
      * @param string|int $value - The value of the column to search for
      * @param bool $multiple - Boolean to determine if more than one table row should be returned.
      * 
-     * @return array - Returns an array with a "found" key, "data" key, and a "message" key. 
-     *                "found" will have either a true or false value, 
-     *                "message" will have an associated message,
-     *                and "data" will contain the retrieved data of rows corresponding to the same column and value 
+     * @return object - Returns an object from the self::response() method.
      */
 
-    public static function get_rows_data(string $table_name, string $column, int|string $value, bool $multiple = true): array|object
+    public static function get_rows_data(string $table_name, string $column, int|string $value, bool $multiple = true): object
     {
         if (!self::table_exists($table_name)) return self::response(false, 500, 'Table `' . $table_name . '` does not exist and therefore no table rows data can be retrieved.');
 
@@ -307,7 +301,7 @@ final class Database
 
         $count_query = $wpdb->prepare("SELECT COUNT(*) FROM $table_name_to_query WHERE $column = $placeholder", $value);
         $total_rows = (int) $wpdb->get_var($count_query);
-        $total_pages = (int) ceil($total_rows / $pagination['$per_page']);
+        $total_pages = (int) ceil($total_rows / $pagination['per_page']);
 
         $query = $wpdb->prepare("SELECT * FROM $table_name_to_query WHERE $column = $placeholder LIMIT %d OFFSET %d", $value, $pagination['per_page'], $pagination['offset']);
 
@@ -337,10 +331,10 @@ final class Database
      * @param string $table_name - The name of the table to insert the data into.
      * @param array $data - An associative array of column names and their corresponding values.
      * 
-     * @return array - Returns an array with a "inserted" key and a "message" key. "inserted" will have either a true of false value, and "message" key will have a message associated with it.  If insert was successful, a key of "id" with its value will be included.
+     * @return object - Returns an object from the self::response() method.
      */
 
-    public static function insert_row(string $table_name, array $data): array|object
+    public static function insert_row(string $table_name, array $data): object
     {
         if (!self::table_exists($table_name)) return self::response(false, 500, 'Table `' . $table_name . '` does not exist and therefore a row cannot be inserted.');
 
@@ -356,7 +350,7 @@ final class Database
 
         ob_end_clean();
 
-        if (!$result || $wpdb->insert_id === 0) return self::response(false, 500, 'An error occurred while inserting data into row for table `' . $table_name . '`: ' . $wpdb->last_error);
+        if (!$result || $wpdb->insert_id === 0) return self::response(false, 500, 'An error occurred while inserting data into row for table `' . $table_name . '`.');
 
         return self::response(true, 201, 'Table row for `' . $table_name . '` successfully inserted.', ['id' => $wpdb->insert_id]);
     }
@@ -371,10 +365,10 @@ final class Database
      * @param int $id - Id of table row to update.
      * @param array $data - An associative array of column names and their corresponding values to update.
      * 
-     * @return array - Returns an array with an "updated" key and a "message" key. "updated" will have either a true or false value, and "message" key will have a message associated with it.
+     * @return object - Returns an object from the self::response() method.
      */
 
-    public static function update_row(string $table_name, int $id, array $data): array|object
+    public static function update_row(string $table_name, int $id, array $data): object
     {
         if (!self::table_exists($table_name)) return self::response(false, 500, 'Table `' . $table_name . '` does not exist and therefore the table row cannot be updated.');
 
@@ -392,7 +386,7 @@ final class Database
 
         ob_end_clean();
 
-        if ($result === false) return self::response(false, 500, 'An error occurred while updating the table row for `' . $table_name . '`: ' . $wpdb->last_error);
+        if ($result === false) return self::response(false, 500, 'An error occurred while updating the table row for `' . $table_name . '`.');
 
         if ($result === 0) return self::response(false, 400, 'Table row for `' . $table_name . '` could not be updated.  Please check the ID and make sure it corresponds to an existing table row.');
 
@@ -408,12 +402,10 @@ final class Database
      * @param string $table_name - The name of the table to delete the row from.
      * @param int $id - The ID of the row to delete.
      * 
-     * @return array - Returns an array with a "deleted" key and a "message" key. 
-     *                 "deleted" will have either a true or false value,
-     *                 and "message" will provide an associated message.
+     * @return object - Returns an object from the self::response() method.
      */
 
-    public static function delete_row(string $table_name, int $id): array|object
+    public static function delete_row(string $table_name, int $id): object
     {
         if (!self::table_exists($table_name)) return self::response(false, 500, 'Table `' . $table_name . '` does not exist and therefore the table row cannot be deleted.');
 
@@ -431,7 +423,7 @@ final class Database
 
         ob_end_clean();
 
-        if ($result === false) return self::response(false, 500, 'An error occurred while attempting to delete the row for `' . $table_name . '`: ' . $wpdb->last_error);
+        if ($result === false) return self::response(false, 500, 'An error occurred while attempting to delete the row for `' . $table_name . '`.');
 
         if ($result === 0) return self::response(false, 400, 'Table row for `' . $table_name . '` could not be deleted.  Please check the ID and make sure it corresponds to an existing table row.');
 

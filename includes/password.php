@@ -35,7 +35,7 @@ final class Password
      * @param string $message - Message to be returned in the response
      * @param string $hash - Hashed password string
      * 
-     * @return object Response indicating success or failure, and the generated hash if successful.
+     * @return object Response from the Response_Handler::response() method.
      */
 
     private static function response(bool $ok, int $status_code, string $message = '', string $hash = ''): object
@@ -67,10 +67,10 @@ final class Password
      * 
      * @param string $string - String text to be hashed.
      * 
-     * @return array Response indicating success or failure, and the generated hash if successful.
+     * @return object Response indicating success or failure, and the generated hash if successful.
      */
 
-    public static function hash(string $string): array|object 
+    public static function hash(string $string): object 
     {
         if ($string === '') {
             return self::response(false, 500, 'String must be provided to hash in Password hash method.');
@@ -97,10 +97,10 @@ final class Password
      * @param string $entered_password The plain-text password.
      * @param string $hashed_password The hashed password to verify against.
      * 
-     * @return array Response indicating whether verification was successful.
+     * @return object Response indicating whether verification was successful.
      */
 
-    public static function verify(string $entered_password = '', string $hashed_password = ''): array|object 
+    public static function verify(string $entered_password = '', string $hashed_password = ''): object 
     {
         if ($entered_password === '' || $hashed_password === '') {
             return self::response(false, 500, 'The entered plain text password and the hashed password must be passed in as parameters in the Password verify method.');

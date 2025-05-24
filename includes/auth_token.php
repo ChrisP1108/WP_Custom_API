@@ -36,7 +36,7 @@ final class Auth_Token
      * @param int|null $issued_at - Timestamp when the token was issued.
      * @param int|null $expires_at - Timestamp when the token will expire.
      * 
-     * @return object - Returns a structured response.
+     * @return object - Returns a structured response from the Response_Handler::response() method.
      */
 
     private static function response(bool $ok, int $status_code, string|int|null $id, string $message, int $issued_at = 0, int $expires_at = 0): object
@@ -101,7 +101,7 @@ final class Auth_Token
      * @param string $token_name - Name of token to be stored.  Token name is also the cookie name
      * @param int $expiration - Set duration of token before expiring.
      * 
-     * @return object - Returns array with "ok", "id", and "message" keys
+     * @return object - Returns object from the self::response() method
      */
 
     public static function generate(int $id, string $token_name, int $expiration = Config::TOKEN_EXPIRATION): object
@@ -157,7 +157,7 @@ final class Auth_Token
      * @param string $token_name - Name of token to verify. Stored as http only cookie with the same name
      * @param int|null $logout_time - Optional timestamp of the user's last logout.
      * 
-     * @return object - Returns array with "ok", "id", and "message" keys
+     * @return object - Returns object from the self::response() method
      */
 
     public static function validate(string $token_name, int $logout_time = 0): object
