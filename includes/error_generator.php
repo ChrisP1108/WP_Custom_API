@@ -8,9 +8,7 @@ use WP_Error;
  * Prevent direct access from sources other than the Wordpress environment
  */
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+if (!defined('ABSPATH')) exit;
 
 /** 
  * Used for generating error messages in the Wordpress Dashboard utilizing the WP_Error class and the 'admin_notices' Wordpress hook.

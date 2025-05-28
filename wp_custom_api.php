@@ -20,9 +20,7 @@
  * Prevent direct access from sources other than the Wordpress environment.
  */
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+if (!defined('ABSPATH')) exit;
 
 /** 
  * Define WP Custom API Plugin Folder Path.  Used for requiring plugin files and auto loader on init class.

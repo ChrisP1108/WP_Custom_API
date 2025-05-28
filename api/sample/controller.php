@@ -14,9 +14,7 @@ use WP_Custom_API\Api\Sample\Permission;
 * Prevent direct access from sources other than the Wordpress environment
 */
 
-if (!defined('ABSPATH')) { 
-    exit;
-}
+if (!defined('ABSPATH')) exit;
 
 final class Controller extends Controller_Interface
 {

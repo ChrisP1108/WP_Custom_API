@@ -10,9 +10,7 @@ use WP_Custom_API\Includes\Model_Interface;
 * Prevent direct access from sources other than the Wordpress environment
 */
 
-if (!defined('ABSPATH')) { 
-    exit;
-}
+if (!defined('ABSPATH')) exit;
 
 final class Model extends Model_Interface
 {
@@ -41,7 +39,8 @@ final class Model extends Model_Interface
                         'required' => true,
                         'limit'    => 80
                     ]
-        ];
+            ]
+        ;
     }
 
     public static function create_table(): bool 

@@ -16,9 +16,7 @@ use Exception;
  * Prevent direct access from sources other than the Wordpress environment
  */
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+if (!defined('ABSPATH')) exit;
 
 /** 
  * Runs spl_autoload_register for all classes throughout the plugin based upon namespaces

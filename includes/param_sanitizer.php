@@ -8,9 +8,7 @@ namespace WP_Custom_API\Includes;
  * Prevent direct access from sources other than the Wordpress environment
  */
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+if (!defined('ABSPATH')) exit;
 
 /**
  * Class for sanitizing parameters based on a predefined schema.
@@ -49,7 +47,19 @@ class Param_Sanitizer {
         return $sanitized;
     }
 
-    private static function generate_error_response($value, $expected): array {
+    /**
+     * METHOD - generate_error_response
+     * 
+     * Generate an error response in the case of an invalid type.
+     * 
+     * @param mixed $value The value that failed the type check.
+     * @param string $expected The expected type.
+     * 
+     * @return array A response containing the error message, type found, and expected type.
+     */
+
+    private static function generate_error_response($value, string $expected): array {
+        // Generate an error response with the message, type found, and expected type
         return [
             'message' => 'Expected type `'.$expected.'`, got `' . gettype($value) . '` with value `'.$value.'`.',
             'type_found' => (gettype($value) === 'integer' ? 'int' : gettype($value)) === 'boolean' ? 'bool' : gettype($value),

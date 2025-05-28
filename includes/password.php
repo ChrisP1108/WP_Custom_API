@@ -10,9 +10,7 @@ use WP_Custom_API\Config;
  * Prevent direct access from sources other than the Wordpress environment
  */
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+if (!defined('ABSPATH')) exit;
 
 /** 
  * Used for hashing passwords with the Bcrypt algorithm, as well as validating existing hash against a plan string.

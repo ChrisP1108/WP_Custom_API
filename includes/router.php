@@ -14,10 +14,7 @@ use WP_REST_Response;
  * Prevent direct access from sources other than the Wordpress environment
  */
 
-if (!defined('ABSPATH')) {
-    exit;
-}
-
+if (!defined('ABSPATH')) exit;
 
 /** 
  * Used for setting up API Routes.  

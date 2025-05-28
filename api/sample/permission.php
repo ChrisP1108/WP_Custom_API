@@ -12,9 +12,7 @@ use WP_Custom_API\Api\Sample\Model;
 * Prevent direct access from sources other than the Wordpress environment
 */
 
-if (!defined('ABSPATH')) { 
-    exit;
-}
+if (!defined('ABSPATH')) exit;
 
 final class Permission extends Permission_Interface
 {

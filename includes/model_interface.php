@@ -10,9 +10,7 @@ use WP_Custom_API\Includes\Database;
  * Prevent direct access from sources other than the Wordpress environment
  */
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+if (!defined('ABSPATH')) exit;
 
 /** 
  * Used for interating with Wordpress database. 

@@ -6,9 +6,7 @@ namespace WP_Custom_API;
  * Prevent direct access from sources other than the Wordpress environment
  */
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+if (!defined('ABSPATH')) exit;
 
 /** 
  * Used for plugin config.  

@@ -13,9 +13,7 @@ use WP_Custom_API\Includes\Param_Sanitizer;
  * Prevent direct access from sources other than the Wordpress environment
  */
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+if (!defined('ABSPATH')) exit;
 
 /** 
  * Interface for controller classes. 
@@ -61,7 +59,6 @@ class Controller_Interface
      * 
      * @param WP_REST_Request $req The request object to parse.
      * @param array $schema The schema to use for sanitizing the request data.
-     * @param array $required_keys The required keys to check if they are present in the sanitized data.
      * 
      * @return static An object containing the sanitized request data and a flag indicating if the operation was successful.
      */
@@ -77,7 +74,7 @@ class Controller_Interface
         // Map out schema for checking data types
         $schema_data_types = [];
 
-        foreach($schema as $key=> $params) {
+        foreach($schema as $key => $params) {
             $schema_data_types[$key] =  $params['type'];
         }
 
@@ -134,8 +131,6 @@ class Controller_Interface
                 }
             }
         }
-
-
 
         // Set if ok
         $ok = empty($missing_keys) && empty($invalid_types) && empty($keys_exceeding_char_limit);

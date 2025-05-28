@@ -136,7 +136,7 @@ class Create
 
         // Add code snippet to prevent direct access to files outside Wordpress environment
 
-        $file_content .= "\n/**\n* Prevent direct access from sources other than the Wordpress environment\n*/\n\nif (!defined('ABSPATH')) { \n    exit;\n}\n";
+        $file_content .= "\n/**\n* Prevent direct access from sources other than the Wordpress environment\n*/\n\nif (!defined('ABSPATH')) exit;\n";
 
         if ($type !== 'routes') {
 
@@ -233,7 +233,8 @@ class Create
                                     'required' => true,
                                     'limit'    => 80
                                 ]
-                    ];
+                        ]
+                    ;
                 }
 
                 public static function create_table(): bool 

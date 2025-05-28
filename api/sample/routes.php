@@ -12,9 +12,7 @@ use WP_Custom_API\Api\Sample\Permission;
 * Prevent direct access from sources other than the Wordpress environment
 */
 
-if (!defined('ABSPATH')) { 
-    exit;
-}
+if (!defined('ABSPATH')) exit;
 
 /**
 * API Base Route - {url_origin}/wp-json/custom-api/v1/sample 
