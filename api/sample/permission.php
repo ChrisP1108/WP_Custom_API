@@ -20,7 +20,7 @@ final class Permission extends Permission_Interface
 {
     public const TOKEN_NAME = 'sample_token';
 
-    public static function authorized(Request $request, $controller_params): bool
+    public static function authorized(Request $request): bool|array
     {
         // Replace code in this method with logic for protecting a route from unauthorized access. 
 

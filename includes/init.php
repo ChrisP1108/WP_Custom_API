@@ -221,13 +221,12 @@ final class Init
             $model = new $model_class_name;
             $table_exists = Database::table_exists($model::table_name());
 
-            if (!$table_exists && $model::table_name() !== '' && method_exists($model, 'create_table') && $model::create_table() && !empty($model::table_schema())) {
+            if (!$table_exists && $model::table_name() !== '' && method_exists($model, 'create_table') && $model::create_table() && !empty($model::schema())) {
                 $table_creation_result = Database::create_table(
                     $model::table_name(),
-                    $model::table_schema()
+                    $model::schema()
                 );
-
-                if (!$table_creation_result['ok']) {
+                if (!$table_creation_result->ok) {
                     Error_Generator::generate(
                         'Error creating table in database',
                         'The table name "' . Database::get_table_full_name($model::table_name()) . '" had an error in being created in MySql through the WP_Custom_API plugin.'

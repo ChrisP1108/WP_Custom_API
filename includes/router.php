@@ -123,28 +123,42 @@ final class Router
                 // Callback wrapper to allow custom Permission callback unauthorized response to be set by running the main callback and checking if it returned true or false
 
                 $wrapped_callback = function (WP_REST_Request $request) use ($route) {
-
-                    // The permission callback can also run the permission_params_callback to pass data into the controller callback.
-                    $permission_data = null;
-                    $permission_params_callback = function ($data) use (&$permission_data) {
-                        $permission_data = $data;
-                    };
                     
                     // Run permission callback
-                    $ok = call_user_func( $route['permission_callback'], $request, $permission_params_callback);
+                    $ok = call_user_func( $route['permission_callback'], $request);
 
                     // Check if permission callback returned true or false.  If not, return error response message.
-                    if (!is_bool($ok)) {
+                    
+                    // Check if non array of true or false value
+                    $non_bool_value = false;
+                    if (!is_array($ok) && !is_bool($ok)) {
+                        $non_bool_value = true;
+                    }
+
+                    // Check if array returned with true or false value
+                    if (is_array($ok) && !is_bool($ok[0])) {
+                        $non_bool_value = true;
+                    }
+
+                    // Show error if no boolean value was returned from permission callback
+                    if ($non_bool_value) {
                         $non_bool_message = 'The permission callback registered for the ' . $route['method'] . ' route `' . $route['route'] . '` returned a non-boolean value.  It must return true or false.';
                         Error_Generator::generate('Non-Bool Return Value For Permission Callback', $non_bool_message);
                         return new WP_Rest_Response(['message' => $non_bool_message], 500);
+                    }
+
+                    // Destructure if array was returned from permission callback
+                    $data_params = null;
+                    if (is_array($ok) && is_bool($ok[0])) {
+                        $data_params = $ok[1] ?? null;
+                        $ok = $ok[0];
                     }
                         
                     // Return an unauthorized response if permission callback returned false
                     if (!$ok) return new WP_Rest_Response(['message' => 'Unauthorized'], 401);
 
                     // Run controller callback if permission callback returned true and pass in permission_data from permission callback
-                    return call_user_func($route['callback'], $request, $permission_data);
+                    return call_user_func($route['callback'], $request, $data_params);
                 };
 
                 register_rest_route(Config::BASE_API_ROUTE, $route['route'], [

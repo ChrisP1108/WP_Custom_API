@@ -6,6 +6,7 @@ namespace WP_Custom_API\Includes;
 
 use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Response_Handler;
+use WP_Custom_API\Includes\Error_Generator;
 
 /** 
  * Prevent direct access from sources other than the Wordpress environment
@@ -48,6 +49,21 @@ final class Database
         do_action('wp_custom_api_database_response', $return_data);
 
         return $return_data;
+    }
+
+    /**
+     * METHOD - escaped_chars
+     * 
+     * Checks string for any special characters
+     * 
+     * @param string $string The string to escape.
+     * 
+     * @return bool True if the string contains only alphanumeric characters and underscores, false otherwise.
+     */
+
+    private static function escaped_chars(string $string): bool
+    {
+        return (bool) preg_match('/^[a-zA-Z0-9_]+$/', $string);
     }
 
     /**
@@ -116,7 +132,7 @@ final class Database
 
     public static function get_table_full_name(string $table_name): ?string
     {
-        if (!preg_match('/^[a-zA-Z0-9_]+$/', $table_name)) return null;
+        if (!self::escaped_chars($table_name)) return null;
 
         global $wpdb;
 
@@ -172,7 +188,23 @@ final class Database
         $create_table_query = "CREATE TABLE $table_create_name ( id mediumint(11) NOT NULL AUTO_INCREMENT, ";
 
         foreach ($table_schema as $key => $value) {
-            $create_table_query .= esc_sql($key) . " " . esc_sql($value) . ", ";
+            if (!self::escaped_chars($key)) {
+                $err_msg = 'Column name of `'.$key.'` contained invalid characters.';
+                Error_Generator::generate('Column name error in schema', $err_msg);
+                return self::response(false, 500, $err_msg);
+            }
+            $column_query = $value['query'] ?? null;
+            if (!$column_query) {
+                $err_msg = 'Column query for column name of `'.$key.'` is not specified.';
+                Error_Generator::generate('Column query type not specified', $err_msg);
+                return self::response(false, 500, $err_msg);
+            }
+            if (!preg_match( '/^(?:INT|TEXT|VARCHAR\(\d+\))$/i', $column_query)) {
+                $err_msg = 'Column query for column name of `'.$key.'` contained invalid characters.';
+                Error_Generator::generate('Column name error in schema', $err_msg);
+                return self::response(false, 500, $err_msg);
+            }
+            $create_table_query .= esc_sql($key) . " " . esc_sql($column_query) . ", ";
         }
 
         $create_table_query .= "created DATETIME DEFAULT CURRENT_TIMESTAMP, updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id)) $charset_collate;";
@@ -186,9 +218,14 @@ final class Database
         ob_end_clean();
 
         if ($wpdb->last_error) return self::response(false, 500, 'An error occurred when attempting to create the table `' . $table_name . '`.');
-        return self::table_exists($table_name)
-            ? self::response(true, 201, 'Table `' . $table_name . '` successfully created.')
-            : self::response(false, 500, 'An error occurred when attempting to create the table `' . $table_name . '`.');
+
+        if (!self::table_exists($table_name)) {
+            $err_msg = 'An error occurred when attempting to create the table `' . $table_create_name . '`.';
+            Error_Generator::generate('Error creating SQL table', $err_msg . $wpdb->last_error);
+            return self::response(false, 500, $err_msg);
+        }
+        
+        return self::response(true, 201, 'Table `' . $table_create_name . '` successfully created.');
     }
 
     /**
@@ -291,7 +328,7 @@ final class Database
 
         if (!$table_name_to_query) return self::table_name_err_msg();
 
-        if (!preg_match('/^[a-zA-Z0-9_]+$/', $column)) return self::response(false, 400, 'Invalid column name provided for `' . $table_name . '`.');
+        if (!self::escaped_chars($column)) return self::response(false, 400, 'Invalid column name provided for `' . $table_name . '`.');
 
         $pagination = self::pagination_params();
 

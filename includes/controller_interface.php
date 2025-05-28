@@ -36,7 +36,7 @@ class Controller_Interface
      * @param string $message The message to return.
      * @param array $missing_keys The missing keys from the request data.
      * @param array $invalid_types The invalid types found in the request data.
-     * @param array $missing_schema_keys The missing schema keys.
+     * @param array $keys_exceeding_char_limit Keys that exceeded their character length limit.
      */
 
     private function __construct(
@@ -48,7 +48,7 @@ class Controller_Interface
         protected readonly string $message,
         protected readonly array $missing_keys,
         protected readonly array $invalid_types,
-        protected readonly array $missing_schema_keys
+        protected readonly array $keys_exceeding_char_limit
     ) {}
 
     /**
@@ -66,7 +66,7 @@ class Controller_Interface
      * @return static An object containing the sanitized request data and a flag indicating if the operation was successful.
      */
 
-    final public static function request_handler(WP_REST_Request $req, array $schema = [], array $required_keys = []): static
+    final public static function request_handler(WP_REST_Request $req, array $schema = []): static
     {
         $params = $req->get_params() ?? [];
         $json = json_decode($req->get_body(), true) ?? [];
@@ -74,11 +74,18 @@ class Controller_Interface
         $files = $req->get_file_params() ?? [];
         $headers = $req->get_headers() ?? [];
 
+        // Map out schema for checking data types
+        $schema_data_types = [];
+
+        foreach($schema as $key=> $params) {
+            $schema_data_types[$key] =  $params['type'];
+        }
+
         // Sanitize the request data according to the schema
         $sanitized_params = [
-            'params' => Param_Sanitizer::sanitize($params, $schema),
-            'json'   => Param_Sanitizer::sanitize($json, $schema),
-            'form'   => Param_Sanitizer::sanitize($form, $schema)
+            'params' => Param_Sanitizer::sanitize($params, $schema_data_types),
+            'json'   => Param_Sanitizer::sanitize($json, $schema_data_types),
+            'form'   => Param_Sanitizer::sanitize($form, $schema_data_types)
         ];
 
         // Merge the sanitized data
@@ -92,51 +99,58 @@ class Controller_Interface
         $invalid_types = [];
 
         foreach ($merged_sanitized_params as $key => $value) {
-            if (isset($value['error_response'])) {
+            if (isset($value['message'])) {
                 $invalid_types[] = [
                     'key' => $key,
-                    'error_response' => $value['error_response']
+                    'message' => $value['message'],
+                    'type_found' => $value['type_found'],
+                    'expected' => $value['expected']
                 ];
             }
         }
 
-        // Set to chekc if required keys are present in the sanitized data and check it against the schema to make sure no required keys are missing from the schema.
+        // Set to check if required keys are present in the sanitized data and check it against the schema to make sure no required keys are missing from the schema, along with character limits.
         $missing_keys = [];
-        $missing_schema_keys = [];
+        $keys_exceeding_char_limit = [];
 
-        // Loop through required keys and check if they are present in the sanitized data and check it against the schema to make sure no required keys are missing from the schema.
-        foreach ($required_keys as $key) {
-            if (!isset($schema[$key])) {
-                $missing_schema_keys[] = ['key' => $key, 'error_response' => 'The `' . $key . '` needs to be defined in the schema.'];
-            } else if (!array_key_exists($key, $merged_sanitized_params)) {
+        // Loop through the schema to make sure all required keys from sanitized data are present, along with making sure all parameter values do not exceed character limit.
+        foreach ($schema as $key => $params) {
+            $required_key = $params['required'] ?? true;
+            if ($required_key && !array_key_exists($key, $merged_sanitized_params)) {
                 $missing_keys[] = $key;
+                continue;
+            }
+            $value = $merged_sanitized_params[$key];
+            if (!is_array($value) && !is_object($value)) {
+                $char_limit = $params['limit'] ?? 255;
+                $key_char_length = strlen($value) ?? 0;
+                if ($key_char_length > 0 && $key_char_length > $char_limit) {
+                    $keys_exceeding_char_limit[] = [
+                        'key' => $key,
+                        'message' => 'Key of `' . $key . '` exceeded the character limit of `' . $char_limit . '`. The key had a character length of `' . $key_char_length . '`.',
+                        'limit' => $char_limit,
+                        'length' => $key_char_length
+                    ];
+                }
             }
         }
 
+
+
         // Set if ok
-        $ok = empty($missing_keys) && empty($invalid_types) && empty($missing_schema_keys);
+        $ok = empty($missing_keys) && empty($invalid_types) && empty($keys_exceeding_char_limit);
 
         // Set for message 
         $message = null;
 
         // Set for status code
         $status_code = null;
-        
-        if (!empty($missing_schema_keys)) {
 
-            // Handle the case where required keys are missing from the schema
-            $missing_schema_key_names = array_map(function ($item) {
-                return $item['key'];
-            }, $missing_schema_keys);
-            $message = 'The following keys must be defined in the schema: `' . implode(', ', $missing_schema_key_names) . '`.';
-            $status_code = 500;
-
-        } else if (!empty($missing_keys)) {
+        if (!empty($missing_keys)) {
 
             // Handle the case where missing keys or invalid data types are present
             $message = 'The following keys are required: `' . implode(', ', $missing_keys) . '`.';
             $status_code = 400;
-
         } else if (!empty($invalid_types)) {
 
             // Handle the case where there are invalid data types
@@ -145,24 +159,29 @@ class Controller_Interface
             }, $invalid_types);
             $message = 'Invalid data types found for `' . implode(', ', $invalid_keys) . '`.';
             $status_code = 422;
-
+        } else if (!empty($keys_exceeding_char_limit)) {
+            $keys_exceeding_limit = array_map(function ($item) {
+                return $item['key'];
+            }, $keys_exceeding_char_limit);
+            $message = 'The following keys exceeded their character limit: `' . implode(', ', $keys_exceeding_limit) . '`';
+            $status_code = 400;
         } else {
 
             // Handle the case where everything is ok
             $status_code = 200;
             $message = 'Success';
-
         }
 
         return new static(
-            $merged_sanitized_params, 
-            $files, 
-            $headers, 
-            $status_code, 
-            $ok, $message, 
-            $missing_keys, 
-            $invalid_types, 
-            $missing_schema_keys
+            $merged_sanitized_params,
+            $files,
+            $headers,
+            $status_code,
+            $ok,
+            $message,
+            $missing_keys,
+            $invalid_types,
+            $keys_exceeding_char_limit
         );
     }
 
@@ -175,7 +194,7 @@ class Controller_Interface
      * 
      * @return void
      */
-    
+
     final public static function set_headers(array $headers): void
     {
         // Check if headers are set
@@ -185,7 +204,6 @@ class Controller_Interface
             foreach ($headers as $key => $value) {
                 header($key . ': ' . $value);
             }
-
         }
     }
 
@@ -215,13 +233,9 @@ class Controller_Interface
 
         // Check if the response contains a validation error and return appropriate response.
         $validation_error = false;
-        
+
         if (isset($response->ok) && !$response->ok) {
 
-            if (isset($response->missing_schema_keys) && !empty($response->missing_schema_keys) && !$validation_error) {
-                $parsed_response['missing_schema_keys'] = $response->missing_schema_keys;
-                $validation_error = true;
-            }
             if (isset($response->missing_keys) && !empty($response->missing_keys) && !$validation_error) {
                 $parsed_response['missing_keys'] = $response->missing_keys;
                 $validation_error = true;
@@ -230,13 +244,17 @@ class Controller_Interface
                 $parsed_response['invalid_types'] = $response->invalid_types;
                 $validation_error = true;
             }
+            if (isset($response->keys_exceeding_char_limit) && !empty($response->keys_exceeding_char_limit) && !$validation_error) {
+                $parsed_response['keys_exceeding_char_limit'] = $response->keys_exceeding_char_limit;
+                $validation_error = true;
+            }
 
             return new WP_REST_Response($parsed_response, $response_status_code);
         }
 
         // Check if the response contains an error or success response and return it
         if (isset($response->error_response) && $response->error_response) return $response->error_response;
-        if (isset($response->success_response)&& $response->success_response) return $response->success_response;
+        if (isset($response->success_response) && $response->success_response) return $response->success_response;
 
         // Parse response data
         if ($response !== null) {
@@ -246,7 +264,6 @@ class Controller_Interface
 
                 // Set data if response is an associaitve array
                 $parsed_response['data'] = $response;
-
             } else {
 
                 // Prevent password hash in response
@@ -258,7 +275,6 @@ class Controller_Interface
                 if (isset($response->data) && $response->data !== null) {
                     $parsed_response['data'] = $response->data;
                 }
-
             }
         }
 

@@ -207,7 +207,41 @@ class Create
         $dependencies = [
             "WP_Custom_API\Includes\Model_Interface"
         ];
-        $class_content = "    public static function table_name():string \n    {\n        return '" . strtolower(str_replace('/', '_', PATH)) . "';\n    }\n\n    public static function table_schema(): array \n    {\n        return\n            [\n\n            ];\n    }\n\n    public static function create_table(): bool \n    {\n        return false;\n    }\n\n    public static function data_schema(): array \n    {\n        return \n            [\n\n            ];\n    }\n\n    public static function required_keys(): array \n    {\n        return \n            [\n\n            ];\n    }";
+        $class_content = $class_content = <<<'PHP'
+                public static function table_name(): string 
+                {
+                    return 'sample';
+                }
+
+                public static function schema(): array 
+                {
+                    // Below is a sample schema, feel free to update/delete as needed.
+
+                    return
+                        [
+                            'name' => 
+                                [
+                                    'query'    => 'VARCHAR(50)',
+                                    'type'     => 'text',
+                                    'required' => true,
+                                    'limit'    => 50
+                                ],
+                            'email' => 
+                                [
+                                    'query'    => 'VARCHAR(80)',
+                                    'type'     => 'text',
+                                    'required' => true,
+                                    'limit'    => 80
+                                ]
+                    ];
+                }
+
+                public static function create_table(): bool 
+                {
+                    return false;
+                }
+            PHP
+        ;
         self::create_file("model", $dependencies, $class_content);
     }
 
@@ -222,7 +256,7 @@ class Create
             "WP_Custom_API\Includes\Permission_Interface",
             "WP_Custom_API\Api\Sample\Model"
         ];
-        $class_content = "    public const TOKEN_NAME = '" . strtolower(str_replace('/', '_', PATH)) . "_token';\n\n    public static function authorized(Request \$request, \$controller_params): bool\n    {\n        // Replace code in this method with logic for protecting a route from unauthorized access. \n\n        return self::token_validate(self::TOKEN_NAME)->ok;\n    }";
+        $class_content = "    public const TOKEN_NAME = '" . strtolower(str_replace('/', '_', PATH)) . "_token';\n\n    public static function authorized(Request \$request): bool|array\n    {\n        // Replace code in this method with logic for protecting a route from unauthorized access. \n\n        return self::token_validate(self::TOKEN_NAME)->ok;\n    }";
         self::create_file("permission", $dependencies, $class_content);
     }
 

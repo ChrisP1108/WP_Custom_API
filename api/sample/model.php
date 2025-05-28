@@ -16,37 +16,36 @@ if (!defined('ABSPATH')) {
 
 final class Model extends Model_Interface
 {
-    public static function table_name():string 
+    public static function table_name(): string 
     {
         return 'sample';
     }
 
-    public static function table_schema(): array 
+    public static function schema(): array 
     {
+        // Below is a sample schema, feel free to update/delete as needed.
+
         return
             [
-
-            ];
+                'name' => 
+                    [
+                        'query'    => 'VARCHAR(50)',
+                        'type'     => 'text',
+                        'required' => true,
+                        'limit'    => 50
+                    ],
+                'email' => 
+                    [
+                        'query'    => 'VARCHAR(80)',
+                        'type'     => 'text',
+                        'required' => true,
+                        'limit'    => 80
+                    ]
+        ];
     }
 
     public static function create_table(): bool 
     {
         return false;
-    }
-
-    public static function data_schema(): array 
-    {
-        return 
-            [
-
-            ];
-    }
-
-    public static function required_keys(): array 
-    {
-        return 
-            [
-
-            ];
     }
 }

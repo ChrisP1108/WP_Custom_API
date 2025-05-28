@@ -36,14 +36,14 @@ abstract class Model_Interface
     abstract public static function table_name(): string;
 
     /**
-     * ABSTRACT METHOD - table_schema
+     * ABSTRACT METHOD - schema
      * 
-     * Set the schema for the table to create in the database.
+     * Set the schema for table creation, as well as type declaration, requirements, and character limits.
      *
      * @return array
      */
 
-    abstract public static function table_schema(): array;
+    abstract public static function schema(): array;
 
     /**
      * ABSTRACT METHOD - create_table
@@ -56,38 +56,6 @@ abstract class Model_Interface
     abstract public static function create_table(): bool;
 
     /**
-     * ABSTRACT METHOD - data_schema
-     * 
-     * Set the data schema for validation data types.
-     *
-     * @return bool
-     */
-
-    abstract public static function data_schema(): array;
-
-    /**
-     * ABSTRACT METHOD - required_keys
-     * 
-     * Set the required keys for validation requirements.
-     *
-     * @return bool
-     */
-
-    abstract public static function required_keys(): array;
-
-    /**
-     * METHOD - table_columns
-     * 
-     * Get the table schema columns.
-     *
-     * @return array
-     */
-    
-    final public static function table_columns(): array {
-        return array_keys(static::table_schema());
-    }
-
-    /**
      * METHOD - table_exists
      * 
      * Check if the table exists in the database.
@@ -98,32 +66,6 @@ abstract class Model_Interface
     final public static function table_exists(): bool
     {
         return Database::table_exists(static::table_name());
-    }
-
-    /**
-     * METHOD - create_new_table
-     * 
-     * Create the table in the database.
-     *
-     * @return array|object
-     */
-
-    final public static function create_new_table(): array|object
-    {
-        return Database::create_table(static::table_name(), static::table_schema());
-    }
-
-    /**
-     * METHOD - drop_table
-     * 
-     * Drop the table from the database.
-     *
-     * @return array|object
-     */
-
-    final public static function drop_table(): array|object
-    {
-        return Database::drop_table(static::table_name());
     }
 
     /**

@@ -49,6 +49,14 @@ class Param_Sanitizer {
         return $sanitized;
     }
 
+    private static function generate_error_response($value, $expected): array {
+        return [
+            'message' => 'Expected type `'.$expected.'`, got `' . gettype($value) . '` with value `'.$value.'`.',
+            'type_found' => (gettype($value) === 'integer' ? 'int' : gettype($value)) === 'boolean' ? 'bool' : gettype($value),
+            'expected' => $expected
+        ];
+    }
+
     /**
      * METHOD - sanitize_value
      * 
@@ -69,7 +77,7 @@ class Param_Sanitizer {
                 if (is_numeric($value)) {
                     return absint((int)$value);
                 }
-                return ['error_response' => "Expected type `int`, got `" . gettype($value) . "` with value `$value`."];
+                return self::generate_error_response($value, 'int');
             case 'bool':
                 // Sanitize booleans
                 // If the value is a boolean, or a string that can be interpreted as a boolean, return it.
@@ -77,18 +85,22 @@ class Param_Sanitizer {
                 if (is_bool($value) || in_array(strtolower((string)$value), ['true', 'false', '0', '1'], true)) {
                     return filter_var($value, FILTER_VALIDATE_BOOLEAN);
                 }
-                return ['error_response' => "Expected type `bool`, got `" . gettype($value) . "` with value `$value`."];
+                return self::generate_error_response($value, 'bool');
             case 'email':
                 // Sanitize emails
                 // If the value is not a string, return an error message.
                 // Otherwise, sanitize the email using the sanitize_email function.
                 // If the sanitized email is not a valid email, return an error message, otherwise return the value.
                 if (!is_string($value)) {
-                    return ['error_response' => "Expected type `email` as string, got `" . gettype($value) . "`."];
+                    return self::generate_error_response($value, 'email');
                 }
                 $sanitized = sanitize_email($value);
                 if (!is_email($sanitized)) {
-                    return ['error_response' => "Invalid email format for value `$value`."];
+                    return [
+                        'message' => "Invalid email format for value `$value`.",
+                        'type_found' => gettype($value) === 'integer' ? 'int' : gettype($value),
+                        'expected' => 'email'
+                    ];
                 }
                 return $sanitized;
             case 'url':
@@ -97,11 +109,15 @@ class Param_Sanitizer {
                 // Otherwise, sanitize the URL using the esc_url_raw function.
                 // If the sanitized URL is not a valid URL, return an error message, otherwise return the value.
                 if (!is_string($value)) {
-                    return ['error_response' => "Expected type `url` as string, got `" . gettype($value) . "`."];
+                    return self::generate_error_response($value, 'url');
                 }
                 $sanitized = esc_url_raw($value);
                 if (!filter_var($sanitized, FILTER_VALIDATE_URL)) {
-                    return ['error_response' => "Invalid URL format for value `$value`."];
+                    return [
+                        'error_response' => "Invalid URL format for value `$value`.",
+                        'type_found' => gettype($value) === 'integer' ? 'int' : gettype($value),
+                        'expected' => 'url'
+                    ];
                 }
                 return $sanitized;
             case 'raw':
@@ -114,7 +130,7 @@ class Param_Sanitizer {
                 // If the value is not a string, return an error message.
                 // Otherwise, sanitize the text using the sanitize_text_field function and return it.
                 if (!is_string($value)) {
-                    return ['error_response' => "Expected type `text` as string, got `" . gettype($value) . "`."];
+                    return self::generate_error_response($value, 'text');
                 }
                 return sanitize_text_field($value);
         }
