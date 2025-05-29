@@ -255,7 +255,7 @@ class Create
         $dependencies = [
             "WP_REST_Request as Request",
             "WP_Custom_API\Includes\Permission_Interface",
-            "WP_Custom_API\Api\Sample\Model"
+            "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Model"
         ];
         $class_content = "    public const TOKEN_NAME = '" . strtolower(str_replace('/', '_', PATH)) . "_token';\n\n    public static function authorized(Request \$request): bool|array\n    {\n        // Replace code in this method with logic for protecting a route from unauthorized access. \n\n        return self::token_validate(self::TOKEN_NAME)->ok;\n    }";
         self::create_file("permission", $dependencies, $class_content);
