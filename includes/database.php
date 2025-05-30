@@ -123,13 +123,14 @@ final class Database
      * 
      * Get name of table utilizing Wordpress database prefix concatenated with the DB_CUSTOM_PREFIX
      * @param string $table_name - The name of the table to search for
+     * @param bool $return_prefix = Used to determine if table name prefix only should be returned
      * 
      * @return string|null - Returns null if regex fails.  Returns string for table name otherwise.
      */
 
-    public static function get_table_full_name(string $table_name): ?string
+    public static function get_table_full_name(string $table_name, bool $return_prefix = false): ?string
     {
-        if (!self::escaped_chars($table_name)) return null;
+        if (!self::escaped_chars($table_name) && !$return_prefix) return null;
 
         global $wpdb;
 
@@ -283,7 +284,7 @@ final class Database
 
         ob_start();
 
-        $rows_data = [];
+        $rows_data = null;
 
         if (!$get_all_rows) {
             $pagination = self::pagination_params();
@@ -296,6 +297,8 @@ final class Database
             $total_rows = (int) $wpdb->get_var("SELECT COUNT(*) FROM $table_name_to_query");
             $total_pages = 1;
         }
+
+        if (!$rows_data) return self::response(false, 500, 'An error occurred when attempting to retrieve data from the table `' . $table_name . '`.');
 
         ob_end_clean();
 
@@ -482,10 +485,10 @@ final class Database
      * @return array
      */
 
-    private static function get_table_schema_from_db(string $table_name): array
+    public static function get_table_schema_from_db(string $table_name): array
     {
         global $wpdb;
-        $table_full_name = self::get_table_full_name($table_name);
+        $table_full_name = self::get_table_full_name($table_name, true);
         $cols = $wpdb->get_results("DESCRIBE {$table_full_name}", ARRAY_A);
         $schema = [];
 
@@ -528,7 +531,9 @@ final class Database
     {
         global $wpdb;
 
-        $like_table_name_query = self::get_table_full_name('');
+        $like_table_name_query = self::get_table_full_name('', true);
+
+        if ($like_table_name_query) return self::response(false, 500, 'An error occurred while attempting to retrieve table names or no tables exist.');
 
         // Get all table names
         $table_names = $wpdb->get_col(
@@ -543,18 +548,27 @@ final class Database
         // Initialize an empty array to store the table data
         $tables_data = [];
 
+        $error_getting_table_data = false;
+
         // Loop through each table name and collect its data
         foreach ($table_names as $table_name) {
             $api_table_name = str_replace($like_table_name_query, '', $table_name);
             $response = self::get_table_data($api_table_name, true);
+            if (!$response->ok) $error_getting_table_data = true;
             $tables_data[$api_table_name] = [
+                'ok' => $response->ok,
                 'data' => $response->data ?? [],
-                'schema' => self::get_table_schema_from_db($api_table_name)
+                'schema' => self::get_table_schema_from_db($api_table_name),
+                'message' => $response->message
             ];
         }
 
+        if ($error_getting_table_data) {
+            return self::response(false, 500, 'An error occurred while attempting to retrieve table data.', $tables_data);
+        }
+
         if (empty($tables_data)) {
-            return self::response(false, 500, 'No tables data was found in the database.');
+            return self::response(false, 200, 'No tables data was found in the database.', $tables_data);
         }
 
         // Return the table data
@@ -596,7 +610,6 @@ final class Database
                     $insert_row_data = self::insert_row($table_name, $row);
                     if (!$insert_row_data->ok) {
                         $results[$table_name]['data_inserted'] = false;
-                        break;
                     }
                 }
             }
@@ -608,7 +621,7 @@ final class Database
                 return self::response(
                     false,
                     500,
-                    'An error occurred while attempting to import one or more table(s) data. See results data for details',
+                    'An error occurred while attempting to import one or more table(s) data.',
                     $results
                 );
             }

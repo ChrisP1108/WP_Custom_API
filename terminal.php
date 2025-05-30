@@ -16,17 +16,26 @@ require __DIR__ . '/config.php';
 define("BASE_API_ROUTE", WP_Custom_API\Config::BASE_API_ROUTE);
 
 /**
+ * Import Database class for exporting and importing data
+ */
+
+require_once __DIR__ . '/includes/database.php';
+use WP_Custom_API\Includes\Database;
+
+/**
  * Define app name
  */
 
 define("APP_NAME", "WP_Custom_API");
 
 /** 
- * Establish valid Command names "create" and "delete"
+ * Establish valid Command names "create", "delete", "export", "import"
  */
 
 define('COMMAND_CREATE', 'create');
 define('COMMAND_DELETE', 'delete');
+define('COMMAND_EXPORT', 'export');
+define('COMMAND_IMPORT', 'import');
 
 /**
  * Collect command line props
@@ -101,6 +110,12 @@ define("COMMAND", strtolower($cr[0]));
 define("RESOURCE", strtolower($cr[1]));
 define("PATH", implode("/", $naming_formatted));
 define("NAMESPACE_PATH", implode("\\", $naming_formatted));
+
+/**
+ * Establish file path for export and import commands of json file
+ */
+
+define('DATA_FILE_PATH', strtolower(PATH) . ".json");
 
 
 /**
@@ -337,7 +352,7 @@ if (COMMAND === COMMAND_CREATE) {
 
 // Delete commands
 
-else if (COMMAND === COMMAND_DELETE) {
+if (COMMAND === COMMAND_DELETE) {
     $resource_types = ['interface', 'controller', 'model', 'permission', 'routes'];
     if (RESOURCE === 'interface') {
         Delete::interface();
@@ -351,7 +366,74 @@ else if (COMMAND === COMMAND_DELETE) {
     }
 }
 
-// If command is not `create` or `delete` show error message
+// Export and Import Commmands
+
+if (COMMAND === COMMAND_EXPORT || COMMAND === COMMAND_IMPORT && RESOURCE === 'data') {
+
+    // Load wordpress environment
+
+    $wp_load = dirname(__DIR__, 3) . '/index.php';
+    if (!file_Exists($wp_load)) {
+        echo "Error loading Wordpress file index.php from the Wordpress root directory";
+        exit;
+    }
+    require_once $wp_load;
+
+    global $wpdb;
+    exit;
+
+    // Perform export command
+    if (COMMAND === COMMAND_EXPORT) {
+        $get_table_data = Database::get_all_tables_data();
+        if (!$get_table_data->ok) {
+            echo "Error getting table data.  See list of errors below:\n";
+            foreach ($get_table_data->data as $item) {
+                if (!$item['ok']) {
+                    echo $item['message'] . "\n";
+                }
+            }
+            exit;
+        }
+        if (empty($get_table_data->data)) {
+            echo $get_table_data->message . "\n";
+            exit;
+        }
+        $file_content = json_encode($get_table_data);
+        $create_file = file_put_contents(DATA_FILE_PATH, $file_content);
+        if (!$create_file) {
+            echo "Error creating export file " . DATA_FILE_PATH . "\n";
+            exit;
+        }
+        echo "Export file " . DATA_FILE_PATH . " created successfully. \n";
+        exit;
+    }
+
+    // Perform import command
+    if (COMMAND === COMMAND_IMPORT) {
+        $get_file_data = file_get_contents(DATA_FILE_PATH);
+        if (!$get_file_data) {
+            echo "Error importing data from file.  Make sure that " . DATA_FILE_PATH . " exists in the root folder of the plugin.";
+            exit;
+        }
+        $assoc_array = json_decode($get_file_data, true);
+        $import_data = Database::import_tables_data($assoc_array);
+        if (!$import_data->ok) {
+            echo $import_data->message . " See list below for error details.\n";
+            foreach($import_data->data as $table => $data) {
+                if (!$table['table_created']) {
+                    echo "An error occured when creating the table " . $table . ".";
+                }
+                if (!$table['data_inserted']) {
+                    echo "An error occured when inserting data into the table " . $table . ".";
+                }
+            }
+        }
+        echo "Data import successful. \n";
+        exit;
+    }
+}
+
+// If command is not `create`, `delete`, `export`, or `import`, show error message
 
 echo "`" . COMMAND . "` is not a valid command and could not be executed.\n";
 exit;
