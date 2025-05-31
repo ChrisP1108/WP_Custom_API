@@ -286,8 +286,9 @@ final class Database
 
         $rows_data = null;
 
+        $pagination = self::pagination_params();
+
         if (!$get_all_rows) {
-            $pagination = self::pagination_params();
             $rows_data = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table_name_to_query LIMIT %d OFFSET %d", $pagination['per_page'], $pagination['offset']), ARRAY_A);
 
             $total_rows = (int) $wpdb->get_var("SELECT COUNT(*) FROM $table_name_to_query");
@@ -298,7 +299,7 @@ final class Database
             $total_pages = 1;
         }
 
-        if (!$rows_data) return self::response(false, 500, 'An error occurred when attempting to retrieve data from the table `' . $table_name . '`.');
+        if ($rows_data === false) return self::response(false, 500, 'An error occurred when attempting to retrieve data from the table `' . $table_name . '`.');
 
         ob_end_clean();
 
@@ -351,6 +352,8 @@ final class Database
         $query = $wpdb->prepare("SELECT * FROM $table_name_to_query WHERE $column = $placeholder LIMIT %d OFFSET %d", $value, $pagination['per_page'], $pagination['offset']);
 
         $rows_data = $wpdb->get_results($query, ARRAY_A);
+
+        if ($rows_data === false) return self::response(false, 500, 'An error occurred when attempting to retrieve data from the table `' . $table_name . '`.');
 
         ob_end_clean();
 
@@ -476,19 +479,22 @@ final class Database
     }
 
     /**
-     * METHOD - get_table_schema
+     * METHOD - get_table_schema_from_db
      *
      * Pulls a table’s column definitions (minus the automatic id/created/updated)
      * and normalizes them into the format expected by create_table().
      *
      * @param string $table_name The table name without the prefix.
-     * @return array
+     * @return object - Returns an object from the self::response() method.
      */
 
-    public static function get_table_schema_from_db(string $table_name): array
+    public static function get_table_schema_from_db(string $table_name): object
     {
         global $wpdb;
-        $table_full_name = self::get_table_full_name($table_name, true);
+        $table_full_name = self::get_table_full_name($table_name);
+
+        if (!$table_full_name) return self::response(false, 500, 'Table `' . $table_name . '` does not exist.');
+
         $cols = $wpdb->get_results("DESCRIBE {$table_full_name}", ARRAY_A);
         $schema = [];
 
@@ -516,7 +522,7 @@ final class Database
             ];
         }
 
-        return $schema;
+        return self::response(true, 200, 'Schema retrieved successfully for table `' . $table_name . '`', $schema);
     }
 
     /**
@@ -531,9 +537,11 @@ final class Database
     {
         global $wpdb;
 
-        $like_table_name_query = self::get_table_full_name('', true);
+        $table_name_query = self::get_table_full_name('', true);
 
-        if ($like_table_name_query) return self::response(false, 500, 'An error occurred while attempting to retrieve table names or no tables exist.');
+        if (!$table_name_query) return self::response(false, 500, 'An error occurred while attempting to retrieve table names or no tables exist.');
+
+        $like_table_name_query = '%' . $table_name_query . '%';
 
         // Get all table names
         $table_names = $wpdb->get_col(
@@ -545,6 +553,8 @@ final class Database
 
         if (!$table_names) return self::response(false, 500, 'An error occurred while attempting to retrieve table names.');
 
+        if (empty($table_names)) return self::response(false, 500, 'No tables created by this plugin were found.');
+
         // Initialize an empty array to store the table data
         $tables_data = [];
 
@@ -552,15 +562,24 @@ final class Database
 
         // Loop through each table name and collect its data
         foreach ($table_names as $table_name) {
-            $api_table_name = str_replace($like_table_name_query, '', $table_name);
+
+            // Get table name without prefix
+            $api_table_name = str_replace($table_name_query, '', $table_name);
+
+            // Get table data and check if it returned data
             $response = self::get_table_data($api_table_name, true);
             if (!$response->ok) $error_getting_table_data = true;
+
+            // Get table schema
+            $schema = self::get_table_schema_from_db($api_table_name);
+            if (!$schema->ok) $error_getting_table_data = true;
+
+            // Add table data to the tables data array
             $tables_data[$api_table_name] = [
-                'ok' => $response->ok,
-                'data' => $response->data ?? [],
-                'schema' => self::get_table_schema_from_db($api_table_name),
-                'message' => $response->message
-            ];
+                'ok' => $schema->ok && $response->ok,
+                'data' => $response->data,
+                'schema' => $schema->data
+            ];;
         }
 
         if ($error_getting_table_data) {
@@ -580,7 +599,7 @@ final class Database
      * 
      * Import tables data
      *
-     * @param array $data - Associative array of table names as keys and another associative array of 'schema' and 'data' as values.
+     * @param array $data - Associative array of table names as keys and another associative array of 'ok', 'schema' and 'data' as values.
      *                      'schema' is an associative array of column definitions.
      *                      'data' is an array of associative arrays of the row data to import.
      *
@@ -595,22 +614,35 @@ final class Database
 
         $results = [];
 
+        $import_data_errors = [];
+
         // Create tables
         foreach ($data as $table_name => $table_data) {
+            if (!$table_data['ok']) {
+                $import_data_errors[] = $table_name;
+                continue;
+            }
             $create_table = self::create_table($table_name, $table_data['schema']);
             $results[$table_name] = ['table_created' => $create_table->ok];
         }
 
+        // Check if any existing import data had errors where ok was false
+        if (!empty($import_data_errors)) {
+            return self::response(
+                false,
+                500,
+                'The following tables from the import data indicated errors when it was exported: ' . implode(', ', $import_data_errors) . '.  Try exporting the data from the source database and importing again.',
+                $results
+            );
+        }
+
         // Import data for each table created
         foreach ($results as $table_name => $result) {
-            $results[$table_name]['data_inserted'] = true;
             if ($result['table_created']) {
                 $table_data = $data[$table_name]['data'];
                 foreach ($table_data as $row) {
                     $insert_row_data = self::insert_row($table_name, $row);
-                    if (!$insert_row_data->ok) {
-                        $results[$table_name]['data_inserted'] = false;
-                    }
+                    $results[$table_name]['data_inserted'] = $insert_row_data->ok;
                 }
             }
         }

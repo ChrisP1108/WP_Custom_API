@@ -6,11 +6,16 @@
 
 define("BASE_PATH", rtrim(__DIR__, '/') . '/');
 
+/** 
+ * Declare ABSPATH for wordpress environment
+ */
+
+define('ABSPATH', dirname(__DIR__, 3) . '/');
+
 /**
  * Import Config class Base API Route
  */
 
-define("ABSPATH", null);
 require __DIR__ . '/config.php';
 
 define("BASE_API_ROUTE", WP_Custom_API\Config::BASE_API_ROUTE);
@@ -371,10 +376,9 @@ if (COMMAND === COMMAND_DELETE) {
 if (COMMAND === COMMAND_EXPORT || COMMAND === COMMAND_IMPORT && RESOURCE === 'data') {
 
     // Load wordpress environment
-
-    $wp_load = dirname(__DIR__, 3) . '/index.php';
+    $wp_load = dirname(__DIR__, 3) . '/wp-load.php';
     if (!file_Exists($wp_load)) {
-        echo "Error loading Wordpress file index.php from the Wordpress root directory";
+        echo "Error loading Wordpress file wp-load.php from the Wordpress root directory";
         exit;
     }
     require_once $wp_load;
@@ -388,17 +392,16 @@ if (COMMAND === COMMAND_EXPORT || COMMAND === COMMAND_IMPORT && RESOURCE === 'da
         if (!$get_table_data->ok) {
             echo "Error getting table data.  See list of errors below:\n";
             foreach ($get_table_data->data as $item) {
-                if (!$item['ok']) {
-                    echo $item['message'] . "\n";
+                if (!$item->ok) {
+                    echo $item->message . "\n";
                 }
             }
             exit;
         }
         if (empty($get_table_data->data)) {
             echo $get_table_data->message . "\n";
-            exit;
         }
-        $file_content = json_encode($get_table_data);
+        $file_content = json_encode($get_table_data->data);
         $create_file = file_put_contents(DATA_FILE_PATH, $file_content);
         if (!$create_file) {
             echo "Error creating export file " . DATA_FILE_PATH . "\n";
@@ -417,16 +420,23 @@ if (COMMAND === COMMAND_EXPORT || COMMAND === COMMAND_IMPORT && RESOURCE === 'da
         }
         $assoc_array = json_decode($get_file_data, true);
         $import_data = Database::import_tables_data($assoc_array);
+        $error_importing_data = false;
         if (!$import_data->ok) {
             echo $import_data->message . " See list below for error details.\n";
             foreach($import_data->data as $table => $data) {
                 if (!$table['table_created']) {
                     echo "An error occured when creating the table " . $table . ".";
+                    $error_importing_data = true;
                 }
                 if (!$table['data_inserted']) {
                     echo "An error occured when inserting data into the table " . $table . ".";
+                    $error_importing_data = true;
                 }
             }
+        }
+        if (!$error_importing_data) {
+            echo "One or more errors occured while importing data.\n";
+            exit;
         }
         echo "Data import successful. \n";
         exit;
