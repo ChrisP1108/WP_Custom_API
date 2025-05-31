@@ -26,13 +26,19 @@ if (!defined('ABSPATH')) exit;
  * Define WP Custom API Plugin Folder Path.  Used for requiring plugin files and auto loader on init class.
  */
 
-define("WP_CUSTOM_API_FOLDER_PATH", plugin_dir_path(__FILE__));
+define("WP_CUSTOM_API_FOLDER_PATH", 
+    preg_replace(
+        '#/+#', 
+        '/',
+        str_replace("\\", "/", plugin_dir_path(__FILE__))
+    )
+);
 
 /** 
  * Load Error Generator to output errors that occur from the plugin
  */
 
-require_once WP_CUSTOM_API_FOLDER_PATH . '/includes/error_generator.php';
+require_once WP_CUSTOM_API_FOLDER_PATH . 'includes/error_generator.php';
 
 use WP_Custom_API\Includes\Error_Generator;
 
@@ -40,7 +46,7 @@ use WP_Custom_API\Includes\Error_Generator;
  * Load Init class to initialize plugin.
  */
 
-require_once WP_CUSTOM_API_FOLDER_PATH . '/includes/init.php';
+require_once WP_CUSTOM_API_FOLDER_PATH . 'includes/init.php';
 
 use WP_Custom_API\Includes\Init;
 

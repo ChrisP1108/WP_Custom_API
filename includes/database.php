@@ -491,10 +491,14 @@ final class Database
     public static function get_table_schema_from_db(string $table_name): object
     {
         global $wpdb;
+
+        // Get table data
         $table_full_name = self::get_table_full_name($table_name);
 
+        // Return error if table does not exist
         if (!$table_full_name) return self::response(false, 500, 'Table `' . $table_name . '` does not exist.');
 
+        // Get table columns schema
         $cols = $wpdb->get_results("DESCRIBE {$table_full_name}", ARRAY_A);
         $schema = [];
 
@@ -661,5 +665,72 @@ final class Database
 
         // If all was successful, return success
         return self::response(true, 200, 'Tables data successfully imported.', $results);
+    }
+
+    /**
+     * METHOD - generate_data_migration
+     * 
+     * Generate a data migration file that can be used to import data into another Wordpress
+     * site.
+     *
+     * @param string $filename The name of the file to create without the .json extension.
+     *                          Default is 'migration'
+     * @return object - Returns an object from the self::response() method.
+     */
+
+    public static function generate_migration_file(string $filename = 'migration'): object
+    {
+        // Check if filename already exists
+        $file_path = WP_CUSTOM_API_FOLDER_PATH . strtolower($filename) . '.json';
+
+        if (@file_get_contents($file_path) !== false) return self::response(false, 500, 'A file with the name ' . $filename . '.json already exists.');
+
+        // Get data from database
+        $get_table_data = self::get_all_tables_data();
+        
+        // If error occured, return error
+        if (!$get_table_data->ok) return self::response(false, 500, 'An error occurred while attempting to retrieve table data.');
+
+        // If empty, return error
+        if (empty($get_table_data->data)) return self::response(false, 400, 'No tables data was found in the database.');
+
+        // Create file
+        $file_content = json_encode($get_table_data->data);
+        $create_file = file_put_contents($file_path, $file_content);
+
+        // If error creating file, return error
+        if (!$create_file) return self::response(false, 500, 'An error occurred while attempting to create the data file.');
+
+        // Return success if file successfully created
+        return self::response(true, 200, 'Data migration successfully generated.', ['filename' => $filename]);
+    }
+
+    /**
+     * Run a migration from a file.
+     *
+     * Runs a migration from a file with the specified name.  The file should be a JSON file
+     * in the root folder of the plugin.
+     *
+     * @param string $filename The name of the file to import without the .json extension.  Default is 'migration'
+     * @return object Returns an object from the self::response() method.
+     */
+
+    public static function run_migration_from_file(string $filename = 'migration'): object
+    {
+        // Get file data
+        $get_file_data = @file_get_contents(WP_CUSTOM_API_FOLDER_PATH . strtolower($filename) . '.json');
+
+        // If file doesn't exist, return error
+        if (!$get_file_data) return self::response(false, 500, 'Error importing data from file.  Make sure that ' . WP_CUSTOM_API_FOLDER_PATH . $filename . '.json' . ' exists in the root folder of the plugin.');
+
+        // Convert JSON into an associative array
+        $assoc_array = json_decode($get_file_data, true);
+
+        // If file is not a valid JSON array, return error
+        if (!is_array($assoc_array)) return self::response(false, 500, 'Data from ' . WP_CUSTOM_API_FOLDER_PATH . $filename . '.json' . ' is not valid for migrating. Check that the file is a valid JSON file.');
+        
+        // Import data and return result
+        $import_data = self::import_tables_data($assoc_array);
+        return $import_data;
     }
 }

@@ -154,7 +154,7 @@ final class Init
                 return;
             }
             $relative_class = str_replace('WP_Custom_API\\', '', $class);
-            $file = WP_CUSTOM_API_FOLDER_PATH . '/' . strtolower($relative_class) . '.php';
+            $file = WP_CUSTOM_API_FOLDER_PATH . strtolower($relative_class) . '.php';
             self::load_file($file, $class);
         });
     }
@@ -175,7 +175,7 @@ final class Init
 
         foreach ($all_files_to_load as $filename) {
             try {
-                $directory = new RecursiveDirectoryIterator(WP_CUSTOM_API_FOLDER_PATH . '/' . 'api');
+                $directory = new RecursiveDirectoryIterator(WP_CUSTOM_API_FOLDER_PATH . 'api');
                 $iterator = new RecursiveIteratorIterator($directory);
                 foreach ($iterator as $file) {
                     if ($file->isFile() && $file->getExtension() === 'php' && $file->getFilename() === $filename . '.php') {

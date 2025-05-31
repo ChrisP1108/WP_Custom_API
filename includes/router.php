@@ -68,7 +68,7 @@ final class Router
         $router_folder_path = str_replace("\\", "/", dirname($router_trace[1]['file']));
         $router_folder_path = preg_replace('#/+#', '/', $router_folder_path);
 
-        $base_folder_path = str_replace("\\", "/", WP_CUSTOM_API_FOLDER_PATH) . "/api/";
+        $base_folder_path = str_replace("\\", "/", WP_CUSTOM_API_FOLDER_PATH) . "api/";
         $base_folder_path = preg_replace('#/+#', '/', $base_folder_path);
 
         $router_base_route = "/" . str_replace($base_folder_path, '', $router_folder_path);
