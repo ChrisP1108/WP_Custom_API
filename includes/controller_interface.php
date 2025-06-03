@@ -96,12 +96,12 @@ class Controller_Interface
         $invalid_types = [];
 
         foreach ($merged_sanitized_params as $key => $value) {
-            if (isset($value['message'])) {
+            if (!$value->ok) {
                 $invalid_types[] = [
                     'key' => $key,
-                    'message' => $value['message'],
-                    'type_found' => $value['type_found'],
-                    'expected' => $value['expected']
+                    'message' => $value->message,
+                    'type_found' => $value->type_found,
+                    'expected_type' => $value->expected_type
                 ];
             }
         }
@@ -181,6 +181,37 @@ class Controller_Interface
     }
 
     /**
+     * METHOD - compile_param_data
+     * 
+     * Compiles the sanitized parameters into a single array.
+     * 
+     * Loops through the given array of sanitized parameters and builds a new array containing only the keys and values of the sanitized parameters where the `ok` property is true.
+     * 
+     * @param array|object $data An array of sanitized parameters.
+     * 
+     * @return array|bool A compiled array containing only the keys and values of the sanitized parameters where the `ok` property is true.  Returns false if one or more data object had an ok key with a value of false.
+     */
+
+    final public static function compile_param_data(array|object $data): array|bool
+    {
+        $compiled_data = [];
+        if(isset($data->request_data)) {
+            foreach ($data->request_data ?? [] as $key => $object) {
+                if ($object->ok) {
+                    $compiled_data[$key] = $object->value;
+                }
+            }
+        } else {
+            foreach ($data as $key => $object) {
+                if ($object->ok) {
+                    $compiled_data[$key] = $object->value;
+                } else return false;
+            }
+        }
+        return $compiled_data;
+    }
+
+    /**
      * METHOD - set_headers
      * 
      * Sets HTTP headers.
@@ -207,14 +238,14 @@ class Controller_Interface
      * 
      * Handles the construction of a WP_REST_Response object.
      *
-     * @param object|null|array $response An object (or null) containing response data including 'ok', 'message', and 'data'.
+     * @param object|null|array|bool $response An object (or null) containing response data including 'ok', 'message', and 'data'.
      * @param bool $ok A default flag indicating if the operation was successful.
      * @param string $message A default message to return in the response.
      * 
      * @return WP_REST_Response A response object with the appropriate status code and data.
      */
 
-    final public static function response(object|null|array $response, int $status_code = 200, string|null $message = null): WP_REST_Response
+    final public static function response(object|null|array|bool $response, int $status_code = 200, string|null $message = null): WP_REST_Response
     {
         $parsed_response = [];
 

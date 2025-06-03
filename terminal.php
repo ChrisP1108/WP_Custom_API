@@ -183,9 +183,8 @@ class Create
         // Check that folder exists for writing file.  Create folder if it does not
 
         if (!is_dir("api/" . strtolower(PATH))) {
-            echo "api/" . strtolower(PATH);
             if (mkdir("api/" . strtolower(PATH), 0755, true)) {
-                echo "Directory " . strtolower(PATH) . " created inside api folder.";
+                echo "Directory `" . strtolower(PATH) . "` created inside api folder. ";
             } else {
                 echo "Error creating directory " . strtolower(PATH) . " inside api folder.";
             }
@@ -335,7 +334,7 @@ class Delete
         self::delete_file("permission");
         self::delete_file("routes");
         rmdir("api/" . strtolower(PATH));
-        echo strtolower(PATH) . " folder deleted inside api folder";
+        echo "`". strtolower(PATH) . "` folder deleted inside api folder";
     }
 }
 
