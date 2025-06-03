@@ -181,7 +181,7 @@ class Controller_Interface
     }
 
     /**
-     * METHOD - compile_param_data
+     * METHOD - compile_request_data
      * 
      * Compiles the sanitized parameters into a single array.
      * 
@@ -192,14 +192,14 @@ class Controller_Interface
      * @return array|bool A compiled array containing only the keys and values of the sanitized parameters where the `ok` property is true.  Returns false if one or more data object had an ok key with a value of false.
      */
 
-    final public static function compile_param_data(array|object $data): array|bool
+    final public static function compile_request_data(array|object $data): array|bool
     {
         $compiled_data = [];
         if(isset($data->request_data)) {
             foreach ($data->request_data ?? [] as $key => $object) {
                 if ($object->ok) {
                     $compiled_data[$key] = $object->value;
-                }
+                } else return false;
             }
         } else {
             foreach ($data as $key => $object) {
