@@ -75,7 +75,10 @@ class Controller_Interface
         $schema_data_types = [];
 
         foreach($schema as $key => $params) {
-            $schema_data_types[$key] =  $params['type'];
+            $schema_data_types[$key] =  [
+                'type' => $params['type'],
+                'limit' => $params['limit']
+            ];
         }
 
         // Sanitize the request data according to the schema
@@ -96,10 +99,10 @@ class Controller_Interface
         $invalid_types = [];
 
         foreach ($merged_sanitized_params as $key => $value) {
-            if (!$value->ok) {
+            if (!$value->type_error) {
                 $invalid_types[] = [
                     'key' => $key,
-                    'message' => $value->message,
+                    'type_message' => $value->type_message,
                     'type_found' => $value->type_found,
                     'expected_type' => $value->expected_type
                 ];
@@ -118,17 +121,13 @@ class Controller_Interface
                 continue;
             }
             $value = $merged_sanitized_params[$key];
-            if (!is_array($value) && !is_object($value)) {
-                $char_limit = $params['limit'] ?? 255;
-                $key_char_length = strlen($value) ?? 0;
-                if ($key_char_length > 0 && $key_char_length > $char_limit) {
-                    $keys_exceeding_char_limit[] = [
-                        'key' => $key,
-                        'message' => 'Key of `' . $key . '` exceeded the character limit of `' . $char_limit . '`. The key had a character length of `' . $key_char_length . '`.',
-                        'limit' => $char_limit,
-                        'length' => $key_char_length
-                    ];
-                }
+            if (!is_array($value) && $value->char_limit_exceeded) {
+                $keys_exceeding_char_limit[] = [
+                    'key' => $key,
+                    'message' => 'Key of `' . $key . '` exceeded the character limit of `' . $value->char_limit . '`. The key had a character length of `' . $value->char_length . '`.',
+                    'limit' => $value->char_limit,
+                    'length' => $value->char_length
+                ];
             }
         }
 
