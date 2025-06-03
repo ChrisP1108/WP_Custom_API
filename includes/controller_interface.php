@@ -38,15 +38,15 @@ class Controller_Interface
      */
 
     private function __construct(
-        protected readonly array $request_data,
-        protected readonly array $request_files,
-        protected readonly array $request_headers,
-        protected readonly int $status_code,
-        protected readonly bool $ok,
-        protected readonly string $message,
-        protected readonly array $missing_keys,
-        protected readonly array $invalid_types,
-        protected readonly array $keys_exceeding_char_limit
+        public readonly array $request_data,
+        public readonly array $request_files,
+        public readonly array $request_headers,
+        public readonly int $status_code,
+        public readonly bool $ok,
+        public readonly string $message,
+        public readonly array $missing_keys,
+        public readonly array $invalid_types,
+        public readonly array $keys_exceeding_char_limit
     ) {}
 
     /**
