@@ -7,6 +7,7 @@ namespace WP_Custom_API\Includes;
 use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Error_Generator;
 use WP_Custom_API\Includes\Permission_Interface as Permission;
+use WP_Custom_API\Includes\Controller_Interface as Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -88,6 +89,7 @@ final class Router
         // Register routes to $routes property
 
         self::$routes[] = [
+            'name' => str_replace('/', '',$router_base_route),
             'method' => strtoupper($method),
             'route' => self::parse_wildcards($router_base_route. $route),
             'callback' => $callback,
@@ -145,17 +147,28 @@ final class Router
                     }
 
                     // Destructure if array was returned from permission callback
-                    $data_params = null;
+                    $permission_callback_data_params = null;
                     if (is_array($ok) && is_bool($ok[0])) {
-                        $data_params = $ok[1] ?? null;
+                        $permission_callback_data_params = $ok[1] ?? null;
                         $ok = $ok[0];
                     }
                         
+                    // Used for model schema validation for first parameter in controller callback
+                    $model_class = 'WP_Custom_API\\Api\\' . ucfirst($route['name']) . '\Model';
+
+                    $model_schema = null;
+                    $request_validation = null;
+
+                    if (class_exists($model_class)) {
+                        $model_schema = new $model_class();
+                        $request_validation = Controller::request_handler($request, $model_schema::schema());
+                    }
+
                     // Return an unauthorized response if permission callback returned false
                     if (!$ok) return new WP_Rest_Response(['message' => 'Unauthorized'], 401);
 
                     // Run controller callback if permission callback returned true and pass in permission_data from permission callback
-                    return call_user_func($route['callback'], $request, $data_params);
+                    return call_user_func($route['callback'], $request_validation, $request, $permission_callback_data_params);
                 };
 
                 register_rest_route(Config::BASE_API_ROUTE, $route['route'], [

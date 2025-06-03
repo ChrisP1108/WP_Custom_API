@@ -25,6 +25,7 @@ define("BASE_API_ROUTE", WP_Custom_API\Config::BASE_API_ROUTE);
  */
 
 require_once __DIR__ . '/includes/database.php';
+
 use WP_Custom_API\Includes\Database;
 
 /**
@@ -214,7 +215,7 @@ class Create
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Model",
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Permission"
         ];
-        $class_content = "    public static function index(Request \$request, \$permission_params): Response \n    {\n        return self::response(null, 200, '" . ucfirst(PATH) . " route works');\n    }";
+        $class_content = "    public static function index(\$sanitized_params, Request \$request, \$permission_params): Response \n    {\n        return self::response(null, 200, '" . ucfirst(PATH) . " route works');\n    }";
         self::create_file("controller", $dependencies, $class_content);
     }
 
@@ -249,7 +250,7 @@ class Create
                             'email' => 
                                 [
                                     'query'    => 'VARCHAR(80)',
-                                    'type'     => 'text',
+                                    'type'     => 'email',
                                     'required' => true,
                                     'limit'    => 80
                                 ]
@@ -261,8 +262,7 @@ class Create
                 {
                     return false;
                 }
-            PHP
-        ;
+            PHP;
         self::create_file("model", $dependencies, $class_content);
     }
 
@@ -423,7 +423,7 @@ if (COMMAND === COMMAND_EXPORT || COMMAND === COMMAND_IMPORT && RESOURCE === 'da
         $error_importing_data = false;
         if (!$import_data->ok) {
             echo $import_data->message . " See list below for error details.\n";
-            foreach($import_data->data as $table => $data) {
+            foreach ($import_data->data as $table => $data) {
                 if (!$table['table_created']) {
                     echo "An error occured when creating the table " . $table . ".";
                     $error_importing_data = true;

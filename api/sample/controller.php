@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) exit;
 
 final class Controller extends Controller_Interface
 {
-    public static function index(Request $request, $permission_params): Response 
+    public static function index($sanitized_params, Request $request, $permission_params): Response 
     {
         return self::response(null, 200, 'Sample route works');
     }

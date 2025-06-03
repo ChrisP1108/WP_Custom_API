@@ -35,7 +35,7 @@ final class Model extends Model_Interface
                 'email' => 
                     [
                         'query'    => 'VARCHAR(80)',
-                        'type'     => 'text',
+                        'type'     => 'email',
                         'required' => true,
                         'limit'    => 80
                     ]
