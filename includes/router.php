@@ -152,23 +152,12 @@ final class Router
                         $permission_callback_data_params = $ok[1] ?? null;
                         $ok = $ok[0];
                     }
-                        
-                    // Used for model schema validation for first parameter in controller callback
-                    $model_class = 'WP_Custom_API\\Api\\' . ucfirst($route['name']) . '\Model';
-
-                    $model_schema = null;
-                    $request_validation = null;
-
-                    if (class_exists($model_class)) {
-                        $model_schema = new $model_class();
-                        $request_validation = Controller::request_handler($request, $model_schema::schema());
-                    }
 
                     // Return an unauthorized response if permission callback returned false
                     if (!$ok) return new WP_Rest_Response(['message' => 'Unauthorized'], 401);
 
                     // Run controller callback if permission callback returned true and pass in permission_data from permission callback
-                    return call_user_func($route['callback'], $request_validation, $request, $permission_callback_data_params);
+                    return call_user_func($route['callback'], $request, $permission_callback_data_params);
                 };
 
                 register_rest_route(Config::BASE_API_ROUTE, $route['route'], [

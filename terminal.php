@@ -214,7 +214,7 @@ class Create
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Model",
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Permission"
         ];
-        $class_content = "    public static function index(\$sanitized_params, Request \$request, \$permission_params): Response \n    {\n        return self::response(null, 200, '" . ucfirst(PATH) . " route works');\n    }";
+        $class_content = "    public static function index(Request \$request, \$permission_params): Response \n    {\n        return self::response(null, 200, '" . ucfirst(PATH) . " route works');\n    }";
         self::create_file("controller", $dependencies, $class_content);
     }
 
