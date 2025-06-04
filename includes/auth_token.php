@@ -207,7 +207,7 @@ final class Auth_Token
         $hmac_key = hash_hkdf('sha256', Config::SECRET_KEY, 32, 'authentication');
 
         // Validate HMAC
-        $computed_hmac = hash_hmac("sha256", $iv . $encrypted_data_with_iv, $hmac_key);
+        $computed_hmac = hash_hmac("sha256", $iv . $encrypted_data_with_iv, $hmac_key, true);
         if (!hash_equals($computed_hmac, $received_hmac)) {
             self::remove_token($token_name);
             return self::response(false, 401, null, "Invalid token.");
