@@ -185,15 +185,8 @@ final class Auth_Token
         $token = $_COOKIE[$token_name] ?? null;
         if (!$token) return self::response(false, 401, null, "No token with the name of `" . $token_name . "` was found.");
 
-        // Base64 decode the token
-        $token_base64_decoded = base64_decode($token, true);
-        if ($token_base64_decoded === false) {
-            self::remove_token($token_name);
-            return self::response(false, 401, null, "Invalid base64 token format.");
-        }
-
         // Split the token into encrypted data and HMAC and check that it is valid.
-        $token_split = explode(".", $token_base64_decoded, 3);
+        $token_split = explode(".", $token, 3);
         if(count($token_split) !== 3) return self::response(false, 401, null, "Inadequate data from existing token. May be invalid.");
 
         // Split token data into encrypted data and HMAC
