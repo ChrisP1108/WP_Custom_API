@@ -130,8 +130,12 @@ final class Auth_Token
         // Create HMAC of the encrypted data (with IV) for integrity
         $hmac = hash_hmac("sha256", $iv . $encrypted_data, $hmac_key);
 
+        $iv_64 = base64_encode($iv);
+        $encrypted_data_64 = base64_encode($encrypted_data);
+        $hmac_64 = base64_encode($hmac);
+
         // Combine IV + encrypted data(base64 encoded) + HMAC(base64_encoded) and base64 encode it
-        $token = base64_encode($iv . base64_encode($encrypted_data) . '.' . base64_encode($hmac));
+        $token = base64_encode($iv_64 . '.' . $encrypted_data_64 . '.' . $hmac_64);
 
         // Check if the connection is using HTTPS
         if (!wp_is_using_https() && Config::TOKEN_OVER_HTTPS_ONLY) return self::response(false, 500, $id, "Token could not be stored as a cookie on the client, as the `TOKEN_OVER_HTTPS_ONLY` config variable is set to true and the server is not using HTTPS.");
@@ -190,16 +194,17 @@ final class Auth_Token
 
         // Split the token into encrypted data and HMAC and check that it is valid.
         $token_split = explode(".", $token_base64_decoded, 2);
-        if(count($token_split) !== 2) return self::response(false, 401, null, "Inadequate data from existing token. May be invalid.");
+        if(count($token_split) !== 3) return self::response(false, 401, null, "Inadequate data from existing token. May be invalid.");
 
         // Split token data into encrypted data and HMAC
-        list($encrypted_data_with_iv_base64, $received_hmac_base64) = $token_split;
+        list($iv_base64, $encrypted_data_with_iv_base64, $received_hmac_base64) = $token_split;
 
         // Base 64 decode the data
+        $iv = base64_decode($iv_base64, true);
         $encrypted_data_with_iv = base64_decode($encrypted_data_with_iv_base64, true);
         $received_hmac = base64_decode($received_hmac_base64, true);
 
-        if (!$encrypted_data_with_iv || !$received_hmac) {
+        if (!$iv === false || $encrypted_data_with_iv === false || $received_hmac === false) {
             self::remove_token($token_name);
             return self::response(false, 401, null, "Invalid base64 token format.");
         }
