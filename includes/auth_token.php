@@ -193,7 +193,7 @@ final class Auth_Token
         }
 
         // Split the token into encrypted data and HMAC and check that it is valid.
-        $token_split = explode(".", $token_base64_decoded, 2);
+        $token_split = explode(".", $token_base64_decoded, 3);
         if(count($token_split) !== 3) return self::response(false, 401, null, "Inadequate data from existing token. May be invalid.");
 
         // Split token data into encrypted data and HMAC
