@@ -99,7 +99,7 @@ class Controller_Interface
         $invalid_types = [];
 
         foreach ($merged_sanitized_params as $key => $value) {
-            if (!$value->type_error) {
+            if ($value->type_error) {
                 $invalid_types[] = [
                     'key' => $key,
                     'type_message' => $value->type_message,

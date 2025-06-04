@@ -73,11 +73,35 @@ class Param_Sanitizer {
      */
 
     private static function generate_types_response(bool $type_valid, $value, string $expected): array {
+        
+        // Generate correct type verbiage
+        $type_found = 'text';
+        switch(gettype($value)) {
+            case 'integer':
+                $type_found = 'int';
+                break;
+            case 'boolean':
+                $type_found = 'bool';
+                break;
+            case 'string':
+                if ($expected === 'text') {
+                    $type_found = 'text';
+                }
+                if ($expected === 'email' && $type_valid) {
+                    $type_found = 'email';
+                }
+                break;
+            default:
+                $type_found = gettype($value);
+                break;
+        }
+        
+        // Generate response
         return [
-            'type_error' => $type_valid,
-            'type_found' => gettype($value) === 'integer' ? 'int' : (gettype($value) === 'boolean' ? 'bool' : (gettype($value) === 'string' ? 'text' : gettype($value))),
+            'type_error' => !$type_valid,
+            'type_found' => $type_found,
             'expected_type' => $expected,
-            'type_message' => 'Expected type `'.$expected.'`, got `' . gettype($value) . '` with value of `'.$value.'`.'
+            'type_message' => 'Expected type `'.$expected.'`, got `' . $type_found . '` with value of `'.$value.'`.'
         ];
     }
 
@@ -87,14 +111,14 @@ class Param_Sanitizer {
      * Generate a response regarding the character limit of a given value.
      * 
      * @param mixed $value The value being checked.
-     * @param string $expected The expected type with optional character limit.
+     * @param string|int|bool|null $expected The expected type with optional character limit.
      * 
      * @return array A response indicating if the character limit was exceeded, along with related messages and values.
      */
 
-    private static function generate_char_limit_response($value, string $expected): array {
-        $char_limit = $expected['limit'] ?? 255;
-        $char_length = strlen($value) ?? 0;
+    private static function generate_char_limit_response($value, int $expected): array {
+        $char_limit = $expected ?? 255;
+        $char_length = strlen(strval($value)) ?? 0;
         
         return [
             'char_limit_exceeded' => $char_length > $char_limit,
@@ -110,12 +134,12 @@ class Param_Sanitizer {
      * Sanitize a value according to its type.
      * 
      * @param string|int|array $value The value to be sanitized.
-     * @param string $type The expected type of the value.
+     * @param array $type The expected type of the value with keys of type, limit.
      * 
      * @return string|int|array The sanitized value.
      */
 
-    public static function sanitize_value($value, string $type): object {
+    public static function sanitize_value($value, array $type): object {
         $valid = false;
         $sanitized = null;
         switch ($type['type']) {
@@ -256,7 +280,7 @@ class Param_Sanitizer {
                     $type_set['type_error'],
                     $type_set['type_found'],
                     $type_set['expected_type'],
-                    $type_set['message'],
+                    $type_set['type_message'],
                     $length_set['char_limit_exceeded'],
                     $length_set['char_limit_message'],
                     $length_set['char_limit'],
@@ -276,7 +300,7 @@ class Param_Sanitizer {
                     $type_set['type_error'],
                     $type_set['type_found'],
                     $type_set['expected_type'],
-                    $type_set['message'],
+                    $type_set['type_message'],
                     $length_set['char_limit_exceeded'],
                     $length_set['char_limit_message'],
                     $length_set['char_limit'],
