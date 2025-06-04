@@ -197,12 +197,10 @@ final class Auth_Token
         $encrypted_data_with_iv = base64_decode($encrypted_data_with_iv_base64, true);
         $received_hmac = base64_decode($received_hmac_base64, true);
 
-        if (!$iv === false || $encrypted_data_with_iv === false || $received_hmac === false) {
+        if ($iv === false || $encrypted_data_with_iv === false || $received_hmac === false) {
             self::remove_token($token_name);
             return self::response(false, 401, null, "Invalid base64 token format.");
         }
-
-        if (strlen($encrypted_data_with_iv) < 16) return self::response(false, 401, null, "Invalid token structure. Missing IV.");
 
         // Derive keys using HKDF (same as in generate)
         $encryption_key = hash_hkdf('sha256', Config::SECRET_KEY, 32, 'encryption');
