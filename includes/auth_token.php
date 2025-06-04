@@ -135,7 +135,7 @@ final class Auth_Token
         $hmac_64 = base64_encode($hmac);
 
         // Combine IV + encrypted data(base64 encoded) + HMAC(base64_encoded) and base64 encode it
-        $token = base64_encode($iv_64 . '.' . $encrypted_data_64 . '.' . $hmac_64);
+        $token = $iv_64 . '.' . $encrypted_data_64 . '.' . $hmac_64;
 
         // Check if the connection is using HTTPS
         if (!wp_is_using_https() && Config::TOKEN_OVER_HTTPS_ONLY) return self::response(false, 500, $id, "Token could not be stored as a cookie on the client, as the `TOKEN_OVER_HTTPS_ONLY` config variable is set to true and the server is not using HTTPS.");
