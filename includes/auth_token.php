@@ -124,11 +124,11 @@ final class Auth_Token
         $hmac_key = hash_hkdf('sha256', Config::SECRET_KEY, 32, 'authentication');
 
         // Encrypt the data
-        $encrypted_data = openssl_encrypt($data, 'aes-256-cbc', $encryption_key, 0, $iv);
+        $encrypted_data = openssl_encrypt($data, 'aes-256-cbc', $encryption_key, OPENSSL_RAW_DATA, $iv);
         if ($encrypted_data === false) return self::response(false, 500, $id, "Encryption failed while generating the auth token.");
 
         // Create HMAC of the encrypted data (with IV) for integrity
-        $hmac = hash_hmac("sha256", $iv . $encrypted_data, $hmac_key);
+        $hmac = hash_hmac("sha256", $iv . $encrypted_data, $hmac_key, true);
 
         $iv_64 = base64_encode($iv);
         $encrypted_data_64 = base64_encode($encrypted_data);
@@ -204,25 +204,19 @@ final class Auth_Token
 
         if (strlen($encrypted_data_with_iv) < 16) return self::response(false, 401, null, "Invalid token structure. Missing IV.");
 
-        // Extract the IV from the encrypted data (first 16 bytes)
-        $iv = substr($encrypted_data_with_iv, 0, 16);
-
-        // Extract the encrypted data (the rest of the data after the IV)
-        $encrypted_data = substr($encrypted_data_with_iv, 16);
-
         // Derive keys using HKDF (same as in generate)
         $encryption_key = hash_hkdf('sha256', Config::SECRET_KEY, 32, 'encryption');
         $hmac_key = hash_hkdf('sha256', Config::SECRET_KEY, 32, 'authentication');
 
         // Validate HMAC
-        $computed_hmac = hash_hmac("sha256", $iv . $encrypted_data, $hmac_key);
+        $computed_hmac = hash_hmac("sha256", $iv . $encrypted_data_with_iv, $hmac_key);
         if (!hash_equals($computed_hmac, $received_hmac)) {
             self::remove_token($token_name);
             return self::response(false, 401, null, "Invalid token.");
         }
 
         // Decrypt the data
-        $decrypted_data = openssl_decrypt($encrypted_data, 'aes-256-cbc', $encryption_key, 0, $iv);
+        $decrypted_data = openssl_decrypt($encrypted_data_with_iv, 'aes-256-cbc', $encryption_key, OPENSSL_RAW_DATA, $iv);
         if ($decrypted_data === false) {
             self::remove_token($token_name);
             return self::response(false, 401, null, "Decryption failed. Token may be invalid.");
@@ -240,14 +234,18 @@ final class Auth_Token
         // Separate token components
         list($id, $expiration, $issued_at, $nonce) = $parts;
 
+        $id = intval($id);
+        $expiration = intval($expiration);
+        $issued_at = intval($issued_at);
+
         // Check token expiration
-        if (intval($expiration) <= time()) {
+        if ($expiration <= time()) {
             self::remove_token($token_name, $id);
             return self::response(false, 401, null, "Token has expired.");
         }
 
         // Check if token was issued before logout
-        if ($logout_time !== 0 && intval($issued_at) <= $logout_time) {
+        if ($logout_time !== 0 && $issued_at <= $logout_time) {
             self::remove_token($token_name, $id);
             return self::response(false, 401, null, "Token was issued before or at the last logout time.");
         }
@@ -260,6 +258,6 @@ final class Auth_Token
         }
 
         // Token is valid
-        return self::response(true, 200, $id, "Token authenticated.", intval($issued_at), intval($expiration));
+        return self::response(true, 200, $id, "Token authenticated.", $issued_at, $expiration);
     }
 }
