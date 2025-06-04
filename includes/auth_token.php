@@ -104,9 +104,8 @@ final class Auth_Token
 
     public static function generate(int $id, string $token_name, int $expiration = Config::TOKEN_EXPIRATION): object
     {
-        if (!$id || !$token_name) {
-            return self::response(false, 500, $id, "`id` and `token_name` parameters required to generate auth token.");
-        }
+        // Check if token name was provided.  If not return error
+        if (!$id || !$token_name) return self::response(false, 500, $id, "`id` and `token_name` parameters required to generate auth token.");
 
         $issued_at = time(); // Current timestamp
         $expiration_time = $issued_at + intval($expiration);
@@ -117,23 +116,25 @@ final class Auth_Token
         // Token data to be stored
         $data = strval($id) . '|' . $expiration_time . '|' . $issued_at . '|' . $nonce;
 
-        // Encrypt the token data for additional security
+        // Generate random bytes for IV
         $iv = random_bytes(16);
-        $encrypted_data = openssl_encrypt($data, 'aes-256-cbc', Config::SECRET_KEY, 0, $iv);
-        if ($encrypted_data === false) {
-            return self::response(false, 500, $id, "Encryption failed while generating the auth token.");
-        }
+
+         // Derive keys using HKDF
+        $encryption_key = hash_hkdf('sha256', Config::SECRET_KEY, 32, 'encryption');
+        $hmac_key = hash_hkdf('sha256', Config::SECRET_KEY, 32, 'authentication');
+
+        // Encrypt the data
+        $encrypted_data = openssl_encrypt($data, 'aes-256-cbc', $encryption_key, 0, $iv);
+        if ($encrypted_data === false) return self::response(false, 500, $id, "Encryption failed while generating the auth token.");
 
         // Create HMAC of the encrypted data (with IV) for integrity
-        $hmac = hash_hmac("sha256", $iv . $encrypted_data, Config::SECRET_KEY);
+        $hmac = hash_hmac("sha256", $iv . $encrypted_data, $hmac_key);
 
         // Combine IV + encrypted data + HMAC and base64 encode it
         $token = base64_encode($iv . $encrypted_data . '.' . $hmac);
 
         // Check if the connection is using HTTPS
-        if (!wp_is_using_https() && Config::TOKEN_OVER_HTTPS_ONLY) {
-            return self::response(false, 500, $id, "Token could not be stored as a cookie on the client, as the `TOKEN_OVER_HTTPS_ONLY` config variable is set to true and the server is not using HTTPS.");
-        }
+        if (!wp_is_using_https() && Config::TOKEN_OVER_HTTPS_ONLY) return self::response(false, 500, $id, "Token could not be stored as a cookie on the client, as the `TOKEN_OVER_HTTPS_ONLY` config variable is set to true and the server is not using HTTPS.");
 
         // Store the nonce server-side in a transient (or database) to validate later
         set_transient(Config::AUTH_TOKEN_PREFIX . $id, $nonce, $expiration_time - $issued_at);
@@ -142,7 +143,17 @@ final class Auth_Token
         $token_name = Config::AUTH_TOKEN_PREFIX . $token_name;
 
         // Set the token as a cookie in the browser
-        setcookie($token_name, $token, $expiration_time, "/", "", Config::TOKEN_OVER_HTTPS_ONLY, Config::TOKEN_COOKIE_HTTP_ONLY);
+        $cookie_result = setcookie($token_name, $token, 
+        [
+            'expires' => $expiration_time, 
+            'path' => "/", 
+            'domain' => "", 
+            'secure' => Config::TOKEN_OVER_HTTPS_ONLY, 
+            'httponly' => Config::TOKEN_COOKIE_HTTP_ONLY, 
+            'samesite' => Config::TOKEN_COOKIE_SAME_SITE
+        ]);
+
+        if (!$cookie_result) return self::response(false, 500, $id, "Token was generated but could not be stored in cookie. Headers may have already been sent.");
 
         return self::response(true, 200, $id, "Token successfully generated.", $issued_at, $expiration_time);
     }
@@ -160,18 +171,15 @@ final class Auth_Token
 
     public static function validate(string $token_name, int $logout_time = 0): object
     {
-        if (!$token_name) {
-            return self::response(false, 500, null, "A token name must be provided for validation.");
-        }
+        // Check if token name was provided.  If not return error
+        if (!$token_name) return self::response(false, 500, null, "A token name must be provided for validation.");
 
         // Apply auth token prefix to token name
-
         $token_name = Config::AUTH_TOKEN_PREFIX . $token_name;
 
+        // Check if token exists
         $token = $_COOKIE[$token_name] ?? null;
-        if (!$token) {
-            return self::response(false, 401, null, "No token with the name of `" . $token_name . "` was found.");
-        }
+        if (!$token) return self::response(false, 401, null, "No token with the name of `" . $token_name . "` was found.");
 
         // Base64 decode the token
         $token_base64_decoded = base64_decode($token, true);
@@ -180,12 +188,14 @@ final class Auth_Token
             return self::response(false, 401, null, "Invalid base64 token format.");
         }
 
-        // Split the token into encrypted data and HMAC
-        list($encrypted_data_with_iv, $received_hmac) = explode(".", $token_base64_decoded, 2);
-        if (!isset($received_hmac) || !isset($encrypted_data_with_iv)) {
-            self::remove_token($token_name);
-            return self::response(false, 401, null, "Inadequate data from existing token. May be invalid.");
-        }
+        // Split the token into encrypted data and HMAC and check that it is valid.
+        $token_split = explode(".", $token_base64_decoded, 2);
+        if(count($token_split) !== 2) return self::response(false, 401, null, "Inadequate data from existing token. May be invalid.");
+
+        // Split token data into encrypted data and HMAC
+        list($encrypted_data_with_iv, $received_hmac) = $token_split;
+
+        if (strlen($encrypted_data_with_iv) < 16) return self::response(false, 401, null, "Invalid token structure. Missing IV.");
 
         // Extract the IV from the encrypted data (first 16 bytes)
         $iv = substr($encrypted_data_with_iv, 0, 16);
@@ -193,19 +203,35 @@ final class Auth_Token
         // Extract the encrypted data (the rest of the data after the IV)
         $encrypted_data = substr($encrypted_data_with_iv, 16);
 
+        // Derive keys using HKDF (same as in generate)
+        $encryption_key = hash_hkdf('sha256', Config::SECRET_KEY, 32, 'encryption');
+        $hmac_key = hash_hkdf('sha256', Config::SECRET_KEY, 32, 'authentication');
+
+        // Validate HMAC
+        $computed_hmac = hash_hmac("sha256", $iv . $encrypted_data, $hmac_key);
+        if (!hash_equals($computed_hmac, $received_hmac)) {
+            self::remove_token($token_name);
+            return self::response(false, 401, null, "Invalid token.");
+        }
+
         // Decrypt the data
-        $decrypted_data = openssl_decrypt($encrypted_data, 'aes-256-cbc', Config::SECRET_KEY, 0, $iv);
+        $decrypted_data = openssl_decrypt($encrypted_data, 'aes-256-cbc', $encryption_key, 0, $iv);
         if ($decrypted_data === false) {
             self::remove_token($token_name);
             return self::response(false, 401, null, "Decryption failed. Token may be invalid.");
         }
 
         // Extract token components
-        list($id, $expiration, $issued_at, $nonce) = explode('|', $decrypted_data);
-        if (!isset($id) || !isset($expiration) || !isset($issued_at) || !isset($nonce)) {
-            self::remove_token($token_name, $id);
+        $parts = explode('|', $decrypted_data);
+
+        // Check if token structure is valid
+        if (count($parts) !== 4) {
+            self::remove_token($token_name);
             return self::response(false, 401, null, "Token structure is invalid.");
         }
+
+        // Separate token components
+        list($id, $expiration, $issued_at, $nonce) = $parts;
 
         // Check token expiration
         if (intval($expiration) <= time()) {
@@ -224,15 +250,6 @@ final class Auth_Token
         if (!$stored_nonce || $stored_nonce !== $nonce) {
             self::remove_token($token_name, $id);
             return self::response(false, 401, null, "Invalid or replayed token.");
-        }
-
-        // Recompute the HMAC and compare it
-        $computed_hmac = hash_hmac("sha256", $iv . $encrypted_data, Config::SECRET_KEY);
-
-        // Use hash_equals for a secure HMAC comparison
-        if (!hash_equals($computed_hmac, $received_hmac)) {
-            self::remove_token($token_name, $id);
-            return self::response(false, 401, null, "Invalid token.");
         }
 
         // Token is valid
