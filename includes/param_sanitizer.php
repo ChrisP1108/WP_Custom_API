@@ -25,9 +25,10 @@ class Param_Sanitizer {
         public readonly string|null $type_message,
         public readonly bool $char_maximum_exceeded,
         public readonly string|null $char_maximum_message,
+        public readonly string|null $char_minimum_message,
         public readonly int $char_maximum,
         public readonly int $char_minimun,
-        public readonly int $char_minimum_met,
+        public readonly bool $char_minimum_met,
         public readonly int $char_length
     ) {}
 
@@ -83,7 +84,7 @@ class Param_Sanitizer {
                 $type_found = 'int';
                 break;
             case 'boolean':
-                $type_found = 'bool';
+                $type_found = 'boolean';
                 break;
             case 'string':
                 if ($expected === 'text') {
@@ -120,7 +121,7 @@ class Param_Sanitizer {
 
     private static function generate_chars_amount_response($value, array $expected): array {
         $char_maximum = $expected['maximum'] ?? 255;
-        $char_minimum = $expected['minimun'] ?? 0;
+        $char_minimum = $expected['minimum'] ?? 0;
         $char_length = strlen(strval($value)) ?? 0;
         
         return [
@@ -128,9 +129,9 @@ class Param_Sanitizer {
             'char_maximum_message' => 'Value `' . $value . '` has a character maximum of `' . $char_maximum . '`. The value had a character length of `' . $char_length . '`.',
             'char_maximum' => $char_maximum,
             'char_length' => $char_length,
-            'char_minimun' => $char_minimum,
+            'char_minimum' => $char_minimum,
             'char_minimum_met' => $char_length >= $char_minimum,
-            'char_minimum_message' => 'Value `' . $value . '` has a character minimum of `' . $char_maximum . '`. The value had a character length of `' . $char_length . '`.',
+            'char_minimum_message' => 'Value `' . $value . '` has a character minimum of `' . $char_minimum . '`. The value had a character length of `' . $char_length . '`.',
             'char_error' => $char_length > $char_maximum || $char_length < $char_minimum
         ];
     }
@@ -169,6 +170,7 @@ class Param_Sanitizer {
                     $type_set['type_message'],
                     $length_set['char_maximum_exceeded'],
                     $length_set['char_maximum_message'],
+                    $length_set['char_minimum_message'],
                     $length_set['char_maximum'],
                     $length_set['char_minimum'],
                     $length_set['char_minimum_met'],
@@ -182,7 +184,7 @@ class Param_Sanitizer {
                     $sanitized = filter_var($value, FILTER_VALIDATE_BOOLEAN);
                     $valid = true;
                 }
-                $type_set = self::generate_types_response($valid, $value, 'bool');
+                $type_set = self::generate_types_response($valid, $value, 'boolean');
                 $length_set = self::generate_chars_amount_response($value, $schema);
                 return new static(
                     $valid && !$length_set['char_error'],
@@ -193,6 +195,7 @@ class Param_Sanitizer {
                     $type_set['type_message'],
                     $length_set['char_maximum_exceeded'],
                     $length_set['char_maximum_message'],
+                    $length_set['char_minimum_message'],
                     $length_set['char_maximum'],
                     $length_set['char_minimum'],
                     $length_set['char_minimum_met'],
@@ -222,6 +225,7 @@ class Param_Sanitizer {
                         $type_set['type_message'],
                         $length_set['char_maximum_exceeded'],
                         $length_set['char_maximum_message'],
+                        $length_set['char_minimum_message'],
                         $length_set['char_maximum'],
                         $length_set['char_minimum'],
                         $length_set['char_minimum_met'],
@@ -238,6 +242,7 @@ class Param_Sanitizer {
                     $type_set['type_message'],
                     $length_set['char_maximum_exceeded'],
                     $length_set['char_maximum_message'],
+                    $length_set['char_minimum_message'],
                     $length_set['char_maximum'],
                     $length_set['char_minimum'],
                     $length_set['char_minimum_met'],
@@ -267,6 +272,7 @@ class Param_Sanitizer {
                         $type_set['type_message'],
                         $length_set['char_maximum_exceeded'],
                         $length_set['char_maximum_message'],
+                        $length_set['char_minimum_message'],
                         $length_set['char_maximum'],
                         $length_set['char_minimum'],
                         $length_set['char_minimum_met'],
@@ -283,6 +289,7 @@ class Param_Sanitizer {
                     $type_set['type_message'],
                     $length_set['char_maximum_exceeded'],
                     $length_set['char_maximum_message'],
+                    $length_set['char_minimum_message'],
                     $length_set['char_maximum'],
                     $length_set['char_minimum'],
                     $length_set['char_minimum_met'],
@@ -302,6 +309,7 @@ class Param_Sanitizer {
                     $type_set['type_message'],
                     $length_set['char_maximum_exceeded'],
                     $length_set['char_maximum_message'],
+                    $length_set['char_minimum_message'],
                     $length_set['char_maximum'],
                     $length_set['char_minimum'],
                     $length_set['char_minimum_met'],
@@ -324,6 +332,7 @@ class Param_Sanitizer {
                     $type_set['type_message'],
                     $length_set['char_maximum_exceeded'],
                     $length_set['char_maximum_message'],
+                    $length_set['char_minimum_message'],
                     $length_set['char_maximum'],
                     $length_set['char_minimum'],
                     $length_set['char_minimum_met'],

@@ -46,7 +46,7 @@ class Controller_Interface
         public readonly string $message,
         public readonly array $missing_keys,
         public readonly array $invalid_types,
-        public readonly array $keys_not_meetings_char_requirements
+        public readonly array $keys_not_meeting_char_requirements
     ) {}
 
     /**
@@ -74,11 +74,11 @@ class Controller_Interface
         // Map out schema for checking data types
         $schema_data_types = [];
 
-        foreach($schema as $key => $params) {
+        foreach($schema as $key => $s) {
             $schema_data_types[$key] =  [
-                'type' => $params['type'],
-                'maximum' => $params['maximum'],
-                'minimun'  => $params['minimun'],
+                'type' => $s['type'],
+                'maximum' => $s['maximum'],
+                'minimum'  => $s['minimum'],
             ];
         }
 
@@ -123,10 +123,10 @@ class Controller_Interface
             }
             $value = $merged_sanitized_params[$key];
             if (!is_array($value)) {
-                if ($value->char_maximum_exceeded || $value->char_minimum_met === false) {
+                if ($value->char_maximum_exceeded || !$value->char_minimum_met) {
                     $keys_not_meeting_char_requirements[] = [
                         'key' => $key,
-                        'is_array_key' => false,
+                        'is_array' => false,
                         'message' => 'Key of `' . $key . '` did not satisfy the character maximum or minimum length requirements.',
                         'char_maximum' => $value->char_maximum,
                         'char_maximum_message' => $value->char_maximum_message,
@@ -137,21 +137,21 @@ class Controller_Interface
                         'char_minimum_message' => $value->char_minimum_message
                     ];
                 }
-            } else {
-                foreach ($value as $item) {
-                    if ($item->char_maximum_exceeded || $item->char_minimum_met === false) {
+            } else if (is_array($value)) {
+                foreach ($value as $nested_key => $nested_value) {
+                    if ($nested_value->char_maximum_exceeded || !$nested_value->char_minimum_met) {
                         $keys_not_meeting_char_requirements[] = [
-                            'key' => $item->key,
+                            'key' => $nested_key,
                             'array_key' => $key,
-                            'is_array_key' => true,
-                            'message' => 'Key of `' . $key . '` has a nested array key of `' . $item->key . '` that does not satisfy the character maximum or minimum length requirements.',
-                            'char_maximum' => $item->char_maximum,
-                            'char_maximum_message' => $item->char_maximum_message,
-                            'char_length_exceeded' => $item->char_maximum_exceeded,
-                            'char_length' => $item->char_length,
-                            'char_minimum' => $item->char_minimun,
-                            'char_minimum_met' => $item->char_minimum_met,
-                            'char_minimum_message' => $item->char_minimum_message
+                            'is_array' => true,
+                            'message' => 'Key of `' . $key . '` has a nested array key of `' . $nested_key . '` that does not satisfy the character maximum or minimum length requirements.',
+                            'char_maximum' => $nested_value->char_maximum,
+                            'char_maximum_message' => $nested_value->char_maximum_message,
+                            'char_length_exceeded' => $nested_value->char_maximum_exceeded,
+                            'char_length' => $nested_value->char_length,
+                            'char_minimum' => $nested_value->char_minimun,
+                            'char_minimum_met' => $nested_value->char_minimum_met,
+                            'char_minimum_message' => $nested_value->char_minimum_message
                         ];
                     }
                 }
