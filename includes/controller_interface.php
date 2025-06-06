@@ -34,7 +34,7 @@ class Controller_Interface
      * @param string $message The message to return.
      * @param array $missing_keys The missing keys from the request data.
      * @param array $invalid_types The invalid types found in the request data.
-     * @param array $keys_exceeding_char_limit Keys that exceeded their character length limit.
+     * @param array $keys_not_meetings_char_requirements Keys that didn't satisfy character requirements for maximum/minimum.
      */
 
     private function __construct(
@@ -46,7 +46,7 @@ class Controller_Interface
         public readonly string $message,
         public readonly array $missing_keys,
         public readonly array $invalid_types,
-        public readonly array $keys_exceeding_char_limit
+        public readonly array $keys_not_meetings_char_requirements
     ) {}
 
     /**
@@ -77,7 +77,8 @@ class Controller_Interface
         foreach($schema as $key => $params) {
             $schema_data_types[$key] =  [
                 'type' => $params['type'],
-                'limit' => $params['limit']
+                'maximum' => $params['maximum'],
+                'minimun'  => $params['minimun'],
             ];
         }
 
@@ -109,11 +110,11 @@ class Controller_Interface
             }
         }
 
-        // Set to check if required keys are present in the sanitized data and check it against the schema to make sure no required keys are missing from the schema, along with character limits.
+        // Set to check if required keys are present in the sanitized data and check it against the schema to make sure no required keys are missing from the schema, along with character maximums and minimums..
         $missing_keys = [];
-        $keys_exceeding_char_limit = [];
+        $keys_not_meeting_char_requirements = [];
 
-        // Loop through the schema to make sure all required keys from sanitized data are present, along with making sure all parameter values do not exceed character limit.
+        // Loop through the schema to make sure all required keys from sanitized data are present, along with making sure all parameter values do not exceed character maximum.
         foreach ($schema as $key => $params) {
             $required_key = $params['required'] ?? true;
             if ($required_key && !array_key_exists($key, $merged_sanitized_params)) {
@@ -121,18 +122,44 @@ class Controller_Interface
                 continue;
             }
             $value = $merged_sanitized_params[$key];
-            if (!is_array($value) && $value->char_limit_exceeded) {
-                $keys_exceeding_char_limit[] = [
-                    'key' => $key,
-                    'message' => 'Key of `' . $key . '` exceeded the character limit of `' . $value->char_limit . '`. The key had a character length of `' . $value->char_length . '`.',
-                    'limit' => $value->char_limit,
-                    'length' => $value->char_length
-                ];
+            if (!is_array($value)) {
+                if ($value->char_maximum_exceeded || $value->char_minimum_met === false) {
+                    $keys_not_meeting_char_requirements[] = [
+                        'key' => $key,
+                        'is_array_key' => false,
+                        'message' => 'Key of `' . $key . '` did not satisfy the character maximum or minimum length requirements.',
+                        'char_maximum' => $value->char_maximum,
+                        'char_maximum_message' => $value->char_maximum_message,
+                        'char_length_exceeded' => $value->char_maximum_exceeded,
+                        'char_length' => $value->char_length,
+                        'char_minimum' => $value->char_minimun,
+                        'char_minimum_met' => $value->char_minimum_met,
+                        'char_minimum_message' => $value->char_minimum_message
+                    ];
+                }
+            } else {
+                foreach ($value as $item) {
+                    if ($item->char_maximum_exceeded || $item->char_minimum_met === false) {
+                        $keys_not_meeting_char_requirements[] = [
+                            'key' => $item->key,
+                            'array_key' => $key,
+                            'is_array_key' => true,
+                            'message' => 'Key of `' . $key . '` has a nested array key of `' . $item->key . '` that does not satisfy the character maximum or minimum length requirements.',
+                            'char_maximum' => $item->char_maximum,
+                            'char_maximum_message' => $item->char_maximum_message,
+                            'char_length_exceeded' => $item->char_maximum_exceeded,
+                            'char_length' => $item->char_length,
+                            'char_minimum' => $item->char_minimun,
+                            'char_minimum_met' => $item->char_minimum_met,
+                            'char_minimum_message' => $item->char_minimum_message
+                        ];
+                    }
+                }
             }
         }
 
         // Set if ok
-        $ok = empty($missing_keys) && empty($invalid_types) && empty($keys_exceeding_char_limit);
+        $ok = empty($missing_keys) && empty($invalid_types) && empty($keys_not_meeting_char_requirements);
 
         // Set for message 
         $message = null;
@@ -153,11 +180,11 @@ class Controller_Interface
             }, $invalid_types);
             $message = 'Invalid data types found for `' . implode(', ', $invalid_keys) . '`.';
             $status_code = 422;
-        } else if (!empty($keys_exceeding_char_limit)) {
-            $keys_exceeding_limit = array_map(function ($item) {
+        } else if (!empty($keys_not_meeting_char_requirements)) {
+            $keys_not_meeting_char_requirements_array = array_map(function ($item) {
                 return $item['key'];
-            }, $keys_exceeding_char_limit);
-            $message = 'The following keys exceeded their character limit: `' . implode(', ', $keys_exceeding_limit) . '`';
+            }, $keys_not_meeting_char_requirements);
+            $message = 'The following keys did not satisfy the character maximum or minimum length requirements: `' . implode(', ', $keys_not_meeting_char_requirements_array) . '`';
             $status_code = 400;
         } else {
 
@@ -175,7 +202,7 @@ class Controller_Interface
             $message,
             $missing_keys,
             $invalid_types,
-            $keys_exceeding_char_limit
+            $keys_not_meeting_char_requirements
         );
     }
 
@@ -269,8 +296,8 @@ class Controller_Interface
                 $parsed_response['invalid_types'] = $response->invalid_types;
                 $validation_error = true;
             }
-            if (isset($response->keys_exceeding_char_limit) && !empty($response->keys_exceeding_char_limit) && !$validation_error) {
-                $parsed_response['keys_exceeding_char_limit'] = $response->keys_exceeding_char_limit;
+            if (isset($response->keys_not_meeting_char_requirements) && !empty($response->keys_not_meeting_char_requirements) && !$validation_error) {
+                $parsed_response['keys_not_meeting_char_requirements'] = $response->keys_not_meeting_char_requirements;
                 $validation_error = true;
             }
 
@@ -332,14 +359,14 @@ class Controller_Interface
      *
      * @param string|int $total_rows The total number of rows.
      * @param string|int $total_pages The total number of pages.
-     * @param string|int $limit The number of items per page.
+     * @param string|int $maximum The number of items per page.
      * @param string|int $page The current page number.
      * 
      * @return void
      */
 
-    final public static function pagination_headers(string|int $total_rows, string|int $total_pages, string|int $limit, string|int $page): void
+    final public static function pagination_headers(string|int $total_rows, string|int $total_pages, string|int $maximum, string|int $page): void
     {
-        Database::pagination_headers($total_rows, $total_pages, $limit, $page);
+        Database::pagination_headers($total_rows, $total_pages, $maximum, $page);
     }
 }

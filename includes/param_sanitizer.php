@@ -23,9 +23,11 @@ class Param_Sanitizer {
         public readonly string $type_found,
         public readonly string $expected_type,
         public readonly string|null $type_message,
-        public readonly bool $char_limit_exceeded,
-        public readonly string|null $char_limit_message,
-        public readonly int $char_limit,
+        public readonly bool $char_maximum_exceeded,
+        public readonly string|null $char_maximum_message,
+        public readonly int $char_maximum,
+        public readonly int $char_minimun,
+        public readonly int $char_minimum_met,
         public readonly int $char_length
     ) {}
 
@@ -35,7 +37,7 @@ class Param_Sanitizer {
      * Sanitize an array of parameters using a provided schema.
      *
      * @param array $params Associative array of request parameters.
-     * @param array $schema Associative array where key = param name, [type = expected type, limit = max length].
+     * @param array $schema Associative array where key = param name, [type = expected type, maximum = maximum length, minimum = minimum length].
      * 
      * @return array Sanitized parameters.
      */
@@ -106,25 +108,29 @@ class Param_Sanitizer {
     }
 
     /**
-     * METHOD - generate_char_limit_response
+     * METHOD - generate_chars_amount_response
      * 
-     * Generate a response regarding the character limit of a given value.
+     * Generate a response regarding the character maximum of a given value.
      * 
      * @param mixed $value The value being checked.
-     * @param string|int|bool|null $expected The expected type with optional character limit.
+     * @param string|int|bool|null $expected The expected type with optional character maximum.
      * 
-     * @return array A response indicating if the character limit was exceeded, along with related messages and values.
+     * @return array A response indicating if the character maximum was exceeded, along with related messages and values.
      */
 
-    private static function generate_char_limit_response($value, int $expected): array {
-        $char_limit = $expected ?? 255;
+    private static function generate_chars_amount_response($value, array $expected): array {
+        $char_maximum = $expected['maximum'] ?? 255;
+        $char_minimum = $expected['minimun'] ?? 0;
         $char_length = strlen(strval($value)) ?? 0;
         
         return [
-            'char_limit_exceeded' => $char_length > $char_limit,
-            'char_limit_message' => 'Value `' . $value . '` has a character limit of `' . $char_limit . '`. The value had a character length of `' . $char_length . '`.',
-            'char_limit' => $char_limit,
-            'char_length' => $char_length
+            'char_maximum_exceeded' => $char_length > $char_maximum,
+            'char_maximum_message' => 'Value `' . $value . '` has a character maximum of `' . $char_maximum . '`. The value had a character length of `' . $char_length . '`.',
+            'char_maximum' => $char_maximum,
+            'char_length' => $char_length,
+            'char_minimun' => $char_minimum,
+            'char_minimum_met' => $char_length >= $char_minimum,
+            'char_minimum_message' => 'Value `' . $value . '` has a character minimum of `' . $char_maximum . '`. The value had a character length of `' . $char_length . '`.'
         ];
     }
 
@@ -134,15 +140,15 @@ class Param_Sanitizer {
      * Sanitize a value according to its type.
      * 
      * @param string|int|array $value The value to be sanitized.
-     * @param array $type The expected type of the value with keys of type, limit.
+     * @param array $type The expected type of the value with keys of type, maximum.
      * 
      * @return string|int|array The sanitized value.
      */
 
-    public static function sanitize_value($value, array $type): object {
+    public static function sanitize_value($value, array $schema): object {
         $valid = false;
         $sanitized = null;
-        switch ($type['type']) {
+        switch ($schema['type']) {
             case 'int':
                 // Sanitize integers
                 // If the value is numeric, cast it to an integer and return it.
@@ -152,17 +158,19 @@ class Param_Sanitizer {
                     $valid = true;
                 } 
                 $type_set = self::generate_types_response($valid, $value, 'int');
-                $length_set = self::generate_char_limit_response($value, $type['limit']);
+                $length_set = self::generate_chars_amount_response($value, $schema);
                 return new static(
-                    $valid && !$length_set['char_limit_exceeded'],
+                    $valid && !$length_set['char_maximum_exceeded'],
                     $sanitized,
                     $type_set['type_error'],
                     $type_set['type_found'],
                     $type_set['expected_type'],
                     $type_set['type_message'],
-                    $length_set['char_limit_exceeded'],
-                    $length_set['char_limit_message'],
-                    $length_set['char_limit'],
+                    $length_set['char_maximum_exceeded'],
+                    $length_set['char_maximum_message'],
+                    $length_set['char_maximum'],
+                    $length_set['char_minimum'],
+                    $length_set['char_minimum_met'],
                     $length_set['char_length']
                 );
             case 'bool':
@@ -174,17 +182,19 @@ class Param_Sanitizer {
                     $valid = true;
                 }
                 $type_set = self::generate_types_response($valid, $value, 'bool');
-                $length_set = self::generate_char_limit_response($value, $type['limit']);
+                $length_set = self::generate_chars_amount_response($value, $schema);
                 return new static(
-                    $valid && !$length_set['char_limit_exceeded'],
+                    $valid && !$length_set['char_maximum_exceeded'],
                     $sanitized,
                     $type_set['type_error'],
                     $type_set['type_found'],
                     $type_set['expected_type'],
                     $type_set['type_message'],
-                    $length_set['char_limit_exceeded'],
-                    $length_set['char_limit_message'],
-                    $length_set['char_limit'],
+                    $length_set['char_maximum_exceeded'],
+                    $length_set['char_maximum_message'],
+                    $length_set['char_maximum'],
+                    $length_set['char_minimum'],
+                    $length_set['char_minimum_met'],
                     $length_set['char_length']
                 );
             case 'email':
@@ -200,7 +210,7 @@ class Param_Sanitizer {
                 if (!is_email($sanitized)) {
                     $type_set = self::generate_types_response(false, $value, 'email');
                 }
-                $length_set = self::generate_char_limit_response($value, $type['limit']);
+                $length_set = self::generate_chars_amount_response($value, $schema);
                 if ($type_set !== null) {
                     return new static(
                         false,
@@ -209,23 +219,27 @@ class Param_Sanitizer {
                         $type_set['type_found'],
                         $type_set['expected_type'],
                         $type_set['type_message'],
-                        $length_set['char_limit_exceeded'],
-                        $length_set['char_limit_message'],
-                        $length_set['char_limit'],
+                        $length_set['char_maximum_exceeded'],
+                        $length_set['char_maximum_message'],
+                        $length_set['char_maximum'],
+                        $length_set['char_minimum'],
+                        $length_set['char_minimum_met'],
                         $length_set['char_length']
                     );
                 }
                 $type_set = self::generate_types_response(true, $value, 'email');
                 return new static(
-                    true && !$length_set['char_limit_exceeded'],
+                    true && !$length_set['char_maximum_exceeded'],
                     $sanitized,
                     $type_set['type_error'],
                     $type_set['type_found'],
                     $type_set['expected_type'],
                     $type_set['type_message'],
-                    $length_set['char_limit_exceeded'],
-                    $length_set['char_limit_message'],
-                    $length_set['char_limit'],
+                    $length_set['char_maximum_exceeded'],
+                    $length_set['char_maximum_message'],
+                    $length_set['char_maximum'],
+                    $length_set['char_minimum'],
+                    $length_set['char_minimum_met'],
                     $length_set['char_length']
                 );
             case 'url':
@@ -241,7 +255,7 @@ class Param_Sanitizer {
                 if (!filter_var($sanitized, FILTER_VALIDATE_URL)) {
                     $type_set =  self::generate_types_response(false, $value, 'url');
                 } 
-                $length_set = self::generate_char_limit_response($value, $type['limit']);
+                $length_set = self::generate_chars_amount_response($value, $schema);
                 if ($type_set !== null) {
                     return new static(
                         false,
@@ -250,9 +264,11 @@ class Param_Sanitizer {
                         $type_set['type_found'],
                         $type_set['expected_type'],
                         $type_set['type_message'],
-                        $length_set['char_limit_exceeded'],
-                        $length_set['char_limit_message'],
-                        $length_set['char_limit'],
+                        $length_set['char_maximum_exceeded'],
+                        $length_set['char_maximum_message'],
+                        $length_set['char_maximum'],
+                        $length_set['char_minimum'],
+                        $length_set['char_minimum_met'],
                         $length_set['char_length']
                     );
                 }
@@ -264,16 +280,18 @@ class Param_Sanitizer {
                     $type_set['type_found'],
                     $type_set['expected_type'],
                     $type_set['type_message'],
-                    $length_set['char_limit_exceeded'],
-                    $length_set['char_limit_message'],
-                    $length_set['char_limit'],
+                    $length_set['char_maximum_exceeded'],
+                    $length_set['char_maximum_message'],
+                    $length_set['char_maximum'],
+                    $length_set['char_minimum'],
+                    $length_set['char_minimum_met'],
                     $length_set['char_length']
                 );
             case 'raw':
                 // Return the value as is
                 // No sanitization is done.
                 $type_set = self::generate_types_response(true, $value, 'raw');
-                $length_set = self::generate_char_limit_response($value, $type['limit']);
+                $length_set = self::generate_chars_amount_response($value, $schema);
                 return new static(
                     true,
                     $value,
@@ -281,9 +299,11 @@ class Param_Sanitizer {
                     $type_set['type_found'],
                     $type_set['expected_type'],
                     $type_set['type_message'],
-                    $length_set['char_limit_exceeded'],
-                    $length_set['char_limit_message'],
-                    $length_set['char_limit'],
+                    $length_set['char_maximum_exceeded'],
+                    $length_set['char_maximum_message'],
+                    $length_set['char_maximum'],
+                    $length_set['char_minimum'],
+                    $length_set['char_minimum_met'],
                     $length_set['char_length']
                 );
             case 'text':
@@ -293,7 +313,7 @@ class Param_Sanitizer {
                 // Otherwise, sanitize the text using the sanitize_text_field function and return it.
                 if (is_string($value)) $valid = true;
                 $type_set = self::generate_types_response($valid, $value, 'text');
-                $length_set = self::generate_char_limit_response($value, $type['limit']);
+                $length_set = self::generate_chars_amount_response($value, $schema);
                 return new static(
                     $valid,
                     $valid ? sanitize_text_field($value) : null,
@@ -301,9 +321,11 @@ class Param_Sanitizer {
                     $type_set['type_found'],
                     $type_set['expected_type'],
                     $type_set['type_message'],
-                    $length_set['char_limit_exceeded'],
-                    $length_set['char_limit_message'],
-                    $length_set['char_limit'],
+                    $length_set['char_maximum_exceeded'],
+                    $length_set['char_maximum_message'],
+                    $length_set['char_maximum'],
+                    $length_set['char_minimum'],
+                    $length_set['char_minimum_met'],
                     $length_set['char_length']
                 );
         }
