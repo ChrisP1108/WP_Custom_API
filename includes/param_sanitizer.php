@@ -130,7 +130,8 @@ class Param_Sanitizer {
             'char_length' => $char_length,
             'char_minimun' => $char_minimum,
             'char_minimum_met' => $char_length >= $char_minimum,
-            'char_minimum_message' => 'Value `' . $value . '` has a character minimum of `' . $char_maximum . '`. The value had a character length of `' . $char_length . '`.'
+            'char_minimum_message' => 'Value `' . $value . '` has a character minimum of `' . $char_maximum . '`. The value had a character length of `' . $char_length . '`.',
+            'char_error' => $char_length > $char_maximum || $char_length < $char_minimum
         ];
     }
 
@@ -160,7 +161,7 @@ class Param_Sanitizer {
                 $type_set = self::generate_types_response($valid, $value, 'int');
                 $length_set = self::generate_chars_amount_response($value, $schema);
                 return new static(
-                    $valid && !$length_set['char_maximum_exceeded'],
+                    $valid && !$length_set['char_error'],
                     $sanitized,
                     $type_set['type_error'],
                     $type_set['type_found'],
@@ -184,7 +185,7 @@ class Param_Sanitizer {
                 $type_set = self::generate_types_response($valid, $value, 'bool');
                 $length_set = self::generate_chars_amount_response($value, $schema);
                 return new static(
-                    $valid && !$length_set['char_maximum_exceeded'],
+                    $valid && !$length_set['char_error'],
                     $sanitized,
                     $type_set['type_error'],
                     $type_set['type_found'],
@@ -229,7 +230,7 @@ class Param_Sanitizer {
                 }
                 $type_set = self::generate_types_response(true, $value, 'email');
                 return new static(
-                    true && !$length_set['char_maximum_exceeded'],
+                    !$length_set['char_error'],
                     $sanitized,
                     $type_set['type_error'],
                     $type_set['type_found'],
@@ -274,7 +275,7 @@ class Param_Sanitizer {
                 }
                 $type_set = self::generate_types_response(true, $value, 'url');
                 return new static(
-                    true,
+                    !$length_set['char_error'],
                     $sanitized,
                     $type_set['type_error'],
                     $type_set['type_found'],
@@ -315,7 +316,7 @@ class Param_Sanitizer {
                 $type_set = self::generate_types_response($valid, $value, 'text');
                 $length_set = self::generate_chars_amount_response($value, $schema);
                 return new static(
-                    $valid,
+                    $valid && !$length_set['char_error'],
                     $valid ? sanitize_text_field($value) : null,
                     $type_set['type_error'],
                     $type_set['type_found'],
