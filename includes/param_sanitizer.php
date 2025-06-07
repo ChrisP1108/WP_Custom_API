@@ -27,7 +27,7 @@ class Param_Sanitizer {
         public readonly string|null $char_maximum_message,
         public readonly string|null $char_minimum_message,
         public readonly int $char_maximum,
-        public readonly int $char_minimun,
+        public readonly int $char_minimum,
         public readonly bool $char_minimum_met,
         public readonly int $char_length
     ) {}
