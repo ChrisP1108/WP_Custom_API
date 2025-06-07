@@ -132,7 +132,7 @@ class Controller_Interface
                         'char_maximum_message' => $value->char_maximum_message,
                         'char_length_exceeded' => $value->char_maximum_exceeded,
                         'char_length' => $value->char_length,
-                        'char_minimum' => $value->char_minimun,
+                        'char_minimum' => $value->char_minimum,
                         'char_minimum_met' => $value->char_minimum_met,
                         'char_minimum_message' => $value->char_minimum_message
                     ];
@@ -149,7 +149,7 @@ class Controller_Interface
                             'char_maximum_message' => $nested_value->char_maximum_message,
                             'char_length_exceeded' => $nested_value->char_maximum_exceeded,
                             'char_length' => $nested_value->char_length,
-                            'char_minimum' => $nested_value->char_minimun,
+                            'char_minimum' => $nested_value->char_minimum,
                             'char_minimum_met' => $nested_value->char_minimum_met,
                             'char_minimum_message' => $nested_value->char_minimum_message
                         ];
