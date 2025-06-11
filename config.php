@@ -75,7 +75,7 @@ final class Config
     /**
      * CONSTANT
      * 
-     * @const string HASH_ROUNDS
+     * @const int HASH_ROUNDS
      * Determines number of cost rounds for password hashing.  Used primarily in the Password class.
      */
 
@@ -93,7 +93,7 @@ final class Config
     /**
      * CONSTANT
      * 
-     * @const string TOKEN_COOKIE_HTTP_ONLY
+     * @const bool TOKEN_COOKIE_HTTP_ONLY
      * If set to true, the cookie will be set for HTTP only access, preventing javascript access on the client side.
      */
 
@@ -107,4 +107,13 @@ final class Config
      */
 
     public const TOKEN_COOKIE_SAME_SITE = 'Strict';
+
+    /**
+     * CONSTANT
+     * 
+     * @const bool DEBUG_MESSAGE_MODE
+     * Sets whether detailed messages about errors are returned when hitting API routes for debugging.
+     */
+
+    public const DEBUG_MESSAGE_MODE = false;
 }

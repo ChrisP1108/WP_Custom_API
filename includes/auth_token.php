@@ -48,16 +48,11 @@ final class Auth_Token
             $data['expires_at'] = date("Y-m-d H:i:s", $expires_at);
         }
 
-        $action_hook_data = Response_Handler::response($ok, $status_code, $message, $data);
+        $return_data = Response_Handler::response($ok, $status_code, $message, $data);
 
-        do_action('wp_custom_api_database_response', $action_hook_data);
+        do_action('wp_custom_api_auth_token_response', $return_data);
 
-        if (!$ok) {
-            $message = 'Unauthorized';
-            $status_code = 401;
-        }
-
-        return Response_Handler::response($ok, $status_code, $message, $data);
+        return $return_data;
     }
 
     /**

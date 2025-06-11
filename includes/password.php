@@ -44,18 +44,11 @@ final class Password
             $output['hash'] = $hash;
         }
 
-        $action_hook_data = Response_Handler::response($ok, $status_code, $message, $output);
+        $return_data = Response_Handler::response($ok, $status_code, $message, $output);
 
-        do_action('wp_custom_api_password_response', $action_hook_data);
+        do_action('wp_custom_api_password_response', $return_data);
 
-        if (!$ok) {
-            $message = 'Unauthorized';
-            $status_code = 401;
-        } else {
-            $message = 'Authentication successful.';
-        }
-
-        return Response_Handler::response($ok, $status_code, $message, ['hash' => $output['hash']]);
+        return $return_data;
     }
 
     /**

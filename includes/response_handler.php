@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace WP_Custom_API\Includes;
 
+use WP_Custom_API\Config;
 use WP_REST_Response;
+
 
 /** 
  * Prevent direct access from sources other than the Wordpress environment
@@ -42,7 +44,7 @@ final class Response_Handler
     /**
      * METHOD - response
      * 
-     * Response method to standardize the response data
+     * Response method to standardize the response data.
      * 
      * @param bool $ok
      * @param int $status_code
@@ -54,6 +56,14 @@ final class Response_Handler
 
     public static function response(bool $ok, int $status_code, string $message = '', array|null|string|bool $data = null, bool $parse_responses = true): static
     {
+        // Set return message based upon if DEBUG_MESSAGE_MODE constant in Config class is set to false.  This ensures sensitive information is secured.
+        if (!Config::DEBUG_MESSAGE_MODE) {
+            if ($status_code < 300) $message = 'Success';
+            if ($status_code >= 300 && $status_code < 500) $message = 'There was an error with the client request data.';
+            if ($status_code >= 500) $message = 'An error occured while processing your request on the server.';
+        }
+
+        // Handle error and success responses
         $error_response = null;
         $success_response = null;
 
@@ -63,6 +73,7 @@ final class Response_Handler
             $success_response = self::build_success_response($message, $status_code, $data);
         }
 
+        // Return the response object
         return new static(
             $ok, 
             $status_code, 
