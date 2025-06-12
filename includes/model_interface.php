@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace WP_Custom_API\Includes;
 
 use WP_Custom_API\Includes\Database;
+use WP_Custom_API\Includes\Response_Handler;
 
 /** 
  * Prevent direct access from sources other than the Wordpress environment
@@ -71,10 +72,10 @@ abstract class Model_Interface
      * 
      * Retrieve all data from the table.
      *
-     * @return array|object
+     * @return Response_Handler The response of the get table data operation from the self::response() method.
      */
 
-    final public static function get_table_data(): array|object
+    final public static function get_table_data(): Response_Handler
     {
         return Database::get_table_data(static::table_name());
     }
@@ -88,10 +89,10 @@ abstract class Model_Interface
      * @param string|null $value
      * @param bool $multiple
      * 
-     * @return array|object
+     * @return Response_Handler The response of the get rows data operation from the self::response() method.
      */
 
-    final public static function get_rows_data(string $column, int|string $value, bool $multiple = true): array|object
+    final public static function get_rows_data(string $column, int|string $value, bool $multiple = true): Response_Handler
     {
         return Database::get_rows_data(static::table_name(), $column, $value, $multiple);
     }
@@ -102,10 +103,10 @@ abstract class Model_Interface
      * Insert a new row into the table.
      *
      * @param array $data
-     * @return array|object
+     * @return Response_Handler The response of the insert row operation from the self::response() method.
      */
 
-    final public static function insert_row(array $data): array|object
+    final public static function insert_row(array $data): Response_Handler
     {
         return Database::insert_row(static::table_name(), $data);
     }
@@ -118,10 +119,10 @@ abstract class Model_Interface
      * @param int $id
      * @param array $data
      * 
-     * @return array|object
+     * @return Response_Handler The response of the update row operation from the self::response() method.
      */
 
-    final public static function update_row(int $id, array $data): array|object
+    final public static function update_row(int $id, array $data): Response_Handler
     {
         return Database::update_row(static::table_name(), $id, $data);
     }
@@ -133,10 +134,10 @@ abstract class Model_Interface
      *
      * @param int $id
      * 
-     * @return array|object
+     * @return Response_Handler The response of the delete row operation from the self::response() method.
      */
 
-    final public static function delete_row(int $id): array|object
+    final public static function delete_row(int $id): Response_Handler
     {
         return Database::delete_row(static::table_name(), $id);
     }

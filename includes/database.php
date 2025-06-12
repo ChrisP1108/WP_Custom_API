@@ -7,6 +7,7 @@ namespace WP_Custom_API\Includes;
 use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Response_Handler;
 use WP_Custom_API\Includes\Error_Generator;
+use WpOrg\Requests\Response;
 
 /** 
  * Prevent direct access from sources other than the Wordpress environment
@@ -169,10 +170,10 @@ final class Database
      * @param string $table_name - The name of the table to check if exists and if not, create it
      * @param array $table_schema - An array consisting of keys for the column names, and their corresponding values indicating the data type 
      * 
-     * @return object - Returns an object from the self::response() method.
+     * @return Response_Handler The response of the create table operation from the self::response() method.
      */
 
-    public static function create_table(string $table_name, array $table_schema): object
+    public static function create_table(string $table_name, array $table_schema): Response_Handler
     {
         if (self::table_exists($table_name)) return self::response(false, 500, 'Table `' . $table_name . '` already exists in database.');
 
@@ -233,10 +234,10 @@ final class Database
      * This method only checks for tables that were created utilizing this plugin.  It will not check other tables that were created from other plugins or from Wordpress directly.
      * @param string $table_name - The name of the table to drop.
      * 
-     * @return object - Returns an object from the self::response() method.
+     * @return Response_Handler The response of the drop table operation from the self::response() method.
      */
 
-    public static function drop_table(string $table_name): object
+    public static function drop_table(string $table_name): Response_Handler
     {
         if (!self::table_exists($table_name)) return self::response(false, 500, 'Table `' . $table_name . '` does not exist and therefore cannot be dropped.');
 
@@ -269,10 +270,10 @@ final class Database
      * @param string $table_name - The name of the table to retrieve data from.
      * @param bool $get_all_rows - Determines if all rows should be returned or if pagination should be used.
      * 
-     * @return object - Returns an object from the self::response() method.
+     * @return Response_Handler The response of the get table data operation from the self::response() method.
      */
 
-    public static function get_table_data(string $table_name, bool $get_all_rows = false): object
+    public static function get_table_data(string $table_name, bool $get_all_rows = false): Response_Handler
     {
         if (!self::table_exists($table_name)) return self::response(false, 500, 'Table `' . $table_name . '` does not exist and therefore no table rows data can be retrieved.');
 
@@ -324,10 +325,10 @@ final class Database
      * @param string|int $value - The value of the column to search for
      * @param bool $multiple - Boolean to determine if more than one table row should be returned.
      * 
-     * @return object - Returns an object from the self::response() method.
+     * @return Response_Handler The response of the get rows data operation from the self::response() method.
      */
 
-    public static function get_rows_data(string $table_name, string $column, int|string $value, bool $multiple = true): object
+    public static function get_rows_data(string $table_name, string $column, int|string $value, bool $multiple = true): Response_Handler
     {
         if (!self::table_exists($table_name)) return self::response(false, 500, 'Table `' . $table_name . '` does not exist and therefore no table rows data can be retrieved.');
 
@@ -379,10 +380,10 @@ final class Database
      * @param string $table_name - The name of the table to insert the data into.
      * @param array $data - An associative array of column names and their corresponding values.
      * 
-     * @return object - Returns an object from the self::response() method.
+     * @return Response_Handler The response of the insert row operation from the self::response() method.
      */
 
-    public static function insert_row(string $table_name, array $data): object
+    public static function insert_row(string $table_name, array $data): Response_Handler
     {
         if (!self::table_exists($table_name)) return self::response(false, 500, 'Table `' . $table_name . '` does not exist and therefore a row cannot be inserted.');
 
@@ -413,10 +414,10 @@ final class Database
      * @param int $id - Id of table row to update.
      * @param array $data - An associative array of column names and their corresponding values to update.
      * 
-     * @return object - Returns an object from the self::response() method.
+     * @return Response_Handler The response of the update row operation from the self::response() method.
      */
 
-    public static function update_row(string $table_name, int $id, array $data): object
+    public static function update_row(string $table_name, int $id, array $data): Response_Handler
     {
         if (!self::table_exists($table_name)) return self::response(false, 500, 'Table `' . $table_name . '` does not exist and therefore the table row cannot be updated.');
 
@@ -450,10 +451,10 @@ final class Database
      * @param string $table_name - The name of the table to delete the row from.
      * @param int $id - The ID of the row to delete.
      * 
-     * @return object - Returns an object from the self::response() method.
+     * @return Response_Handler The response of the delete row operation from the self::response() method.
      */
 
-    public static function delete_row(string $table_name, int $id): object
+    public static function delete_row(string $table_name, int $id): Response_Handler
     {
         if (!self::table_exists($table_name)) return self::response(false, 500, 'Table `' . $table_name . '` does not exist and therefore the table row cannot be deleted.');
 
@@ -485,10 +486,11 @@ final class Database
      * and normalizes them into the format expected by create_table().
      *
      * @param string $table_name The table name without the prefix.
-     * @return object - Returns an object from the self::response() method.
+     * 
+     * @return Response_Handler The response of the get table schema operation from the self::response() method.
      */
 
-    public static function get_table_schema_from_db(string $table_name): object
+    public static function get_table_schema_from_db(string $table_name): Response_Handler
     {
         global $wpdb;
 
@@ -534,10 +536,10 @@ final class Database
      * 
      * Retrieves all table data for the tables created by this plugin.
      * 
-     * @return object - Returns an object from the self::response() method.
+     * @return Response_Handler The response of the get all tables data operation from the self::response() method.
      */
 
-    public static function get_all_tables_data(): object
+    public static function get_all_tables_data(): Response_Handler
     {
         global $wpdb;
 
@@ -607,10 +609,10 @@ final class Database
      *                      'schema' is an associative array of column definitions.
      *                      'data' is an array of associative arrays of the row data to import.
      *
-     * @return object - Returns an object from the self::response() method.
+     * @return Response_Handler The response of the import tables data operation from the self::response() method.
      */
 
-    public static function import_tables_data(array $data): object
+    public static function import_tables_data(array $data): Response_Handler
     {
         if (empty($data)) {
             return self::response(false, 400, 'No data was provided to import database tables.');
@@ -675,10 +677,11 @@ final class Database
      *
      * @param string $filename The name of the file to create without the .json extension.
      *                          Default is 'migration'
-     * @return object - Returns an object from the self::response() method.
+     * 
+     * @return Response_Handler The response of the generate migration file operation from the self::response() method.
      */
 
-    public static function generate_migration_file(string $filename = 'migration'): object
+    public static function generate_migration_file(string $filename = 'migration'): Response_Handler
     {
         // Check if filename already exists
         $file_path = WP_CUSTOM_API_FOLDER_PATH . strtolower($filename) . '.json';
@@ -712,10 +715,11 @@ final class Database
      * in the root folder of the plugin.
      *
      * @param string $filename The name of the file to import without the .json extension.  Default is 'migration'
-     * @return object Returns an object from the self::response() method.
+     * 
+     * @return Response_Handler The response of the run migration from file operation from the self::response() method.
      */
 
-    public static function run_migration_from_file(string $filename = 'migration'): object
+    public static function run_migration_from_file(string $filename = 'migration'): Response_Handler
     {
         // Get file data
         $get_file_data = @file_get_contents(WP_CUSTOM_API_FOLDER_PATH . strtolower($filename) . '.json');

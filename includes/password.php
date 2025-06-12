@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace WP_Custom_API\Includes;
 
 use WP_Custom_API\Config;
+use WP_Custom_API\Includes\Response_Handler;
 
 /** 
  * Prevent direct access from sources other than the Wordpress environment
@@ -33,10 +34,10 @@ final class Password
      * @param string $message - Message to be returned in the response
      * @param string $hash - Hashed password string
      * 
-     * @return object Response from the Response_Handler::response() method.
+     * @return Response_Handler - Returns a structured response
      */
 
-    private static function response(bool $ok, int $status_code, string $message = '', string $hash = ''): object
+    private static function response(bool $ok, int $status_code, string $message = '', string $hash = ''): Response_Handler
     {
         $output = [];
 
@@ -58,10 +59,10 @@ final class Password
      * 
      * @param string $string - String text to be hashed.
      * 
-     * @return object Response indicating success or failure, and the generated hash if successful.
+     * @return Response_Handler The response of the password hash operation from the self::response() method.
      */
 
-    public static function hash(string $string): object 
+    public static function hash(string $string): Response_Handler
     {
         if ($string === '') {
             return self::response(false, 500, 'String must be provided to hash in Password hash method.');
@@ -88,10 +89,10 @@ final class Password
      * @param string $entered_password The plain-text password.
      * @param string $hashed_password The hashed password to verify against.
      * 
-     * @return object Response indicating whether verification was successful.
+     * @return Response_Handler The response of the password verify operation from the self::response() method.
      */
 
-    public static function verify(string $entered_password = '', string $hashed_password = ''): object 
+    public static function verify(string $entered_password = '', string $hashed_password = ''): Response_Handler 
     {
         if ($entered_password === '' || $hashed_password === '') {
             return self::response(false, 500, 'The entered plain text password and the hashed password must be passed in as parameters in the Password verify method.');

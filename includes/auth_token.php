@@ -64,10 +64,10 @@ final class Auth_Token
      * @param string $token_name - Name of token to remove
      * @param string|int|null $id - The user ID from the token.
      * 
-     * @return object - Returns object from the self::response() method
+     * @return Response_Handler The response of the token remove operation from the self::response() method.
      */
 
-    public static function remove_token(string $token_name, string|int $id = 0): object
+    public static function remove_token(string $token_name, string|int $id = 0): Response_Handler
     {
         // Apply auth token prefix to token name if it doesn't exist
         if (!str_starts_with($token_name, Config::AUTH_TOKEN_PREFIX)) {
@@ -78,7 +78,7 @@ final class Auth_Token
         setcookie($token_name, '', time() - 300, '/');
 
         // Check if id was provided
-        if ($id === 0) return self::response(false, 500, null, "No id was provided to remove token.");
+        if ($id === 0) return self::response(false, 500, null, "No id was provided to remove token for token name `" . $token_name . "`.");
         $id = intval($id);
 
         // Check that session data exists corresponding to token
@@ -88,9 +88,9 @@ final class Auth_Token
         // Remove session data corresponding to token
         $remove_session = Session::delete($token_name, $id);
 
-        if (!$remove_session->ok) return self::response(false, 500, null, "Token removal failed.");
+        if (!$remove_session->ok) return self::response(false, 500, null, "Token removal failed for token name of `" . $token_name . "`.");
 
-        return self::response(true, 200, $id, "Token removed successfully.");
+        return self::response(true, 200, $id, "Token removed successfully for token name of `" . $token_name . "`.");
     }
 
     /**
@@ -100,10 +100,10 @@ final class Auth_Token
      * @param string $token_name - Name of token to be stored.  Token name is also the cookie name
      * @param int $expiration - Set duration of token before expiring.
      * 
-     * @return object - Returns object from the self::response() method
+     * @return Response_Handler The response of the token generate operation from the self::response() method.
      */
 
-    public static function generate(int $id, string $token_name, int $expiration = Config::TOKEN_EXPIRATION): object
+    public static function generate(string $token_name, int $id, int $expiration = Config::TOKEN_EXPIRATION): Response_Handler
     {
         // Check if token name was provided.  If not return error
         if (!$id || !$token_name) return self::response(false, 500, $id, "`id` and `token_name` parameters required to generate auth token.");
@@ -142,7 +142,7 @@ final class Auth_Token
         if (!wp_is_using_https() && Config::TOKEN_OVER_HTTPS_ONLY) return self::response(false, 500, $id, "Token could not be stored as a cookie on the client, as the `TOKEN_OVER_HTTPS_ONLY` config variable is set to true and the server is not using HTTPS.");
 
         // Store the nonce server-side in a transient (or database) to validate later through Session::generate method
-        $session = Session::generate($token_name, $id, $nonce, $expiration_time - $issued_at);
+        $session = Session::generate($token_name, $id, $nonce, $expiration_time);
         
         if (!$session->ok) return self::response(false, 500, $id, "There was an error storing the token session data.");    
 
@@ -173,10 +173,10 @@ final class Auth_Token
      * @param string $token_name - Name of token to verify. Stored as http only cookie with the same name
      * @param int|null $logout_time - Optional timestamp of the user's last logout.
      * 
-     * @return object - Returns object from the self::response() method
+     * @return Response_Handler The response of the token validate operation from the self::response() method.
      */
 
-    public static function validate(string $token_name, int $logout_time = 0): object
+    public static function validate(string $token_name, int $logout_time = 0): Response_Handler
     {
         // Check if token name was provided.  If not return error
         if (!$token_name) return self::response(false, 500, null, "A token name must be provided for validation.");
@@ -253,7 +253,7 @@ final class Auth_Token
 
         // Retrieve and validate nonce
         $stored_transient = Session::get($token_name, $id);
-        if (!$stored_transient || !isset($stored_transient['nonce']) || $stored_transient['nonce'] !== $nonce) {
+        if (!$stored_transient->ok || !isset($stored_transient->data['nonce']) || $stored_transient->data['nonce'] !== $nonce) {
             self::remove_token($token_name, $id);
             return self::response(false, 401, null, "Invalid or replayed token.");
         }

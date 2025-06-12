@@ -22,13 +22,16 @@ final class Session
      * @return Response_Handler    Response object
      */
 
-    public static function generate(string $token_name, int $id, string $nonce, int $expiration): Response_Handler
+    public static function generate(string $token_name, int $id, string $nonce, int $expiration_time): Response_Handler
     {
+        // Current time
+        $current_time = time();
+
         // Set data for transient
         $data = [
             'nonce' => $nonce,
-            'issued_at' => time(),
-            'expiration' => $expiration,
+            'issued_at' => $current_time,
+            'expiration' => $expiration_time,
             'additionals' => []
         ];
 
@@ -36,7 +39,7 @@ final class Session
         $transient = set_transient(
             Config::AUTH_TOKEN_PREFIX . $token_name . '_' . $id,
             $data,
-            $expiration
+            $expiration_time - $current_time
         );
 
         // Generate response
@@ -90,17 +93,31 @@ final class Session
     {
         // Retrieve the session
         $update_transient = self::get($token_name, $id);
+
         // If retrieval failed, return the error response
-        if (!$update_transient->ok) return $update_transient;
+        if (!$update_transient->ok) {
+            return Response_Handler::response(
+                false,
+                500,
+                "Unable to retrieve session data corresponding to token name of `" . $token_name . "`.",
+                null
+            );
+        }
+
+        // Existing session data
+        $existing_data = $update_transient->data;
 
         // Update additionals data
-        $update_transient['additionals'] = $updated_data;
+        $existing_data['additionals'] = $updated_data;
+
+        // Update expiration time
+        $updated_expiration = max(1, $existing_data['expiration'] - time());
 
         // Save the session by setting Wordpress transient
         $transient = set_transient(
             Config::AUTH_TOKEN_PREFIX . $token_name . '_' . $id,
-            $update_transient,
-            $update_transient['expiration']
+            $existing_data,
+            $updated_expiration
         );
 
         // Determine if the update was successful
@@ -110,11 +127,11 @@ final class Session
         $return_data = Response_Handler::response(
             $ok,
             $ok ? 200 : 500,
-            $ok ? "Session updated successfully." : "Session update failed.",
-            $transient
+            $ok ? "Session data updated successfully corresponding to token name of `" . $token_name ."`." : "Session update failed corresponding to token name of `" . $token_name . "`.",
+            $existing_data
         );
 
-        do_action('wp_custom_api_session_generated_response', $return_data);
+        do_action('wp_custom_api_session_updated_response', $return_data);
         return $return_data;
     }
 
@@ -137,7 +154,7 @@ final class Session
         return Response_Handler::response(
             $ok,
             $ok ? 200 : 500,
-            $ok ? "Session deleted successfully." : "Session deletion failed."
+            $ok ? "Session deleted successfully for token name of `" . $token_name . "`." : "Session deletion failed for token name of `" . $token_name . "`."
         );
     }
 }

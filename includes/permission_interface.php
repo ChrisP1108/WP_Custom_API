@@ -61,10 +61,10 @@ class Permission_Interface
      *
      * @param string $string The password string to hash.
      * 
-     * @return array|object The response containing the hash and status information.
+     * @return Response_Handler The response of the password hash operation.
      */
 
-    final public static function password_hash(string $string): array|object 
+    final public static function password_hash(string $string): Response_Handler 
     {
         return Password::hash($string);
     }
@@ -81,10 +81,10 @@ class Permission_Interface
      * @param string $entered_password The plain text password to compare.
      * @param string $hashed_password The hashed password to verify against.
      * 
-     * @return array|object The response containing the verification result and status information.
+     * @return Response_Handler The response of the password verify operation.
      */
 
-    final public static function password_verify(string $entered_password = '', string $hashed_password = ''): array|object 
+    final public static function password_verify(string $entered_password = '', string $hashed_password = ''): Response_Handler 
     {
         return Password::verify($entered_password, $hashed_password);
     }
@@ -102,12 +102,12 @@ class Permission_Interface
     * @param string $token_name The token name.
     * @param int $expiration The expiration time in seconds.
     *
-    * @return array|object The response containing the generated token and status information.
+    * @return Response_Handler The response of the token_generate operation.
     */
 
-    final public static function token_generate(int $id, string $token_name, int $expiration = Config::TOKEN_EXPIRATION): array|object 
+    final public static function token_generate(string $token_name, int $id, int $expiration = Config::TOKEN_EXPIRATION): Response_Handler
     {
-        return Auth_Token::generate($id, $token_name, $expiration);
+        return Auth_Token::generate($token_name, $id, $expiration);
     }
 
     /**
@@ -122,10 +122,10 @@ class Permission_Interface
     * @param string $token_name The token name to validate.
     * @param int $logout_time The time when the token should be invalidated (optional).
     *
-    * @return array|object The response containing the validation result and status information.
+    * @return Response_Handler The response of the token_validate operation.
     */
 
-    final public static function token_validate(string $token_name, int $logout_time = 0): array|object 
+    final public static function token_validate(string $token_name, int $logout_time = 0): Response_Handler 
     {
         return Auth_Token::validate($token_name, $logout_time);
     }
@@ -140,12 +140,52 @@ class Permission_Interface
     *
     * @param string $token_name The name of the token to remove.
     * @param string|int $id The user ID associated with the token (optional).
-
-    * @return void
+    *
+    * @return Response_Handler The response of the token remove operation from the self::response() method.
     */
 
-    final public static function token_remove(string $token_name, string|int $id = 0): void 
+    final public static function token_remove(string $token_name, string|int $id = 0): Response_Handler 
     {
-        Auth_Token::remove_token($token_name, $id);
+        return Auth_Token::remove_token($token_name, $id);
+    }
+
+    /**
+     * METHOD - token_session_data
+    * 
+    * Retrieves the session data associated with an authentication token.
+    *
+    * This method retrieves the session data associated with an authentication
+    * token for the given token name and user ID.
+    *
+    * @param string $token_name The name of the token to retrieve the session data for.
+    * @param int $id The user ID associated with the token.
+    *
+    * @return Response_Handler The response of the get session data operation.
+    */
+
+    final public static function token_session_data(string $token_name, int $id): Response_Handler
+    {
+        return Session::get($token_name, $id);
+    }
+
+    /**
+     * METHOD - token_updated_session_data
+     * 
+     * Updates the session data associated with an authentication token.
+     *
+     * This method utilizes the Session class to update additional data
+     * for a session corresponding to the given token name and user ID.
+     *
+     * @param string $token_name The name of the token for which the session data should be updated.
+     * @param int $id The user ID associated with the token.
+     * @param array $updated_data The updated data to be stored in the session.
+     *
+     * @return Response_Handler The response of the update operation.
+     */
+
+    final public static function token_updated_session_data(string $token_name, int $id, array $updated_data): Response_Handler 
+    {
+        // Update the session additionals and return the response
+        return Session::update_additionals($token_name, $id, $updated_data);
     }
 }
