@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace WP_Custom_API\Includes;
 
 use WP_Custom_API\Config;
-use WP_REST_Request;
 use WP_Custom_API\Includes\Password;
 use WP_Custom_API\Includes\Auth_Token;
+use WP_Custom_API\Includes\Session;
 use WP_Custom_API\Includes\Response_Handler;
 
 /** 
