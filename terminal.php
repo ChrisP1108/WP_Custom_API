@@ -227,10 +227,13 @@ class Create
         $dependencies = [
             "WP_Custom_API\Includes\Model_Interface"
         ];
-        $class_content = $class_content = <<<'PHP'
+
+        $model_table_name = strtolower(PATH);
+
+        $class_content = $class_content = <<<PHP
                 public static function table_name(): string 
                 {
-                    return 'sample';
+                    return '$model_table_name';
                 }
 
                 public static function schema(): array 
@@ -244,16 +247,16 @@ class Create
                                     'query'    => 'VARCHAR(50)',
                                     'type'     => 'text',
                                     'required' => true,
-                                    'minimum' => 2,
-                                    'maximum'    => 50,
+                                    'minimum'  => 2,
+                                    'maximum'  => 50,
                                 ],
                             'email' => 
                                 [
                                     'query'    => 'VARCHAR(80)',
                                     'type'     => 'email',
                                     'required' => true,
-                                    'minimum' => 8,
-                                    'maximum'    => 80,
+                                    'minimum'  => 8,
+                                    'maximum'  => 80,
                                 ]
                         ]
                     ;

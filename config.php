@@ -103,7 +103,7 @@ final class Config
      * CONSTANT
      * 
      * @const string TOKEN_COOKIE_SAME_SITE
-     * Used for same site cookie configuration. Value can be either 'Stict', 'Lax' or 'None'.
+     * Used for same site cookie configuration. Value can be either 'Strict', 'Lax' or 'None'.
      */
 
     public const TOKEN_COOKIE_SAME_SITE = 'Strict';

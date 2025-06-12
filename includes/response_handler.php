@@ -59,7 +59,9 @@ final class Response_Handler
         // Set return message based upon if DEBUG_MESSAGE_MODE constant in Config class is set to false.  This ensures sensitive information is secured.
         if (!Config::DEBUG_MESSAGE_MODE) {
             if ($status_code < 300) $message = 'Success';
-            if ($status_code >= 300 && $status_code < 500) $message = 'There was an error with the client request data.';
+            if ($status_code >= 300 && $status_code < 500 && $status_code !== 401 && $status_code !== 403) $message = 'There was an error with the client request data.';
+            if ($status_code === 401) $message = 'Unauthorized';
+            if ($status_code === 403) $message = 'Forbidden';
             if ($status_code >= 500) $message = 'An error occured while processing your request on the server.';
         }
 
