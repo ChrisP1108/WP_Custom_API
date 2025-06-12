@@ -59,33 +59,38 @@ final class Auth_Token
     /**
      * METHOD - remove_token
      * 
-     * Removes token by removing cookie name with corresponding name
+     * Removes token by removing cookie name with corresponding name, along with its corresponding server side Wordpress transient session data.
      * 
      * @param string $token_name - Name of token to remove
      * @param string|int|null $id - The user ID from the token.
      * 
-     * @return void
+     * @return object - Returns object from the self::response() method
      */
 
-    public static function remove_token(string $token_name, string|int $id = 0): void
+    public static function remove_token(string $token_name, string|int $id = 0): object
     {
         // Apply auth token prefix to token name if it doesn't exist
-
         if (!str_starts_with($token_name, Config::AUTH_TOKEN_PREFIX)) {
             $token_name = Config::AUTH_TOKEN_PREFIX . $token_name;
         }
 
         // Remove cookie
-
         setcookie($token_name, '', time() - 300, '/');
 
-        // Remove transient if id passed in and transient exists
-        
-        if ($id !== 0) {
-            $id = intval($id);
-            $stored_nonce = Session::get($token_name, $id);
-            if ($stored_nonce->ok) Session::delete($token_name, $id);
-        }
+        // Check if id was provided
+        if ($id === 0) return self::response(false, 500, null, "No id was provided to remove token.");
+        $id = intval($id);
+
+        // Check that session data exists corresponding to token
+        $session = Session::get($token_name, $id);
+        if (!$session->ok) return self::response(false, 500, null, "No token with the name of `" . $token_name . "` was found.");
+
+        // Remove session data corresponding to token
+        $remove_session = Session::delete($token_name, $id);
+
+        if (!$remove_session->ok) return self::response(false, 500, null, "Token removal failed.");
+
+        return self::response(true, 200, $id, "Token removed successfully.");
     }
 
     /**
@@ -142,10 +147,10 @@ final class Auth_Token
         if (!$session->ok) return self::response(false, 500, $id, "There was an error storing the token session data.");    
 
         // Apply auth token prefix to token name
-        $token_name = Config::AUTH_TOKEN_PREFIX . $token_name;
+        $token_name_prefix = Config::AUTH_TOKEN_PREFIX . $token_name;
 
         // Set the token as a cookie in the browser
-        $cookie_result = setcookie($token_name, $token, 
+        $cookie_result = setcookie($token_name_prefix, $token, 
         [
             'expires' => $expiration_time, 
             'path' => "/", 
@@ -177,11 +182,11 @@ final class Auth_Token
         if (!$token_name) return self::response(false, 500, null, "A token name must be provided for validation.");
 
         // Apply auth token prefix to token name
-        $token_name = Config::AUTH_TOKEN_PREFIX . $token_name;
+        $token_name_prefix = Config::AUTH_TOKEN_PREFIX . $token_name;
 
         // Check if token exists
-        $token = $_COOKIE[$token_name] ?? null;
-        if (!$token) return self::response(false, 401, null, "No token with the name of `" . $token_name . "` was found.");
+        $token = $_COOKIE[$token_name_prefix] ?? null;
+        if (!$token) return self::response(false, 401, null, "No token with the name of `" . $token_name_prefix . "` was found.");
 
         // Split the token into encrypted data and HMAC and check that it is valid.
         $token_split = explode(".", $token, 3);

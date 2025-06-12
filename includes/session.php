@@ -24,7 +24,6 @@ final class Session
 
     public static function generate(string $token_name, int $id, string $nonce, int $expiration): Response_Handler
     {
-
         // Set data for transient
         $data = [
             'nonce' => $nonce,
@@ -76,7 +75,7 @@ final class Session
     }
 
     /**
-     * METHOD - set_additional
+     * METHOD - update_additionals
      * 
      * Retrieves the session, updates the additional data, and then saves the session.
      * 
@@ -87,17 +86,17 @@ final class Session
      * @return Response_Handler Response object containing session data or error details
      */
 
-    public static function set_additional(string $token_name, int $id, string $key, string|bool|int|null $value): Response_Handler
+    public static function update_additionals(string $token_name, int $id, array $updated_data): Response_Handler
     {
         // Retrieve the session
         $update_transient = self::get($token_name, $id);
         // If retrieval failed, return the error response
         if (!$update_transient->ok) return $update_transient;
 
-        // Set the additional key value pair
-        $update_transient['additionals'][$key] = $value;
+        // Update additionals data
+        $update_transient['additionals'] = $updated_data;
 
-        // Save the session
+        // Save the session by setting Wordpress transient
         $transient = set_transient(
             Config::AUTH_TOKEN_PREFIX . $token_name . '_' . $id,
             $update_transient,
@@ -133,7 +132,7 @@ final class Session
     {
         $delete_transient = delete_transient(Config::AUTH_TOKEN_PREFIX . $token_name . '_' . $id);
 
-        // Determine if the update was successful
+        // Determine if the deletion was successful
         $ok = $delete_transient !== false;
         return Response_Handler::response(
             $ok,
