@@ -169,7 +169,7 @@ class Permission_Interface
     }
 
     /**
-     * METHOD - token_updated_session_data
+     * METHOD - token_update_session_data
      * 
      * Updates the session data associated with an authentication token.
      *
@@ -183,7 +183,7 @@ class Permission_Interface
      * @return Response_Handler The response of the update operation.
      */
 
-    final public static function token_updated_session_data(string $token_name, int $id, array $updated_data): Response_Handler 
+    final public static function token_update_session_data(string $token_name, int $id, array $updated_data): Response_Handler 
     {
         // Update the session additionals and return the response
         return Session::update_additionals($token_name, $id, $updated_data);
