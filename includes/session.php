@@ -29,6 +29,8 @@ final class Session
 
         // Set data for transient
         $data = [
+            'id' => $id,
+            'token_name' => $token_name,
             'nonce' => $nonce,
             'issued_at' => $current_time,
             'expiration' => $expiration_time,
