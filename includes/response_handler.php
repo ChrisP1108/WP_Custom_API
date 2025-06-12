@@ -36,7 +36,7 @@ final class Response_Handler
         public readonly bool $ok,
         public readonly int $status_code,
         public readonly string $message,
-        public readonly array|null|string|bool $data,
+        public readonly array|null|string|bool|object $data,
         public readonly WP_REST_Response|null $error_response,
         public readonly WP_REST_Response|null $success_response
     )  {}
@@ -54,7 +54,7 @@ final class Response_Handler
      * @return static
      */
 
-    public static function response(bool $ok, int $status_code, string $message = '', array|null|string|bool $data = null, bool $parse_responses = true): static
+    public static function response(bool $ok, int $status_code, string $message = '', array|null|string|bool|object $data = null, bool $parse_responses = true): static
     {
         // Set return message based upon if DEBUG_MESSAGE_MODE constant in Config class is set to false.  This ensures sensitive information is secured.
         if (!Config::DEBUG_MESSAGE_MODE) {

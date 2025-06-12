@@ -6,6 +6,7 @@ namespace WP_Custom_API\Includes;
 
 use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Response_Handler;
+use WP_Custom_API\Includes\Session;
 
 /** 
  * Prevent direct access from sources other than the Wordpress environment
@@ -34,10 +35,10 @@ final class Auth_Token
      * @param int|null $issued_at - Timestamp when the token was issued.
      * @param int|null $expires_at - Timestamp when the token will expire.
      * 
-     * @return object - Returns a structured response from the Response_Handler::response() method.
+     * @return Response_Handler - Returns a structured response from the Response_Handler::response() method.
      */
 
-    private static function response(bool $ok, int $status_code, string|int|null $id, string $message, int $issued_at = 0, int $expires_at = 0): object
+    private static function response(bool $ok, int $status_code, string|int|null $id, string $message, int $issued_at = 0, int $expires_at = 0): Response_Handler
     {
         $data = ['id' => $id !== '' ? intval($id) : null];
 
@@ -82,8 +83,8 @@ final class Auth_Token
         
         if ($id !== 0) {
             $id = intval($id);
-            $stored_nonce = get_transient(Config::AUTH_TOKEN_PREFIX . $id);
-            if ($stored_nonce) delete_transient(Config::AUTH_TOKEN_PREFIX . $id);
+            $stored_nonce = Session::get($token_name, $id);
+            if ($stored_nonce->ok) Session::delete($token_name, $id);
         }
     }
 
@@ -135,8 +136,10 @@ final class Auth_Token
         // Check if the connection is using HTTPS
         if (!wp_is_using_https() && Config::TOKEN_OVER_HTTPS_ONLY) return self::response(false, 500, $id, "Token could not be stored as a cookie on the client, as the `TOKEN_OVER_HTTPS_ONLY` config variable is set to true and the server is not using HTTPS.");
 
-        // Store the nonce server-side in a transient (or database) to validate later
-        set_transient(Config::AUTH_TOKEN_PREFIX . $id, $nonce, $expiration_time - $issued_at);
+        // Store the nonce server-side in a transient (or database) to validate later through Session::generate method
+        $session = Session::generate($token_name, $id, $nonce, $expiration_time - $issued_at);
+        
+        if (!$session->ok) return self::response(false, 500, $id, "There was an error storing the token session data.");    
 
         // Apply auth token prefix to token name
         $token_name = Config::AUTH_TOKEN_PREFIX . $token_name;
@@ -244,8 +247,8 @@ final class Auth_Token
         }
 
         // Retrieve and validate nonce
-        $stored_nonce = get_transient(Config::AUTH_TOKEN_PREFIX . $id);
-        if (!$stored_nonce || $stored_nonce !== $nonce) {
+        $stored_transient = Session::get($token_name, $id);
+        if (!$stored_transient || !isset($stored_transient['nonce']) || $stored_transient['nonce'] !== $nonce) {
             self::remove_token($token_name, $id);
             return self::response(false, 401, null, "Invalid or replayed token.");
         }

@@ -37,10 +37,10 @@ final class Database
      * @param string $message Message detailing the response.
      * @param array|null $data Optional data to include in the response.
      * 
-     * @return object The standardized response object.
+     * @return Response_Handler The standardized response object.
      */
 
-    private static function response(bool $ok, int $status_code, string $message = '', ?array $data = null): object
+    private static function response(bool $ok, int $status_code, string $message = '', ?array $data = null): Response_Handler
     {
         $return_data = Response_Handler::response($ok, $status_code, $message, $data);
 
