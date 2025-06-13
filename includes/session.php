@@ -33,7 +33,7 @@ final class Session
             'token_name' => $token_name,
             'nonce' => $nonce,
             'first_issued' => $current_time,
-            'expiration' => $expiration_time,
+            'expiration' => $expiration_time + $current_time,
             'additionals' => []
         ];
 
@@ -41,7 +41,7 @@ final class Session
         $transient = set_transient(
             Config::AUTH_TOKEN_PREFIX . $token_name . '_' . $id,
             $data,
-            $expiration_time - $current_time
+            $expiration_time
         );
 
         // Generate response

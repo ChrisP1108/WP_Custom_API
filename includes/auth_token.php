@@ -109,13 +109,12 @@ final class Auth_Token
         if (!$id || !$token_name) return self::response(false, 500, $id, "`id` and `token_name` parameters required to generate auth token.");
 
         $issued_at = time(); // Current timestamp
-        $expiration_time = $issued_at + intval($expiration);
 
         // Generate a secure random nonce for replay protection
         $nonce = bin2hex(random_bytes(16));
 
         // Token data to be stored
-        $data = strval($id) . '|' . $expiration_time . '|' . $issued_at . '|' . $nonce;
+        $data = strval($id) . '|' . $expiration . '|' . $issued_at . '|' . $nonce;
 
         // Generate random bytes for IV
         $iv = random_bytes(16);
@@ -142,7 +141,7 @@ final class Auth_Token
         if (!wp_is_using_https() && Config::TOKEN_OVER_HTTPS_ONLY) return self::response(false, 500, $id, "Token could not be stored as a cookie on the client, as the `TOKEN_OVER_HTTPS_ONLY` config variable is set to true and the server is not using HTTPS.");
 
         // Store the nonce server-side in a transient (or database) to validate later through Session::generate method
-        $session = Session::generate($token_name, $id, $nonce, $expiration_time);
+        $session = Session::generate($token_name, $id, $nonce, $expiration);
         
         if (!$session->ok) return self::response(false, 500, $id, "There was an error storing the token session data.");    
 
@@ -152,7 +151,7 @@ final class Auth_Token
         // Set the token as a cookie in the browser
         $cookie_result = setcookie($token_name_prefix, $token, 
         [
-            'expires' => $expiration_time, 
+            'expires' => time() + $expiration, 
             'path' => "/", 
             'domain' => "", 
             'secure' => Config::TOKEN_OVER_HTTPS_ONLY, 
@@ -162,7 +161,7 @@ final class Auth_Token
 
         if (!$cookie_result) return self::response(false, 500, $id, "Token was generated but could not be stored in cookie. Headers may have already been sent.");
 
-        return self::response(true, 200, $id, "Token successfully generated.", $issued_at, $expiration_time);
+        return self::response(true, 200, $id, "Token successfully generated.", $issued_at, $expiration);
     }
 
     /**
