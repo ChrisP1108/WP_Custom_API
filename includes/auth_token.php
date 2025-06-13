@@ -88,7 +88,7 @@ final class Auth_Token
         // Remove session data corresponding to token
         $remove_session = Session::delete($token_name, $id);
 
-        if (!$remove_session->ok) return self::response(false, 500, null, "Token removal failed for token name of `" . $token_name . "`.");
+        if (!$remove_session->ok) return self::response(false, 500, null, "Token session data removal failed for token name of `" . $token_name . "`.");
 
         return self::response(true, 200, $id, "Token removed successfully for token name of `" . $token_name . "`.");
     }

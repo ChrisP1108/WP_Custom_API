@@ -86,8 +86,7 @@ final class Session
      * 
      * @param string $token_name Token name
      * @param int $id User ID
-     * @param string $key The key to add to the additional session data
-     * @param string|bool|int|null $value The value to store for the key
+     * @param array $key The array to store in the additionals key
      * @return Response_Handler Response object containing session data or error details
      */
 

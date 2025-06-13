@@ -94,7 +94,7 @@ final class Config
      * CONSTANT
      * 
      * @const bool TOKEN_COOKIE_HTTP_ONLY
-     * If set to true, the cookie will be set for HTTP only access, preventing javascript access on the client side.
+     * If set to true, the cookie will be set for HTTP only access, preventing javascript access on the client side to avoid XSS attacks.
      */
 
     public const TOKEN_COOKIE_HTTP_ONLY = true;
