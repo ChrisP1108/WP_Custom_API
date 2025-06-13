@@ -22,6 +22,7 @@ final class Permission extends Permission_Interface
     {
         // Replace code in this method with logic for protecting a route from unauthorized access. 
 
-        return self::token_validate(self::TOKEN_NAME)->ok;
+        $token = self::token_parser(self::TOKEN_NAME);
+        return [$token->ok, $token->data];
     }
 }

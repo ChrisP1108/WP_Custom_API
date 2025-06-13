@@ -43,10 +43,10 @@ final class Auth_Token
         $data = ['id' => $id !== '' ? intval($id) : null];
 
         if ($issued_at !== 0) {
-            $data['issued_at'] = date("Y-m-d H:i:s", $issued_at);
+            $data['issued'] = date("Y-m-d H:i:s", $issued_at);
         }
         if ($expires_at !== 0) {
-            $data['expires_at'] = date("Y-m-d H:i:s", $expires_at);
+            $data['expiration'] = date("Y-m-d H:i:s", $expires_at);
         }
 
         $return_data = Response_Handler::response($ok, $status_code, $message, $data);
