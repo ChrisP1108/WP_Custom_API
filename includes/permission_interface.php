@@ -188,4 +188,33 @@ class Permission_Interface
         // Update the session additionals and return the response
         return Session::update_additionals($token_name, $id, $updated_data);
     }
+
+    /**
+     * METHOD - token_parser
+     * 
+     * Validates an authentication token and retrieves the associated session data.
+     *
+     * This method validates the given token name and then retrieves the
+     * associated session data for the given token name and user ID.
+     *
+     * @param string $token_name The name of the token to parse.
+     * @param int $logout_time The time at which the token should expire.
+     *
+     * @return Response_Handler The response of the token parse operation.
+     */
+
+    final public static function token_parser(string $token_name, int $logout_time = 0): Response_Handler
+    {
+        // Validate token and get the id if valid.
+        $token_validate = Auth_Token::validate($token_name, $logout_time);
+
+        // If token is invalid, return error
+        if (!$token_validate->ok) return $token_validate;
+
+        // If token was validated, gather token session data
+        $token_session_data = Session::get($token_name, $token_validate->data['id']);
+
+        // Return token session data
+        return $token_session_data;
+    }
 }

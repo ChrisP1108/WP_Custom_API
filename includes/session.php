@@ -32,7 +32,7 @@ final class Session
             'id' => $id,
             'token_name' => $token_name,
             'nonce' => $nonce,
-            'issued_at' => $current_time,
+            'first_issued' => $current_time,
             'expiration' => $expiration_time,
             'additionals' => []
         ];
@@ -108,11 +108,22 @@ final class Session
         // Existing session data
         $existing_data = $update_transient->data;
 
+        // Add tally to number of times updated
+        if (isset($existing_data['updated_tally'])) {
+            $existing_data['updated_tally'] += 1;
+        } else {
+            $existing_data['updated_tally'] = 1;
+        }
+
+        // Set last time updated
+        $current_time = time();
+        $existing_data['last_updated'] = $current_time;
+
         // Update additionals data
         $existing_data['additionals'] = $updated_data;
 
         // Update expiration time
-        $updated_expiration = max(1, $existing_data['expiration'] - time());
+        $updated_expiration = max(1, $existing_data['expiration'] - $current_time);
 
         // Save the session by setting Wordpress transient
         $transient = set_transient(
@@ -133,6 +144,7 @@ final class Session
         );
 
         do_action('wp_custom_api_session_updated_response', $return_data);
+
         return $return_data;
     }
 
