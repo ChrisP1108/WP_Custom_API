@@ -7,7 +7,7 @@ namespace WP_Custom_API\Includes;
 use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Error_Generator;
 use WP_Custom_API\Includes\Permission_Interface as Permission;
-use WP_Custom_API\Includes\Controller_Interface as Controller;
+use WP_Custom_API\Includes\Init;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -31,7 +31,7 @@ final class Router
      * PROPERTY
      * 
      * @array routes
-     * Collects routes to register before the Init method is called.
+     * Collects routes to register from request before the Init method is called.
      * 
      * @since 1.0.0
      */
@@ -45,7 +45,7 @@ final class Router
      * Used to determine if routes have already been registered.
      */
 
-    private static $routes_registered = false;
+    private static $route_registered = false;
 
     /**
      * METHOD - register_rest_api_route
@@ -62,23 +62,17 @@ final class Router
     
     private static function register_rest_api_route(string $method, string $route, ?callable $callback, ?callable $permission_callback): void
     {
-        // Gets folder name that Router class was called from to create the base API route name
 
-        $router_trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+        // Check that route matches the request method.  If not, the route will not be registered
 
-        $router_folder_path = str_replace("\\", "/", dirname($router_trace[1]['file']));
-        $router_folder_path = preg_replace('#/+#', '/', $router_folder_path);
-
-        $base_folder_path = str_replace("\\", "/", WP_CUSTOM_API_FOLDER_PATH) . "api/";
-        $base_folder_path = preg_replace('#/+#', '/', $base_folder_path);
-
-        $router_base_route = "/" . str_replace($base_folder_path, '', $router_folder_path);
-        $router_base_route = str_replace("\\", "/", $router_base_route);
+        if (Init::$requested_route_data['method'] !== $method) {
+            return;
+        }
 
         // Check that permission callback is callable.  If not, return no_permission_callback_response and set permission_callback to true to display error message
 
         if (!is_callable($permission_callback)) {
-            $no_permission_err_msg = 'A permission callback must be registered for the ' . $method . ' route `' . $router_base_route . $route . '`.';
+            $no_permission_err_msg = 'A permission callback must be registered for the ' . $method . ' route `' . Init::$requested_route_data['route'] . $route . '`.';
             Error_Generator::generate('No Permission Callback', $no_permission_err_msg);
             $callback = function() use ($no_permission_err_msg) { 
                 return new WP_Rest_Response(['message' => $no_permission_err_msg], 500);
@@ -86,12 +80,10 @@ final class Router
             $permission_callback = function () { return Permission::public(); };
         }
 
-        // Register routes to $routes property
-
         self::$routes[] = [
-            'name' => str_replace('/', '',$router_base_route),
+            'name' => Init::$requested_route_data['name'],
             'method' => strtoupper($method),
-            'route' => self::parse_wildcards($router_base_route. $route),
+            'route' => self::parse_wildcards(Init::$requested_route_data['name'] . $route),
             'callback' => $callback,
             'permission_callback' => $permission_callback
         ];
@@ -110,21 +102,22 @@ final class Router
 
     public static function init(): void
     {
-        if (self::$routes_registered) return;
+        if (self::$route_registered || empty(self::$routes)) return;
 
-        self::$routes = apply_filters('wp_custom_api_routes_filter', self::$routes);
+        self::$route_registered = true;
 
-        self::$routes_registered = true;
+        self::$routes = apply_filters('wp_custom_api_route_filter', self::$routes);
 
         add_action('rest_api_init', function () {
-            foreach (self::$routes as $route) {
 
+            foreach (self::$routes as $route) {
+            
                 // Callback wrapper to allow custom Permission callback unauthorized response to be set by running the main callback and checking if it returned true or false
 
                 $wrapped_callback = function (WP_REST_Request $request) use ($route) {
                     
                     // Run permission callback
-                    $ok = call_user_func( $route['permission_callback'], $request);
+                    $ok = call_user_func($route['permission_callback'], $request);
 
                     // Check if permission callback returned true or false.  If not, return error response message.
                     

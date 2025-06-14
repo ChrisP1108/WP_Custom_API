@@ -34,7 +34,7 @@ final class Init
      * Determines if Init class has been instantiated.
      */
 
-    private static $instantiated = false;
+    private static bool $instantiated = false;
 
     /**
      * PROPERTY
@@ -43,7 +43,16 @@ final class Init
      * Stores a list of files that were autoloaded in the plugin
      */
 
-    private static $files_loaded = [];
+    private static array $files_loaded = [];
+
+    /**
+     * PROPERTY
+     * 
+     * @array requested_route
+     * Stores data about the requested route
+     */
+
+    public static array $requested_route_data;
 
     /**
      * METHOD - get_files_loaded
@@ -73,6 +82,7 @@ final class Init
     {
         self::namespaces_autoloader();
         self::files_autoloader();
+        do_action('wp_custom_api_file_autoloaded', self::$files_loaded);
         self::create_tables();
         Router::init();
     }
@@ -172,29 +182,48 @@ final class Init
 
     private static function files_autoloader(): void
     {
-        $route_requested_name = str_replace('/wp-json/' . Config::BASE_API_ROUTE, '', $_SERVER['REQUEST_URI']);
+        // $route_requested_path = str_replace('/wp-json/' . Config::BASE_API_ROUTE, '', $_SERVER['REQUEST_URI']);
 
-        $route_requested_name = explode('?', $route_requested_name)[0];
+        // $route_requested_path = explode('?', $route_requested_path)[0];
 
-        $route_requested_name = explode('/',$route_requested_name)[1];
+        // $route_requested_path = explode('/',$route_requested_path)[1];
+
+        $route_requested_path = parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH );
+
+        $route_prefix = '/wp-json/'. Config::BASE_API_ROUTE . '/';
+
+        if ( strpos( $route_requested_path, $route_prefix ) !== 0 ) {
+            return;
+        }
+
+        $route_path = str_replace($route_prefix, '', $route_requested_path);
+        $route_path = str_replace('\\', '/', $route_path);
+        $route_path = preg_replace('#/+#', '/', $route_path);
+
+        $base_route_folder = substr( $route_requested_path, strlen( $route_prefix ) );
+        $base_route_folder = strtok( trim( $base_route_folder, '/' ), '/' );
+        $base_route_folder = str_replace("\\", "/", $base_route_folder);
+        $base_route_folder = preg_replace('#/+#', '/', $base_route_folder);
+
+        self::$requested_route_data = [
+            'folder' => WP_CUSTOM_API_FOLDER_PATH . 'api/' . $base_route_folder,
+            'name' => $base_route_folder,
+            'method' => $_SERVER['REQUEST_METHOD'],
+            'route' => $route_path
+        ];
 
         $all_files_to_load = apply_filters('wp_custom_api_files_to_autoload', Config::FILES_TO_AUTOLOAD);
 
         foreach ($all_files_to_load as $filename) {
             try {
-                $directory = new RecursiveDirectoryIterator(WP_CUSTOM_API_FOLDER_PATH . 'api/' . $route_requested_name);
-                $iterator = new RecursiveIteratorIterator($directory);
-                foreach ($iterator as $file) {
-                    if ($file->isFile() && $file->getExtension() === 'php' && $file->getFilename() === $filename . '.php') {
-                        self::load_file($file->getPathname());
-                    }
+                $path = self::$requested_route_data['folder'] . "/{$filename}.php";
+                if ( file_exists( $path ) ) {
+                    self::load_file( $path );
                 }
             } catch (Exception $e) {
                 Error_Generator::generate('File load error', 'Error loading ' . $filename . '.php file in "api" folder at ' . WP_CUSTOM_API_FOLDER_PATH . '/api: ' . $e->getMessage());
             }
         }
-
-        do_action('wp_custom_api_files_autoloaded', self::$files_loaded);
     }
 
     /**
