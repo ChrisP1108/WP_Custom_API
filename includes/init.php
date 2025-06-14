@@ -174,9 +174,9 @@ final class Init
     {
         $route_requested_name = str_replace('/wp-json/' . Config::BASE_API_ROUTE, '', $_SERVER['REQUEST_URI']);
 
-        $route_requested_name = explode("?", $route_requested_name)[0];
+        $route_requested_name = explode('?', $route_requested_name)[0];
 
-        var_dump($route_requested_name);
+        $route_requested_name = explode('/',$route_requested_name)[1];
 
         $all_files_to_load = apply_filters('wp_custom_api_files_to_autoload', Config::FILES_TO_AUTOLOAD);
 
