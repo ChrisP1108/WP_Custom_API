@@ -221,14 +221,15 @@ class Controller_Interface
     final public static function compile_request_data(array|object $data): array|bool
     {
         $compiled_data = [];
+
         if(isset($data->request_data)) {
-            foreach ($data->request_data ?? [] as $key => $object) {
+            foreach ((array) $data->request_data ?? [] as $key => $object) {
                 if ($object->ok) {
                     $compiled_data[$key] = $object->value;
                 } else return false;
             }
         } else {
-            foreach ($data as $key => $object) {
+            foreach ((array) $data as $key => $object) {
                 if ($object->ok) {
                     $compiled_data[$key] = $object->value;
                 } else return false;
