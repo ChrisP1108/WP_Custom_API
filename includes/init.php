@@ -163,6 +163,7 @@ final class Init
      * METHOD - api_routes_files_autoloader
      * 
      * Runs RecursiveDirectoryIterator and RecursiveIteratorIterator to load files that are in the CONFIG class FILES_TO_AUTOLOAD constant.
+     * Only folders within the "api" folder that pertain to the request URL route are loaded.
      * Additional files can be loaded/modified through the Wordpress filter hook. 
      * Wordpress action hook is called at the end for other custom code to run after files are loaded.
      * 
@@ -171,11 +172,13 @@ final class Init
 
     private static function files_autoloader(): void
     {
-        $all_files_to_load = apply_filters('wp_custom_api_files_to_autoload', CONFIG::FILES_TO_AUTOLOAD);
+        $route_requested_name = str_replace('/wp-json/' . Config::BASE_API_ROUTE, '', $_SERVER['REQUEST_URI']);
+
+        $all_files_to_load = apply_filters('wp_custom_api_files_to_autoload', Config::FILES_TO_AUTOLOAD);
 
         foreach ($all_files_to_load as $filename) {
             try {
-                $directory = new RecursiveDirectoryIterator(WP_CUSTOM_API_FOLDER_PATH . 'api');
+                $directory = new RecursiveDirectoryIterator(WP_CUSTOM_API_FOLDER_PATH . 'api/' . $route_requested_name);
                 $iterator = new RecursiveIteratorIterator($directory);
                 foreach ($iterator as $file) {
                     if ($file->isFile() && $file->getExtension() === 'php' && $file->getFilename() === $filename . '.php') {
