@@ -45,7 +45,7 @@ final class Password
             $output['hash'] = $hash;
         }
 
-        $return_data = Response_Handler::response($ok, $status_code, $message, $output);
+        $return_data = Response_Handler::response($ok, $status_code, $message, (object) $output);
 
         do_action('wp_custom_api_password_response', $return_data);
 

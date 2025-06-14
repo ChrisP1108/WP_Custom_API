@@ -43,7 +43,7 @@ final class Database
 
     private static function response(bool $ok, int $status_code, string $message = '', ?array $data = null): Response_Handler
     {
-        $return_data = Response_Handler::response($ok, $status_code, $message, $data);
+        $return_data = Response_Handler::response($ok, $status_code, $message, (object) $data);
 
         do_action('wp_custom_api_database_response', $return_data);
 
@@ -206,7 +206,7 @@ final class Database
             $create_table_query .= esc_sql($key) . " " . esc_sql($column_query) . ", ";
         }
 
-        $create_table_query .= "created DATETIME DEFAULT CURRENT_TIMESTAMP, updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id)) $charset_collate;";
+        $create_table_query .= "created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id)) $charset_collate;";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 
@@ -393,6 +393,10 @@ final class Database
 
         if (!$table_name_to_insert) return self::table_name_err_msg();
 
+        if (is_object($data)) {
+            $data = (array) $data;
+        }
+
         ob_start();
 
         $result = $wpdb->insert($table_name_to_insert, $data);
@@ -428,6 +432,10 @@ final class Database
         if (!$table_name_to_update) return self::table_name_err_msg();
 
         $where = ['id' => intval($id)];
+
+        if (is_object($data)) {
+            $data = (array) $data;
+        }
 
         ob_start();
 
@@ -621,6 +629,10 @@ final class Database
         $results = [];
 
         $import_data_errors = [];
+
+        if (is_object($data)) {
+            $data = (array) $data;
+        }
 
         // Create tables
         foreach ($data as $table_name => $table_data) {

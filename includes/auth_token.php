@@ -25,6 +25,20 @@ final class Auth_Token
 {
 
     /**
+     * CONSTRUCTOR
+     *
+     * @param int|null $id The user ID associated with this token.
+     * @param string|null $issued_at The timestamp when the token was issued.
+     * @param string|null $expiration_at The timestamp when the token will expire.
+     */
+
+    private function __construct(
+        public readonly int|null $id,
+        public readonly string|null $issued_at,
+        public readonly string|null $expiration_at
+    ) {}
+
+    /**
      * METHOD - response
      * 
      * Used to return detailed information about the token and its validity.
@@ -38,18 +52,21 @@ final class Auth_Token
      * @return Response_Handler - Returns a structured response from the Response_Handler::response() method.
      */
 
-    private static function response(bool $ok, int $status_code, string|int|null $id, string $message, int $issued_at = 0, int $expires_at = 0): Response_Handler
+    private static function response(bool $ok, int $status_code, string|int|null $id, string $message, int $issued_at = 0, int $expiration_at = 0): Response_Handler
     {
-        $data = ['id' => $id !== '' ? intval($id) : null];
+        $id = $id !== '' ? intval($id) : null;
 
         if ($issued_at !== 0) {
-            $data['issued'] = date("Y-m-d H:i:s", $issued_at);
-        }
-        if ($expires_at !== 0) {
-            $data['expiration'] = date("Y-m-d H:i:s", $expires_at);
-        }
+            $issued_at = date("Y-m-d H:i:s", $issued_at);
+        } else $issued_at = null;
 
-        $return_data = Response_Handler::response($ok, $status_code, $message, $data);
+        if ($expiration_at !== 0) {
+            $expiration_at = date("Y-m-d H:i:s", $expiration_at);
+        } else $expiration_at = null;
+
+        $object_data = new static($id, $issued_at, $expiration_at);
+
+        $return_data = Response_Handler::response($ok, $status_code, $message, $object_data);
 
         do_action('wp_custom_api_auth_token_response', $return_data);
 
@@ -90,7 +107,7 @@ final class Auth_Token
 
         if (!$remove_session->ok) return self::response(false, 500, null, "Token session data removal failed for token name of `" . $token_name . "`.");
 
-        return self::response(true, 200, $id, "Token removed successfully for token name of `" . $token_name . "`.");
+        return self::response(true, 200, $id, "Token removed successfully for token name of `" . $token_name . "` along with its session data.");
     }
 
     /**
@@ -103,7 +120,7 @@ final class Auth_Token
      * @return Response_Handler The response of the token generate operation from the self::response() method.
      */
 
-    public static function generate(string $token_name, int $id, int $expiration = Config::TOKEN_EXPIRATION): Response_Handler
+    public static function generate(string $token_name, int $id, int $expiration_at = Config::TOKEN_EXPIRATION): Response_Handler
     {
         // Check if token name was provided.  If not return error
         if (!$id || !$token_name) return self::response(false, 500, $id, "`id` and `token_name` parameters required to generate auth token.");
@@ -114,7 +131,7 @@ final class Auth_Token
         $nonce = bin2hex(random_bytes(16));
 
         // Token data to be stored
-        $data = strval($id) . '|' . $expiration . '|' . $issued_at . '|' . $nonce;
+        $data = strval($id) . '|' . $expiration_at . '|' . $issued_at . '|' . $nonce;
 
         // Generate random bytes for IV
         $iv = random_bytes(16);
@@ -141,17 +158,19 @@ final class Auth_Token
         if (!wp_is_using_https() && Config::TOKEN_OVER_HTTPS_ONLY) return self::response(false, 500, $id, "Token could not be stored as a cookie on the client, as the `TOKEN_OVER_HTTPS_ONLY` config variable is set to true and the server is not using HTTPS.");
 
         // Store the nonce server-side in a transient (or database) to validate later through Session::generate method
-        $session = Session::generate($token_name, $id, $nonce, $expiration);
+        $session = Session::generate($token_name, $id, $nonce, $expiration_at);
         
         if (!$session->ok) return self::response(false, 500, $id, "There was an error storing the token session data.");    
 
         // Apply auth token prefix to token name
         $token_name_prefix = Config::AUTH_TOKEN_PREFIX . $token_name;
 
+        $expires_at = $issued_at + $expiration_at;
+
         // Set the token as a cookie in the browser
         $cookie_result = setcookie($token_name_prefix, $token, 
         [
-            'expires' => time() + $expiration, 
+            'expires' => $expires_at,
             'path' => "/", 
             'domain' => "", 
             'secure' => Config::TOKEN_OVER_HTTPS_ONLY, 
@@ -161,7 +180,7 @@ final class Auth_Token
 
         if (!$cookie_result) return self::response(false, 500, $id, "Token was generated but could not be stored in cookie. Headers may have already been sent.");
 
-        return self::response(true, 200, $id, "Token successfully generated.", $issued_at, $expiration);
+        return self::response(true, 200, $id, "Token successfully generated.", $issued_at, $expires_at);
     }
 
     /**
@@ -235,11 +254,11 @@ final class Auth_Token
         list($id, $expiration, $issued_at, $nonce) = $parts;
 
         $id = intval($id);
-        $expiration = intval($expiration);
+        $expiration_at = intval($expiration);
         $issued_at = intval($issued_at);
 
         // Check token expiration
-        if ($expiration <= time()) {
+        if ($expiration_at + $issued_at <= time()) {
             self::remove_token($token_name, $id);
             return self::response(false, 401, null, "Token has expired.");
         }
@@ -252,12 +271,20 @@ final class Auth_Token
 
         // Retrieve and validate nonce
         $stored_transient = Session::get($token_name, $id);
-        if (!$stored_transient->ok || !isset($stored_transient->data['nonce']) || $stored_transient->data['nonce'] !== $nonce) {
+        $transient_nonce_value = null;
+
+        if (is_object($stored_transient->data)) {
+            $transient_nonce_value = $stored_transient->data->nonce ?? null;
+        } else {
+            $transient_nonce_value = $stored_transient->data['nonce'] ?? null;
+        }
+
+        if (!$transient_nonce_value || $transient_nonce_value !== $nonce) {
             self::remove_token($token_name, $id);
             return self::response(false, 401, null, "Invalid or replayed token.");
         }
 
         // Token is valid
-        return self::response(true, 200, $id, "Token authenticated.", $issued_at, $expiration);
+        return self::response(true, 200, $id, "Token authenticated.", $issued_at, $expiration_at);
     }
 }

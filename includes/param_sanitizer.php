@@ -16,6 +16,24 @@ if (!defined('ABSPATH')) exit;
 
 class Param_Sanitizer {
 
+    /**
+     * CONSTRUCTOR
+     * 
+     * @param bool $ok Sanitization result (true = success, false = failure).
+     * @param array|string|int|bool|null $value Sanitized value.
+     * @param bool $type_error Type mismatch error flag.
+     * @param string $type_found Found type.
+     * @param string $expected_type Expected type.
+     * @param string|null $type_message Type mismatch error message.
+     * @param bool $char_maximum_exceeded Character count maximum exceeded flag.
+     * @param string|null $char_maximum_message Character count maximum exceeded error message.
+     * @param string|null $char_minimum_message Character count minimum not met error message.
+     * @param int $char_maximum Maximum allowed character count.
+     * @param int $char_minimum Minimum allowed character count.
+     * @param bool $char_minimum_met Character count minimum met flag.
+     * @param int $char_length Actual character count of the value.
+     */
+    
     private function __construct(
         public readonly bool $ok,
         public readonly array|string|int|bool|null $value,

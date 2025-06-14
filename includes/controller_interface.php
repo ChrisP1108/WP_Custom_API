@@ -311,23 +311,26 @@ class Controller_Interface
         // Parse response data
         if ($response !== null) {
 
-            // Check that response wasn't an associative array, if so, add it to data.  Otherwise use the data key from an object
-            if (!is_object($response)) {
+            $data_array = null;
+            
+            // Check that response wasn't an associative array, if so, add it to data.  Otherwise use the data key from the object
+            if (isset($response->data) && is_object($response->data)) {
 
                 // Set data if response is an associaitve array
-                $parsed_response['data'] = $response;
+                $data_array = (array) $response->data;
             } else {
+                $data_array = (array) $response;
+            }
 
-                // Prevent password hash in response
-                if (isset($response->data) && isset($response->data['hash'])) {
-                    unset($response->data['hash']);
-                }
+            $keys_not_to_display = ['hash', 'nonce', 'token_name', 'first_issued_at', 'expiration_at', 'updated_tally', 'last_updated_at', 'additionals'];
 
-                // Set data if data key exists as an object in response data
-                if (isset($response->data) && $response->data !== null) {
-                    $parsed_response['data'] = $response->data;
+            foreach($keys_not_to_display as $key) {
+                if (isset($data_array[$key])) {
+                    unset($data_array[$key]);
                 }
             }
+
+            $parsed_response['data'] = $data_array;
         }
 
         return new WP_REST_Response($parsed_response, $response_status_code);

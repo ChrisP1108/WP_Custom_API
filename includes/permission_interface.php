@@ -212,7 +212,13 @@ class Permission_Interface
         if (!$token_validate->ok) return $token_validate;
 
         // If token was validated, gather token session data
-        $token_session_data = Session::get($token_name, $token_validate->data['id']);
+
+        $id = null;
+        if (is_object($token_validate->data)) {
+            $id = $token_validate->data->id;
+        } else $id = $token_validate->data['id'];
+
+        $token_session_data = Session::get($token_name, $id);
 
         // Return token session data
         return $token_session_data;
