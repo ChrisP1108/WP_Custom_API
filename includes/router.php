@@ -45,7 +45,7 @@ final class Router
      * Used to determine if routes have already been registered.
      */
 
-    private static $route_registered = false;
+    private static $routes_registered = false;
 
     /**
      * METHOD - register_rest_api_route
@@ -62,7 +62,6 @@ final class Router
     
     private static function register_rest_api_route(string $method, string $route, ?callable $callback, ?callable $permission_callback): void
     {
-
         // Check that route matches the request method.  If not, the route will not be registered
 
         if (Init::$requested_route_data['method'] !== $method) {
@@ -102,9 +101,9 @@ final class Router
 
     public static function init(): void
     {
-        if (self::$route_registered || empty(self::$routes)) return;
+        if (self::$routes_registered || empty(self::$routes)) return;
 
-        self::$route_registered = true;
+        self::$routes_registered = true;
 
         self::$routes = apply_filters('wp_custom_api_route_filter', self::$routes);
 
