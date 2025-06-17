@@ -80,28 +80,26 @@ final class Init
 
     private function __construct()
     {
-        self::namespaces_autoloader();
         self::files_autoloader();
         self::create_tables();
         Router::init();
     }
 
     /**
-     * METHOD - run
-     * 
-     * Instantiates Init class constructor if $instantiated is set to false.
-     * Once instantiated, $instantiated is set to true and 'wp_custom_api_loaded' action is run.
-     * This helps prevent more than one instance of the Init class from being loaded.
+     * Runs the plugin by autoloading classes and files, creating tables in the database, and registering routes with the Wordpress REST API.
      * 
      * @return void
      */
 
     public static function run(): void
     {
-        if (!self::$instantiated) {
+        // Autoload classes and files with the same namespace as the plugin
+        self::namespaces_autoloader();
+        
+        // Check if the request is for the plugin and if the plugin hasn't been instantiated yet
+        if (!self::$instantiated && self::request_to_plugin()) {
             new self();
             self::$instantiated = true;
-
             do_action('wp_custom_api_loaded', self::$files_loaded);
         }
     }
@@ -222,9 +220,7 @@ final class Init
      */
 
     private static function files_autoloader(): void
-    {
-        if (!self::request_to_plugin()) return;
-        
+    {    
         $all_files_to_load = apply_filters('wp_custom_api_files_to_autoload', Config::FILES_TO_AUTOLOAD);
 
         foreach ($all_files_to_load as $filename) {

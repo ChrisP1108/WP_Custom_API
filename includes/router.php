@@ -48,6 +48,44 @@ final class Router
     private static $routes_registered = false;
 
     /**
+     * Check if the current request matches a given route and method.
+     *
+     * @param string $method The HTTP method to check against (e.g., GET, POST).
+     * @param string $route The route pattern to match, with optional placeholders.
+     * @return bool True if the request matches the route and method, false otherwise.
+     */
+    private static function route_matches_request(string $method, string $route): bool
+    {
+        // Check if the HTTP method matches the requested method
+        if (Init::$requested_route_data['method'] !== strtoupper($method)) {
+            return false;
+        }
+
+        // Trim the requested route and base route for comparison
+        $requested = trim(Init::$requested_route_data['route'], '/');
+        $base = trim(Init::$requested_route_data['name'], '/');
+        $pattern = trim($route, '/');
+        $combined = $base . ($pattern === '' ? '' : "/{$pattern}");
+
+        // Replace route placeholders with a unique wildcard identifier
+        $placeholder = preg_replace('#\{(\w+)\}#', '__WILD__$1__', $combined);
+        // Escape special regex characters in the pattern
+        $escaped = preg_quote($placeholder, '#');
+
+        // Convert wildcards to named regex groups for matching
+        $regex = preg_replace_callback(
+            '/__WILD__(\w+)__/',
+            fn($m) => '(?P<' . $m[1] . '>[A-Za-z0-9_-]+)',
+            $escaped
+        );
+
+        // Construct full regex pattern for matching the requested route
+        $full_regex = "#^{$regex}$#";
+        // Return whether the requested route matches the constructed regex
+        return (bool) preg_match($full_regex, $requested);
+    }
+
+    /**
      * METHOD - register_rest_api_route
      * 
      * Register a REST API route.  Finds a route folder that the method was called from and registers the route relative to that folder name.
@@ -62,11 +100,9 @@ final class Router
     
     private static function register_rest_api_route(string $method, string $route, ?callable $callback, ?callable $permission_callback): void
     {
-        // Check that route matches the request method.  If not, the route will not be registered
+        // Check that route matches the request.  If not, the route will not be registered
 
-        if (Init::$requested_route_data['method'] !== $method) {
-            return;
-        }
+        if (!self::route_matches_request($method, $route)) return;
 
         // Check that permission callback is callable.  If not, return no_permission_callback_response and set permission_callback to true to display error message
 

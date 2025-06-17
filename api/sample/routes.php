@@ -15,7 +15,7 @@ use WP_Custom_API\Api\Sample\Permission;
 if (!defined('ABSPATH')) exit;
 
 /**
-* API Base Route - {url_origin}/wp-json/custom-api/v1/sample
+* API Base Route - {url_origin}/wp-json/custom-api/v1/sample 
 */
 
 /**
