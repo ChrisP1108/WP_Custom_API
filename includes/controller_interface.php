@@ -290,15 +290,15 @@ class Controller_Interface
         if (isset($response->ok) && !$response->ok) {
 
             if (isset($response->missing_keys) && !empty($response->missing_keys) && !$validation_error) {
-                $parsed_response['missing_keys'] = $response->missing_keys;
+                $parsed_response['missing_keys'] = (array) $response->missing_keys;
                 $validation_error = true;
             }
             if (isset($response->invalid_types) && !empty($response->invalid_types) && !$validation_error) {
-                $parsed_response['invalid_types'] = $response->invalid_types;
+                $parsed_response['invalid_types'] = (array) $response->invalid_types;
                 $validation_error = true;
             }
             if (isset($response->keys_not_meeting_char_requirements) && !empty($response->keys_not_meeting_char_requirements) && !$validation_error) {
-                $parsed_response['keys_not_meeting_char_requirements'] = $response->keys_not_meeting_char_requirements;
+                $parsed_response['keys_not_meeting_char_requirements'] = (array) $response->keys_not_meeting_char_requirements;
                 $validation_error = true;
             }
 

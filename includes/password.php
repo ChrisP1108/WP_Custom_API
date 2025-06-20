@@ -23,6 +23,15 @@ if (!defined('ABSPATH')) exit;
 final class Password 
 {
 
+    /**
+     * CONSTRUCTOR
+     * 
+     * @param string|null $hash The hashed password string or null if no hash is provided
+     */
+
+    private function __construct(
+        public readonly string|null $hash,
+    ) {}
 
     /**
      * METHOD - response
@@ -32,20 +41,16 @@ final class Password
      * @param bool $ok - Whether the password hashing or validation was successful
      * @param int $status_code - HTTP status code
      * @param string $message - Message to be returned in the response
-     * @param string $hash - Hashed password string
+     * @param string|null $hash - Hashed password string
      * 
      * @return Response_Handler - Returns a structured response
      */
 
-    private static function response(bool $ok, int $status_code, string $message = '', string $hash = ''): Response_Handler
+    private static function response(bool $ok, int $status_code, string $message = '', string|null $hash = null): Response_Handler
     {
-        $output = [];
+        $object_data = new static($hash);
 
-        if ($hash !== '') {
-            $output['hash'] = $hash;
-        }
-
-        $return_data = Response_Handler::response($ok, $status_code, $message, (object) $output);
+        $return_data = Response_Handler::response($ok, $status_code, $message, $object_data);
 
         do_action('wp_custom_api_password_response', $return_data);
 
