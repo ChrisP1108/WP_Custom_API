@@ -241,7 +241,7 @@ final class Init
      * 
      * Will iterate through all model classes in the model array from the Init::get_files_loaded() method and create tables 
      *      in the database for any model class fiels that have its create_table method return true if it hasn't been created yet.
-     * Calls a Wordpress action hook after migrations are finished
+     * Calls a Wordpress action hook after migrations are finished and stores tables created in the $tables_created for Wordpress transient storage.
      * 
      * @return void
      */
@@ -261,8 +261,18 @@ final class Init
             }
         }
 
+        $tables_created = [];
+
+        $existing_tables_created = get_transient('wp_custom_api_tables_created');
+
         foreach ($models_classes_names as $model_class_name) {
             $model = new $model_class_name;
+
+            // Skip if table has already been created based upon Wordpress transient data.
+            if ($existing_tables_created && in_array($model::table_name(), $existing_tables_created)) {
+                continue;
+            }
+
             $table_exists = Database::table_exists($model::table_name());
 
             if (!$table_exists && $model::table_name() !== '' && method_exists($model, 'create_table') && $model::create_table() && !empty($model::schema())) {
@@ -273,12 +283,20 @@ final class Init
                 if (!$table_creation_result->ok) {
                     Error_Generator::generate(
                         'Error creating table in database',
-                        'The table name "' . Database::get_table_full_name($model::table_name()) . '" had an error in being created in MySql through the WP_Custom_API plugin.'
+                        'The table name "` . Database::get_table_full_name($model::table_name()) . `" had an error in being created in MySql through the WP_Custom_API plugin.'
                     );
+                } else {
+                    $tables_created[] = $model::table_name();
                 }
             }
         }
 
-        do_action('wp_custom_api_migrations_run', $models_classes_names);
+        // Call Wordpress action hook
+        do_action('wp_custom_api_tables_created', $tables_created);
+
+        // Store existing tables that have been created through this plugin in a Wordpress transient for better load times.  Stores it for 7 days.
+        if(!empty($tables_created)) {
+            set_transient('wp_custom_api_tables_created', $tables_created, 86400 * 7);
+        }
     }
 }
