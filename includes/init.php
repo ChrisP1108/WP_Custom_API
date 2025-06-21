@@ -8,8 +8,6 @@ use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Database;
 use WP_Custom_API\Includes\Router;
 use WP_Custom_API\Includes\Error_Generator;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use Exception;
 
 /** 
@@ -112,40 +110,58 @@ final class Init
      * 
      * @return bool True if the request is for the plugin, false otherwise.
      */
-    
-    private static function request_to_plugin(): bool 
+
+    private static function request_to_plugin(): bool
     {
-        // Parse the request URI to get the path
-        $route_requested_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        $uri    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        $prefix = '/wp-json/' . Config::BASE_API_ROUTE . '/';
 
-        // Define the route prefix based on the configured base API route
-        $route_prefix = '/wp-json/' . Config::BASE_API_ROUTE . '/';
+        if (strpos($uri, $prefix) !== 0) {
+            return false;
+        }
 
-        // Check if the requested path starts with the route prefix
-        if (strpos($route_requested_path, $route_prefix) !== 0) {
-            return false; // Not a plugin request
+        $after = trim(str_replace($prefix, '', $uri), '/');   // e.g. "youtube_blogs/categories/4"
+        $api   = rtrim(WP_CUSTOM_API_FOLDER_PATH, '/') . '/api/';
+
+        $segments = $after === '' ? [] : explode('/', $after);
+
+        // find the deepest matching folder under api/
+        $matched    = false;
+        $matched_dir = '';
+        $remainder  = '';
+        for ($i = count($segments); $i > 0; $i--) {
+            $cand = implode('/', array_slice($segments, 0, $i));
+            if (is_dir($api . $cand)) {
+                $matched    = true;
+                $matched_dir = $cand;
+                $remainder  = implode('/', array_slice($segments, $i));
+                break;
+            }
+        }
+
+        if (! $matched) {
+            // fallback: first segment is folder
+            $matched_dir = $segments[0] ?? '';
         }
 
         // Extract and sanitize the route path
-        $route_path = str_replace($route_prefix, '', $route_requested_path);
+        $route_path = str_replace($prefix, '', $uri);
         $route_path = str_replace('\\', '/', $route_path);
         $route_path = preg_replace('#/+#', '/', $route_path);
 
-        // Determine the base route folder from the requested path
-        $base_route_folder = substr($route_requested_path, strlen($route_prefix));
-        $base_route_folder = strtok(trim($base_route_folder, '/'), '/');
-        $base_route_folder = str_replace("\\", "/", $base_route_folder);
-        $base_route_folder = preg_replace('#/+#', '/', $base_route_folder);
+        $route_without_remainder = str_replace($remainder, '', $route_path);
+        $route_without_remainder = str_replace('\\', '/', $route_without_remainder);
+        $route_without_remainder = preg_replace('#/+#', '/', $route_without_remainder);
 
-        // Store the requested route data for further processing
         self::$requested_route_data = [
-            'folder' => WP_CUSTOM_API_FOLDER_PATH . 'api/' . $base_route_folder,
-            'name' => $base_route_folder,
+            'folder' => $api . $matched_dir,
             'method' => $_SERVER['REQUEST_METHOD'],
-            'route' => $route_path
+            'route'  => $route_path,
+            'route_without_remainder' => $route_without_remainder,
+            'remainder' => $remainder
         ];
 
-        return true; // Plugin request identified
+        return true;
     }
 
     /**
@@ -228,12 +244,15 @@ final class Init
                 $path = self::$requested_route_data['folder'] . '/' . $filename . '.php';
                 if ( file_exists( $path ) ) {
                     self::load_file( $path );
+                } else {
+                    Error_Generator::generate('File load error', 'Error loading ' . $filename . '.php file in "api" folder');
                 }
             } catch (Exception $e) {
                 Error_Generator::generate('File load error', 'Error loading ' . $filename . '.php file in "api" folder at ' . WP_CUSTOM_API_FOLDER_PATH . '/api: ' . $e->getMessage());
             }
         }
         do_action('wp_custom_api_files_autoloaded', self::$files_loaded);
+
     }
 
     /**

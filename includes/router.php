@@ -54,35 +54,60 @@ final class Router
      * @param string $route The route pattern to match, with optional placeholders.
      * @return bool True if the request matches the route and method, false otherwise.
      */
-    private static function route_matches_request(string $method, string $route): bool
+    private static function route_matches_request(string $method, string $route_pattern): bool
     {
-        // Check if the HTTP method matches the requested method
+        // 1) Method must match
         if (Init::$requested_route_data['method'] !== strtoupper($method)) {
             return false;
         }
 
-        // Trim the requested route and base route for comparison
-        $requested = trim(Init::$requested_route_data['route'], '/');
-        $base = trim(Init::$requested_route_data['name'], '/');
-        $pattern = trim($route, '/');
-        $combined = $base . ($pattern === '' ? '' : "/{$pattern}");
+        // 2) Full path after /v1/, e.g. "youtube_blogs/categories/4"
+        $requested_full = trim(Init::$requested_route_data['route'], '/');
 
-        // Replace route placeholders with a unique wildcard identifier
-        $placeholder = preg_replace('#\{(\w+)\}#', '__WILD__$1__', $combined);
-        // Escape special regex characters in the pattern
-        $escaped = preg_quote($placeholder, '#');
+        // 3) Derive your base folder name, e.g. "youtube_blogs/categories"
+        $api_prefix = rtrim(WP_CUSTOM_API_FOLDER_PATH, '/') . '/api/';
+        $folder    = str_replace('\\', '/', Init::$requested_route_data['folder']);
+        $base      = '';
+        if (0 === strpos($folder, $api_prefix)) {
+            $base = trim(substr($folder, strlen($api_prefix)), '/');
+        }
 
-        // Convert wildcards to named regex groups for matching
-        $regex = preg_replace_callback(
-            '/__WILD__(\w+)__/',
-            fn($m) => '(?P<' . $m[1] . '>[A-Za-z0-9_-]+)',
-            $escaped
-        );
+        // 4) Carve off the "remainder" after that base
+        if ($base === '') {
+            $remainder = $requested_full;
+        } elseif ($requested_full === $base) {
+            $remainder = '';
+        } elseif (str_starts_with($requested_full, $base . '/')) {
+            $remainder = substr($requested_full, strlen($base) + 1);
+        } else {
+            return false; // request isn’t under this folder
+        }
+        $remainder = trim($remainder, '/');
 
-        // Construct full regex pattern for matching the requested route
-        $full_regex = "#^{$regex}$#";
-        // Return whether the requested route matches the constructed regex
-        return (bool) preg_match($full_regex, $requested);
+        // 5) Normalize the developer‐supplied pattern (drops any "/" around it)
+        $pattern = trim($route_pattern, '/');
+
+        // 6) If they registered the root (e.g. Router::get("/")):
+        if ($pattern === '') {
+            return $remainder === '';
+        }
+
+        // 7) Break the pattern into segments, build a regex per segment
+        $parts      = explode('/', $pattern);
+        $regex_parts = [];
+        foreach ($parts as $part) {
+            if (preg_match('/^\{(\w+)\}$/', $part, $m)) {
+                // wildcard segment → named capture
+                $regex_parts[] = '(?P<' . $m[1] . '>[A-Za-z0-9_-]+)';
+            } else {
+                // literal segment → escape it
+                $regex_parts[] = preg_quote($part, '/');
+            }
+        }
+
+        // 8) Test remainder against that assembled regex
+        $regex = '#^' . implode('\/', $regex_parts) . '$#';
+        return (bool) preg_match($regex, $remainder);
     }
 
     /**
@@ -101,7 +126,6 @@ final class Router
     private static function register_rest_api_route(string $method, string $route, ?callable $callback, ?callable $permission_callback): void
     {
         // Check that route matches the request.  If not, the route will not be registered
-
         if (!self::route_matches_request($method, $route)) return;
 
         // Check that permission callback is callable.  If not, return no_permission_callback_response and set permission_callback to true to display error message
@@ -115,10 +139,12 @@ final class Router
             $permission_callback = function () { return Permission::public(); };
         }
 
+        $route = trim($route, '/');
+
         self::$routes[] = [
-            'name' => Init::$requested_route_data['name'],
+            'name' => Init::$requested_route_data['folder'],
             'method' => strtoupper($method),
-            'route' => self::parse_wildcards(Init::$requested_route_data['name'] . $route),
+            'route' => self::parse_wildcards(Init::$requested_route_data['route_without_remainder'] . $route),
             'callback' => $callback,
             'permission_callback' => $permission_callback
         ];
