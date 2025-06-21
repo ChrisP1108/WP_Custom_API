@@ -242,22 +242,20 @@ class Create
 
                     return
                         [
-                            'name' => 
-                                [
-                                    'query'    => 'VARCHAR(50)',
-                                    'type'     => 'text',
-                                    'required' => true,
-                                    'minimum'  => 2,
-                                    'maximum'  => 50,
-                                ],
-                            'email' => 
-                                [
-                                    'query'    => 'VARCHAR(80)',
-                                    'type'     => 'email',
-                                    'required' => true,
-                                    'minimum'  => 8,
-                                    'maximum'  => 80,
-                                ]
+                            'name' =>   [
+                                'query'    => 'VARCHAR(50)',
+                                'type'     => 'text',
+                                'required' => true,
+                                'minimum'  => 2,
+                                'maximum'  => 50,
+                            ],
+                            'email' =>  [
+                                'query'    => 'VARCHAR(80)',
+                                'type'     => 'email',
+                                'required' => true,
+                                'minimum'  => 8,
+                                'maximum'  => 80,
+                            ]
                         ]
                     ;
                 }

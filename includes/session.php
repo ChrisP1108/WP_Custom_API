@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace WP_Custom_API\Includes;
 
-use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Response_Handler;
 
 final class Session
@@ -16,7 +15,7 @@ final class Session
      * Initializes a session object with the given parameters.
      *
      * @param int $id Unique identifier for the session.
-     * @param string $token_name Name of the token associated with the session.
+     * @param string $name Name of the session.
      * @param string $nonce Nonce used for additional validation.
      * @param int $first_issued_at Timestamp when the session was first issued.
      * @param int $expiration_at Timestamp when the session will expire.
@@ -27,7 +26,7 @@ final class Session
 
     private function __construct(
         public readonly int $id,
-        public readonly string $token_name,
+        public readonly string $name,
         public readonly string $nonce,
         public readonly int $first_issued_at,
         public readonly int $expiration_at,
@@ -41,14 +40,14 @@ final class Session
      * 
      * Generate a session with the given parameters
      * 
-     * @param string $token_name  Token name
-     * @param int $id        User id
-     * @param string $nonce     Nonce used for validation
-     * @param int $expiration  Timestamp when session will expire
-     * @return Response_Handler    Response object
+     * @param string $name Session name
+     * @param int $id ser id
+     * @param string $nonce Nonce used for validation
+     * @param int $expiration Timestamp when session will expire
+     * @return Response_Handler Response object
      */
 
-    public static function generate(string $token_name, int $id, string $nonce, int $expiration_time): Response_Handler
+    public static function generate(string $name, int $id, string $nonce, int $expiration_time): Response_Handler
     {
         // Current time
         $current_time = time();
@@ -56,7 +55,7 @@ final class Session
         // Set data for transient
         $data = [
             'id' => $id,
-            'token_name' => $token_name,
+            'name' => $name,
             'nonce' => $nonce,
             'first_issued_at' => $current_time,
             'expiration_at' => $expiration_time,
@@ -67,7 +66,7 @@ final class Session
 
         // Set transient for session storage
         $transient = set_transient(
-            Config::AUTH_TOKEN_PREFIX . $token_name . '_' . $id,
+            $name . '_' . $id,
             $data,
             $expiration_time
         );
@@ -78,7 +77,7 @@ final class Session
         // Object data
         $object_data = new static(
             $data['id'], 
-            $data['token_name'], 
+            $data['name'], 
             $data['nonce'], 
             $data['first_issued_at'], 
             $data['expiration_at'],
@@ -98,17 +97,17 @@ final class Session
     /**
      * METHOD - get
      * 
-     * Retrieve a session based on user ID and token name.
+     * Retrieve a session based on user ID and session name.
      *
      * @param int $id User ID
-     * @param string $token_name Token name
+     * @param string $name Name of session
      * @return Response_Handler Response object containing session data or error details
      */
 
-    public static function get(string $token_name, int $id): Response_Handler
+    public static function get(string $name, int $id): Response_Handler
     {
         // Retrieve session data from transient storage
-        $transient = get_transient(Config::AUTH_TOKEN_PREFIX . $token_name . '_' . $id);
+        $transient = get_transient($name . '_' . $id);
 
         // Determine if retrieval was successful
         $ok = $transient !== false;
@@ -120,7 +119,7 @@ final class Session
         if ($ok) {
             $object_data = new static(
                 $transient['id'], 
-                $transient['token_name'], 
+                $transient['name'], 
                 $transient['nonce'], 
                 $transient['first_issued_at'], 
                 $transient['expiration_at'], 
@@ -144,23 +143,23 @@ final class Session
      * 
      * Retrieves the session, updates the additional data, and then saves the session.
      * 
-     * @param string $token_name Token name
+     * @param string $name Name of the session
      * @param int $id User ID
      * @param array $key The array to store in the additionals key
      * @return Response_Handler Response object containing session data or error details
      */
 
-    public static function update_additionals(string $token_name, int $id, array $updated_data): Response_Handler
+    public static function update_additionals(string $name, int $id, array $updated_data): Response_Handler
     {
         // Retrieve the session
-        $update_transient = self::get($token_name, $id);
+        $update_transient = self::get($name, $id);
 
         // If retrieval failed, return the error response
         if (!$update_transient->ok) {
             return Response_Handler::response(
                 false,
                 500,
-                "Unable to retrieve session data corresponding to token name of `" . $token_name . "`."
+                "Unable to retrieve session data corresponding to the name of `" . $name . "`."
             );
         }
 
@@ -186,7 +185,7 @@ final class Session
 
         // Save the session by setting Wordpress transient
         $transient_update = set_transient(
-            Config::AUTH_TOKEN_PREFIX . $token_name . '_' . $id,
+            $name . '_' . $id,
             $existing_data,
             $updated_expiration
         );
@@ -201,9 +200,9 @@ final class Session
         if ($ok) {
             $object_data = new static(
                 $existing_data['id'], 
-                $existing_data['token_name'], 
+                $existing_data['name'], 
                 $existing_data['nonce'], 
-                $existing_data['first_issued'], 
+                $existing_data['first_issued_at'], 
                 $existing_data['expiration_at'], 
                 $existing_data['updated_tally'] ?? 0, 
                 $existing_data['last_updated_at'],
@@ -215,7 +214,7 @@ final class Session
         $return_data = Response_Handler::response(
             $ok,
             $ok ? 200 : 500,
-            $ok ? "Session data updated successfully corresponding to token name of `" . $token_name ."`." : "Session update failed corresponding to token name of `" . $token_name . "`.",
+            $ok ? "Session data updated successfully corresponding to session name of `" . $name ."`." : "Session update failed corresponding to session name of `" . $name . "`.",
             $object_data
         );
 
@@ -227,23 +226,23 @@ final class Session
     /**
      * METHOD - delete
      * 
-     * Delete a session based on user ID and token name.
+     * Delete a session based on user ID and session name.
      * 
-     * @param string $token_name Token name
+     * @param string $name Session name
      * @param int $id User ID
      * @return Response_Handler Response object containing information about the deletion
      */
 
-    public static function delete(string $token_name, int $id): Response_Handler
+    public static function delete(string $name, int $id): Response_Handler
     {
-        $delete_transient = delete_transient(Config::AUTH_TOKEN_PREFIX . $token_name . '_' . $id);
+        $delete_transient = delete_transient($name . '_' . $id);
 
         // Determine if the deletion was successful
         $ok = $delete_transient !== false;
         return Response_Handler::response(
             $ok,
             $ok ? 200 : 500,
-            $ok ? "Session deleted successfully for token name of `" . $token_name . "`." : "Session deletion failed for token name of `" . $token_name . "`."
+            $ok ? "Session deleted successfully for session name of `" . $name . "`." : "Session deletion failed for session name of `" . $name . "`."
         );
     }
 }

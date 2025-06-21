@@ -157,26 +157,27 @@ final class Auth_Token
         // Check if the connection is using HTTPS
         if (!wp_is_using_https() && Config::TOKEN_OVER_HTTPS_ONLY) return self::response(false, 500, $id, "Token could not be stored as a cookie on the client, as the `TOKEN_OVER_HTTPS_ONLY` config variable is set to true and the server is not using HTTPS.");
 
-        // Store the nonce server-side in a transient (or database) to validate later through Session::generate method
-        $session = Session::generate($token_name, $id, $nonce, $expiration_at);
-        
-        if (!$session->ok) return self::response(false, 500, $id, "There was an error storing the token session data.");    
-
         // Apply auth token prefix to token name
         $token_name_prefix = Config::AUTH_TOKEN_PREFIX . $token_name;
+
+        // Store the nonce server-side in a transient (or database) to validate later through Session::generate method
+        $session = Session::generate($token_name_prefix, $id, $nonce, $expiration_at);
+        
+        if (!$session->ok) return self::response(false, 500, $id, "There was an error storing the token session data.");    
 
         $expires_at = $issued_at + $expiration_at;
 
         // Set the token as a cookie in the browser
         $cookie_result = setcookie($token_name_prefix, $token, 
-        [
-            'expires' => $expires_at,
-            'path' => "/", 
-            'domain' => "", 
-            'secure' => Config::TOKEN_OVER_HTTPS_ONLY, 
-            'httponly' => Config::TOKEN_COOKIE_HTTP_ONLY, 
-            'samesite' => Config::TOKEN_COOKIE_SAME_SITE
-        ]);
+            [
+                'expires' => $expires_at,
+                'path' => "/", 
+                'domain' => "", 
+                'secure' => Config::TOKEN_OVER_HTTPS_ONLY, 
+                'httponly' => Config::TOKEN_COOKIE_HTTP_ONLY, 
+                'samesite' => Config::TOKEN_COOKIE_SAME_SITE
+            ]
+        );
 
         if (!$cookie_result) return self::response(false, 500, $id, "Token was generated but could not be stored in cookie. Headers may have already been sent.");
 
@@ -219,7 +220,7 @@ final class Auth_Token
         $received_hmac = base64_decode($received_hmac_base64, true);
 
         if ($iv === false || $encrypted_data_with_iv === false || $received_hmac === false) {
-            self::remove_token($token_name);
+            self::remove_token($token_name_prefix);
             return self::response(false, 401, null, "Invalid base64 token format.");
         }
 
@@ -230,14 +231,14 @@ final class Auth_Token
         // Validate HMAC
         $computed_hmac = hash_hmac("sha256", $iv . $encrypted_data_with_iv, $hmac_key, true);
         if (!hash_equals($computed_hmac, $received_hmac)) {
-            self::remove_token($token_name);
+            self::remove_token($token_name_prefix);
             return self::response(false, 401, null, "Invalid token.");
         }
 
         // Decrypt the data
         $decrypted_data = openssl_decrypt($encrypted_data_with_iv, 'aes-256-cbc', $encryption_key, OPENSSL_RAW_DATA, $iv);
         if ($decrypted_data === false) {
-            self::remove_token($token_name);
+            self::remove_token($token_name_prefix);
             return self::response(false, 401, null, "Decryption failed. Token may be invalid.");
         }
 
@@ -246,7 +247,7 @@ final class Auth_Token
 
         // Check if token structure is valid
         if (count($parts) !== 4) {
-            self::remove_token($token_name);
+            self::remove_token($token_name_prefix);
             return self::response(false, 401, null, "Token structure is invalid.");
         }
 
@@ -259,18 +260,18 @@ final class Auth_Token
 
         // Check token expiration
         if ($expiration_at + $issued_at <= time()) {
-            self::remove_token($token_name, $id);
+            self::remove_token($token_name_prefix, $id);
             return self::response(false, 401, null, "Token has expired.");
         }
 
         // Check if token was issued before logout
         if ($logout_time !== 0 && $issued_at <= $logout_time) {
-            self::remove_token($token_name, $id);
+            self::remove_token($token_name_prefix, $id);
             return self::response(false, 401, null, "Token was issued before or at the last logout time.");
         }
 
         // Retrieve and validate nonce
-        $stored_transient = Session::get($token_name, $id);
+        $stored_transient = Session::get($token_name_prefix, $id);
         $transient_nonce_value = null;
 
         if (is_object($stored_transient->data)) {
@@ -280,7 +281,7 @@ final class Auth_Token
         }
 
         if (!$transient_nonce_value || $transient_nonce_value !== $nonce) {
-            self::remove_token($token_name, $id);
+            self::remove_token($token_name_prefix, $id);
             return self::response(false, 401, null, "Invalid or replayed token.");
         }
 
