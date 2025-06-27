@@ -205,6 +205,14 @@ final class Router
                     if (is_array($ok) && is_bool($ok[0])) {
                         $permission_callback_data_params = $ok[1] ?? null;
                         $ok = $ok[0];
+
+                        // If third argument in array exists for if requests by user exceeded, set it
+                        $user_within_request_attempts_limit = $ok[2] ?? null;
+                    }
+
+                    // Return error response if user exceeded request attempts
+                    if ($user_within_request_attempts_limit === false) {
+                        return new WP_Rest_Response(['message' => 'You have exceeded the number of requests allowed for this action.'], 429);
                     }
 
                     // Return an unauthorized response if permission callback returned false
