@@ -207,7 +207,7 @@ final class Router
                         $ok = $ok[0];
 
                         // If third argument in array exists for if requests by user exceeded, set it
-                        $user_within_request_attempts_limit = $ok[2] ?? null;
+                        $user_within_request_attempts_limit = $ok[2] ?? true;
                     }
 
                     // Return error response if user exceeded request attempts
