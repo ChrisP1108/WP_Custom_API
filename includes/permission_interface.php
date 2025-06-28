@@ -233,7 +233,8 @@ final class Permission_Interface
      * @return Response_Handler The response of the user login data.
      */
 
-    public static function wp_user_data(): Response_Handler {
+    public static function wp_user_data(): Response_Handler 
+    {
         $user_data = wp_get_current_user();
 
         // Check if user is logged in
@@ -256,7 +257,8 @@ final class Permission_Interface
      * @return Response_Handler The response of the login.
      */
 
-    public static function wp_user_login(string $username, string $password, bool $remember = false): Response_Handler {       
+    public static function wp_user_login(string $username, string $password, bool $remember = false): Response_Handler 
+    {       
         // Compile credentials
         $credentials = [
             "user_login" => sanitize_user($username),
@@ -283,7 +285,8 @@ final class Permission_Interface
      * @return Response_Handler The response of the logout.  Will always be successful.
      */
     
-    public static function wp_user_logout(): Response_handler {
+    public static function wp_user_logout(): Response_handler 
+    {
 
         // Get the current user's ID
         $user_id = get_current_user_id();
