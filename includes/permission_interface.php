@@ -233,7 +233,7 @@ final class Permission_Interface
      * @return Response_Handler The response of the user login data.
      */
 
-    public static function wp_user_data(): Object {
+    public static function wp_user_data(): Response_Handler {
         $user_data = wp_get_current_user();
 
         // Check if user is logged in
