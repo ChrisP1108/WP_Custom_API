@@ -9,6 +9,7 @@ use WP_Custom_API\Includes\Password;
 use WP_Custom_API\Includes\Auth_Token;
 use WP_Custom_API\Includes\Session;
 use WP_Custom_API\Includes\Response_Handler;
+use \WP_Session_Tokens;
 
 /** 
  * Prevent direct access from sources other than the Wordpress environment
@@ -23,7 +24,7 @@ if (!defined('ABSPATH')) exit;
  * @since 1.0.0
  */
 
-class Permission_Interface
+final class Permission_Interface
 {
     
     /**
@@ -34,7 +35,7 @@ class Permission_Interface
      * @return bool Returns true to allow route to be public
      */
     
-    final public static function public(): bool {
+    public static function public(): bool {
         return true;
     }
 
@@ -47,7 +48,7 @@ class Permission_Interface
      * @return WP_Error as Error - Returns an error indicating unauthorized access.
      */
     
-    final public static function unauthorized_response(): object {
+    public static function unauthorized_response(): object {
         return Response_Handler::response(false, 401, 'Unauthorized', null, false);
     }
 
@@ -64,7 +65,7 @@ class Permission_Interface
      * @return Response_Handler The response of the password hash operation.
      */
 
-    final public static function password_hash(string $string): Response_Handler 
+    public static function password_hash(string $string): Response_Handler 
     {
         return Password::hash($string);
     }
@@ -84,7 +85,7 @@ class Permission_Interface
      * @return Response_Handler The response of the password verify operation.
      */
 
-    final public static function password_verify(string $entered_password = '', string $hashed_password = ''): Response_Handler 
+    public static function password_verify(string $entered_password = '', string $hashed_password = ''): Response_Handler 
     {
         return Password::verify($entered_password, $hashed_password);
     }
@@ -105,7 +106,7 @@ class Permission_Interface
     * @return Response_Handler The response of the token_generate operation.
     */
 
-    final public static function token_generate(string $token_name, int $id, int $expiration = Config::TOKEN_EXPIRATION): Response_Handler
+    public static function token_generate(string $token_name, int $id, int $expiration = Config::TOKEN_EXPIRATION): Response_Handler
     {
         return Auth_Token::generate($token_name, $id, $expiration);
     }
@@ -125,7 +126,7 @@ class Permission_Interface
     * @return Response_Handler The response of the token_validate operation.
     */
 
-    final public static function token_validate(string $token_name, int $logout_time = 0): Response_Handler 
+    public static function token_validate(string $token_name, int $logout_time = 0): Response_Handler 
     {
         return Auth_Token::validate($token_name, $logout_time);
     }
@@ -144,7 +145,7 @@ class Permission_Interface
     * @return Response_Handler The response of the token remove operation from the self::response() method.
     */
 
-    final public static function token_remove(string $token_name, string|int $id = 0): Response_Handler 
+    public static function token_remove(string $token_name, string|int $id = 0): Response_Handler 
     {
         return Auth_Token::remove_token($token_name, $id);
     }
@@ -163,7 +164,7 @@ class Permission_Interface
     * @return Response_Handler The response of the get session data operation.
     */
 
-    final public static function token_session_data(string $token_name, int $id): Response_Handler
+    public static function token_session_data(string $token_name, int $id): Response_Handler
     {
         return Session::get($token_name, $id);
     }
@@ -183,7 +184,7 @@ class Permission_Interface
      * @return Response_Handler The response of the update operation.
      */
 
-    final public static function token_update_session_data(string $token_name, int $id, array $updated_data): Response_Handler 
+    public static function token_update_session_data(string $token_name, int $id, array $updated_data): Response_Handler 
     {
         // Update the session additionals and return the response
         return Session::update_additionals($token_name, $id, $updated_data);
@@ -203,7 +204,7 @@ class Permission_Interface
      * @return Response_Handler The response of the token parse operation.
      */
 
-    final public static function token_parser(string $token_name, int $logout_time = 0): Response_Handler
+    public static function token_parser(string $token_name, int $logout_time = 0): Response_Handler
     {
         // Validate token and get the id if valid.
         $token_validate = Auth_Token::validate($token_name, $logout_time);
@@ -222,5 +223,79 @@ class Permission_Interface
 
         // Return token session data
         return $token_session_data;
+    }
+
+    /**
+     * METHOD - wp_user_data
+     * 
+     * Retrieve the current user data
+     * 
+     * @return Response_Handler The response of the user login data.
+     */
+
+    public static function wp_user_data(): Object {
+        $user_data = wp_get_current_user();
+
+        // Check if user is logged in
+        $ok = $user_data->ID !== 0;
+
+        // Return response
+        $response_data = Response_Handler::response($ok, $ok ? 200 : 401, $ok ? 'Success' : 'Unauthorized', $user_data);
+        return $response_data;
+    }
+
+    /**
+     * METHOD - wp_user_data
+     * 
+     * Log in a user given their username and password
+     * 
+     * @param string $username The username of the user to log in
+     * @param string $password The password of the user to log in
+     * @param bool $remember Whether to remember the user or not
+     * 
+     * @return Response_Handler The response of the login.
+     */
+
+    public static function wp_user_login(string $username, string $password, bool $remember = false): Response_Handler {       
+        // Compile credentials
+        $credentials = [
+            "user_login" => sanitize_user($username),
+            "user_password" => $password,
+            "remember" => $remember
+        ];
+
+        // Login user
+        $login = wp_signon($credentials, is_ssl());
+
+        // Check if login was successful
+        $ok = !is_wp_error($login);
+
+        // Return response
+        $response_data = Response_Handler::response($ok, $ok ? 200 : 401, $ok ? 'Success' : 'Unauthorized', $login);
+        return $response_data;
+    }
+    
+    /**
+     * METHOD - wp_user_logout
+     * 
+     * Log out the current user by destroying all their sessions and logging out from this browser
+     * 
+     * @return Response_Handler The response of the logout.  Will always be successful.
+     */
+    
+    public static function wp_user_logout(): Response_handler {
+
+        // Get the current user's ID
+        $user_id = get_current_user_id();
+
+        // Destroy every session this user has
+        WP_Session_Tokens::get_instance($user_id)->destroy_all();
+
+        // Log out this browser
+        wp_logout();
+
+        // Return response
+        $response_data = Response_Handler::response(true, 200, 'Success', null);
+        return $response_data;
     }
 }
