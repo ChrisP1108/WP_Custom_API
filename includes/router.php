@@ -200,6 +200,9 @@ final class Router
                         return new WP_Rest_Response(['message' => $non_bool_message], 500);
                     }
 
+                    // User for determining if user has exceeded request attempts or not
+                    $user_within_request_attempts_limit = true;
+
                     // Destructure if array was returned from permission callback
                     $permission_callback_data_params = null;
                     if (is_array($ok) && is_bool($ok[0])) {
