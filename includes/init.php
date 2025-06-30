@@ -80,6 +80,7 @@ final class Init
     private function __construct()
     {
         self::files_autoloader();
+        Session::delete_expired_sessions();
         self::create_tables();
         Router::init();
     }
@@ -89,7 +90,6 @@ final class Init
      * 
      * @return void
      */
-
     public static function run(): void
     {
         // Autoload classes and files with the same namespace as the plugin
@@ -276,17 +276,20 @@ final class Init
 
         // Check if sessions table was created.  If not, create it.
         if (!is_array($existing_tables_created) || !in_array(Session::SESSIONS_TABLE_NAME, $existing_tables_created)) {
-            $sessions_table_created_result = Database::create_table(
-                Session::SESSIONS_TABLE_NAME, 
-                Session::SESSIONS_TABLE_QUERY
-            );
-            if (!$sessions_table_created_result->ok) {
-                Error_Generator::generate(
-                    'Error creating sessions table in database',
-                    'The sessions table name had an error in being created in MySql through the WP_Custom_API plugin.'
+            $table_exists = Database::table_exists(Session::SESSIONS_TABLE_NAME);
+            if (!$table_exists) {
+                $sessions_table_created_result = Database::create_table(
+                    Session::SESSIONS_TABLE_NAME, 
+                    Session::SESSIONS_TABLE_QUERY
                 );
-            } else {
-                $tables_created[] = Session::SESSIONS_TABLE_NAME;
+                if (!$sessions_table_created_result->ok) {
+                    Error_Generator::generate(
+                        'Error creating sessions table in database',
+                        'The sessions table name had an error in being created in MySql through the WP_Custom_API plugin.'
+                    );
+                } else {
+                    $tables_created[] = Session::SESSIONS_TABLE_NAME;
+                }
             }
         }
 

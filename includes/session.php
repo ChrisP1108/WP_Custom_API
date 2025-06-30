@@ -18,17 +18,21 @@ final class Session
      */
 
     const SESSIONS_TABLE_QUERY = [
-        'user' => 
-            [
-                'query' => 'BIGINT(12) NOT NULL'
-            ],
         'name' => 
             [
                 'query' => 'VARCHAR(255) NOT NULL'
             ],
+        'user' => 
+            [
+                'query' => 'BIGINT(12) NOT NULL'
+            ],
         'nonce' => 
             [
                 'query' => 'VARCHAR(255) NOT NULL'
+            ],
+        'expiration_at' => 
+            [
+                'query' => 'BIGINT(12) NOT NULL'
             ],
         'updated_tally' => 
             [
@@ -38,7 +42,7 @@ final class Session
             [
                 'query' => 'JSON NOT NULL'
             ]
-        ];
+    ];
 
     /**
      * CONSTANT
@@ -64,6 +68,7 @@ final class Session
      */
 
     private function __construct(
+        public readonly int $id,
         public readonly string $name,
         public readonly int $user,
         public readonly string $nonce,
@@ -73,6 +78,57 @@ final class Session
         public int|null $last_updated_at,
         public array $additionals
     ) {}
+
+    /**
+     * METHOD - delete_expired_sessions
+     * 
+     * Deletes expired sessions from the database if the check interval has passed.
+     * A transient is used to ensure that the deletion runs only once every 24 hours.
+     * 
+     * @return Response_Handler Response object indicating the result of the operation.
+     */
+
+    public static function delete_expired_sessions(): Response_Handler {
+        // Check if the expiry interval check transient is set
+        $check_interval = get_transient('wp_custom_api_session_expiry_interval_check');
+
+        // If the interval has passed, delete expired sessions
+        if (!$check_interval) {
+            global $wpdb;
+            $table_name = Database::get_table_full_name(self::SESSIONS_TABLE_NAME);
+            $expiration = time();
+            
+            // Delete sessions that have expired from sessions table
+            $sql = "DELETE FROM $table_name WHERE expiration_at < $expiration";
+            $result = $wpdb->query($sql);
+
+            // Check if the deletion was successful
+            if ($result === false) {
+                return Response_Handler::response(
+                    false,  
+                    500,    
+                    'An error occurred while attempting to delete expired sessions.'
+                );
+            }
+
+            // Set transient to prevent deletion from running again within 24 hours
+            set_transient('wp_custom_api_session_expiry_interval_check', true, 86400);
+
+            // Return success response
+            return Response_Handler::response(
+                true,
+                200,
+                'Sessions expired successfully.'
+            );
+        }
+
+        // Return response if interval has not passed
+        return Response_Handler::response(
+            true,
+            200,
+            'Sessions check not yet within refresh interval.',
+        );
+    }
 
     /**
      * METHOD - generate
@@ -88,11 +144,12 @@ final class Session
 
     public static function generate(string $name, int $id, string $nonce, int $expiration_time): Response_Handler
     {
-        // Set data for transient
+        // Set data for table row
         $data = [
             'name' => $name,
             'user' => $id,
             'nonce' => $nonce,
+            'expiration_at' => $expiration_time,
             'updated_tally' => 0,
             'additionals' => []
         ];
@@ -108,6 +165,7 @@ final class Session
         
         // Object return data
         $object_data = new static(
+            $insert_session_result->data['id'],
             $name, 
             $id, 
             $nonce, 
@@ -155,7 +213,7 @@ final class Session
             );
         }
 
-        $get_user_session_row = array_filter(
+        $get_user_sessions_row = array_filter(
             $get_session_rows_by_name->data,
             function ($row) use ($id) {
                 return intval($row['user']) === $id;
@@ -163,7 +221,9 @@ final class Session
         );
 
         // Determine if retrieval was successful
-        $ok = !empty($get_user_session_row);
+        $ok = !empty($get_user_sessions_row);
+
+        $user_session_data = (array) $get_user_sessions_row[0];
 
         // Object data
         $object_data = null;
@@ -171,14 +231,15 @@ final class Session
         // If retrieval was successful, set object data
         if ($ok) {
             $object_data = new static(
-                $get_user_session_row['name'], 
-                $get_user_session_row['user'],
-                $get_user_session_row['nonce'], 
-                strtotime($get_user_session_row['created_at']), 
-                $get_user_session_row['expiration_at'], 
-                $get_user_session_row['updated_tally'], 
-                strtotime($get_user_session_row['updated_at']) ?? null,
-                $get_user_session_row['additionals'] ?? []
+                $user_session_data['id'],
+                $user_session_data['name'], 
+                $user_session_data['user'],
+                $user_session_data['nonce'], 
+                strtotime($user_session_data['created_at']), 
+                $user_session_data['expiration_at'], 
+                $user_session_data['updated_tally'], 
+                strtotime($user_session_data['updated_at']) ?? null,
+                $user_session_data['additionals'] ?? []
             );
         }
 
@@ -220,7 +281,7 @@ final class Session
         $existing_data = (array) $update_session_data->data;
 
         // Add tally to number of times updated
-        if (isset($existing_data->updated_tally)) {
+        if (isset($existing_data['updated_tally'])) {
             $existing_data['updated_tally'] += 1;
         } else {
             $existing_data['updated_tally'] = 1;
@@ -235,7 +296,7 @@ final class Session
         // Update session table row in sessions table
         $insert_session_result = Database::insert_row(
             self::SESSIONS_TABLE_NAME,
-            $update_session_data['id'],
+            $update_session_data->data['id'],
             $existing_data,
         );
 
@@ -248,6 +309,7 @@ final class Session
         // If retrieval was successful, set object data
         if ($ok) {
             $object_data = new static(
+                $existing_data['id'],
                 $existing_data['name'],
                 $existing_data['user'], 
                 $existing_data['nonce'], 
@@ -284,16 +346,11 @@ final class Session
 
     public static function delete(string $name, int $id): Response_Handler
     {
-        // Retrieve session data from transient storage
-        $get_session_rows_by_name = Database::get_rows_data(
-            SESSION::SESSIONS_TABLE_NAME,
-            'name',
-            $name,
-            true
-        );
+        // Retrieve session data
+        $get_session_data = self::get($name, $id);
 
         // Check if retrieval was successful
-        if (!$get_session_rows_by_name->ok) {
+        if (!$get_session_data->ok) {
             return Response_Handler::response(
                 false,
                 500,
@@ -301,15 +358,16 @@ final class Session
             );
         }
 
-        // Delete session data
+        // Delete session row
         $delete_row_result = Database::delete_row(
             SESSION::SESSIONS_TABLE_NAME,
-            $get_session_rows_by_name->data[0]['id']
+            $get_session_data->data['id']
         );
 
         // Check if deletion was successful
         $ok = $delete_row_result->ok;
         
+        // Return response
         return Response_Handler::response(
             $ok,
             $ok ? 200 : 500,
