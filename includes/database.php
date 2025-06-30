@@ -7,7 +7,6 @@ namespace WP_Custom_API\Includes;
 use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Response_Handler;
 use WP_Custom_API\Includes\Error_Generator;
-use WpOrg\Requests\Response;
 
 /** 
  * Prevent direct access from sources other than the Wordpress environment

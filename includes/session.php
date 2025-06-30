@@ -53,6 +53,14 @@ final class Session
     const SESSIONS_TABLE_NAME = '_sessions_';
 
     /**
+     * CONSTANT
+     * 
+     * Name of the sessions interval transient name.
+     */
+
+    const SESSIONS_INTERVAL_TRANSIENT_NAME = 'wp_custom_api_sessions_interval_check';
+
+    /**
      * CONSTRUCTOR
      *
      * Initializes a session object with the given parameters.
@@ -90,19 +98,33 @@ final class Session
 
     public static function delete_expired_sessions(): Response_Handler {
         // Check if the expiry interval check transient is set
-        $check_interval = get_transient('wp_custom_api_session_expiry_interval_check');
+        $check_interval = get_transient(self::SESSIONS_INTERVAL_TRANSIENT_NAME);
 
         // If the interval has passed, delete expired sessions
         if (!$check_interval) {
+
+            // Get session table full name
             global $wpdb;
             $table_name = Database::get_table_full_name(self::SESSIONS_TABLE_NAME);
+
+            // Make sure the sessions table exists
+            if (!$table_name) return Response_Handler::response(
+                false,
+                500,
+                'An error occurred while attempting to delete expired sessions.'
+            );
+
+            // Set current time for expiration check
             $expiration = time();
             
             // Delete sessions that have expired from sessions table
-            $sql = "DELETE FROM $table_name WHERE expiration_at < $expiration";
-            $result = $wpdb->query($sql);
+            $query = $wpdb->prepare(
+                'DELETE FROM '.$table_name.' WHERE expiration_at < %d', 
+                $expiration
+            );
+            $result = $wpdb->query($query);
 
-            // Check if the deletion was successful
+            // Check if the deletions were successful
             if ($result === false) {
                 return Response_Handler::response(
                     false,  
@@ -112,7 +134,7 @@ final class Session
             }
 
             // Set transient to prevent deletion from running again within 24 hours
-            set_transient('wp_custom_api_session_expiry_interval_check', true, 86400);
+            set_transient(self::SESSIONS_INTERVAL_TRANSIENT_NAME, true, 86400);
 
             // Return success response
             return Response_Handler::response(
