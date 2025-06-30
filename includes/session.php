@@ -146,6 +146,7 @@ final class Session
             true
         );
 
+        // Check if retrieval was successful
         if (!$get_session_rows_by_name->ok) {
             return Response_Handler::response(
                 false,
@@ -231,15 +232,15 @@ final class Session
         // Update expiration time
         $updated_expiration = max(1, $existing_data['expiration_at'] - time());
 
-        // Save the session by setting Wordpress transient
-        $transient_update = set_transient(
-            $name . '_' . $id,
+        // Update session table row in sessions table
+        $insert_session_result = Database::insert_row(
+            self::SESSIONS_TABLE_NAME,
+            $update_session_data['id'],
             $existing_data,
-            $updated_expiration
         );
 
         // Determine if the update was successful
-        $ok = $transient_update !== false;
+        $ok = $insert_session_result->ok;
 
         // Object data
         $object_data = null;
@@ -247,13 +248,13 @@ final class Session
         // If retrieval was successful, set object data
         if ($ok) {
             $object_data = new static(
-                $existing_data['id'], 
-                $existing_data['name'], 
+                $existing_data['name'],
+                $existing_data['user'], 
                 $existing_data['nonce'], 
-                $existing_data['first_issued_at'], 
+                strtotime($existing_data['created_at']), 
                 $existing_data['expiration_at'], 
-                $existing_data['updated_tally'] ?? 0, 
-                $existing_data['last_updated_at'],
+                $existing_data['updated_tally'],
+                $updated_expiration, 
                 $existing_data['additionals'] ?? []
             );
         }
@@ -283,10 +284,32 @@ final class Session
 
     public static function delete(string $name, int $id): Response_Handler
     {
-        $delete_transient = delete_transient($name . '_' . $id);
+        // Retrieve session data from transient storage
+        $get_session_rows_by_name = Database::get_rows_data(
+            SESSION::SESSIONS_TABLE_NAME,
+            'name',
+            $name,
+            true
+        );
 
-        // Determine if the deletion was successful
-        $ok = $delete_transient !== false;
+        // Check if retrieval was successful
+        if (!$get_session_rows_by_name->ok) {
+            return Response_Handler::response(
+                false,
+                500,
+                "Unable to retrieve session data corresponding to the name of `" . $name . "` for deletion."
+            );
+        }
+
+        // Delete session data
+        $delete_row_result = Database::delete_row(
+            SESSION::SESSIONS_TABLE_NAME,
+            $get_session_rows_by_name->data[0]['id']
+        );
+
+        // Check if deletion was successful
+        $ok = $delete_row_result->ok;
+        
         return Response_Handler::response(
             $ok,
             $ok ? 200 : 500,
