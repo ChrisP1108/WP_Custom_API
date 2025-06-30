@@ -8,6 +8,7 @@ use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Database;
 use WP_Custom_API\Includes\Router;
 use WP_Custom_API\Includes\Error_Generator;
+use WP_Custom_API\Includes\Session;
 use Exception;
 
 /** 
@@ -258,7 +259,7 @@ final class Init
     /**
      * METHOD - create_tables
      * 
-     * Will iterate through all model classes in the model array from the Init::get_files_loaded() method and create tables 
+     * Sessions table class is created if it does not exists for storing session data.  It will also iterate through all model classes in the model array from the Init::get_files_loaded() method and create tables 
      *      in the database for any model class fiels that have its create_table method return true if it hasn't been created yet.
      * Calls a Wordpress action hook after migrations are finished and stores tables created in the $tables_created for Wordpress transient storage.
      * 
@@ -267,6 +268,28 @@ final class Init
 
     private static function create_tables(): void
     {
+        // Get existing tables created to avoid iterating through tables that have already been created
+        $existing_tables_created = get_transient('wp_custom_api_tables_created');
+
+        // List for gathering table names created
+        $tables_created = [];
+
+        // Check if sessions table was created.  If not, create it.
+        if (!is_array($existing_tables_created) || !in_array(Session::SESSIONS_TABLE_NAME, $existing_tables_created)) {
+            $sessions_table_created_result = Database::create_table(
+                Session::SESSIONS_TABLE_NAME, 
+                Session::SESSIONS_TABLE_QUERY
+            );
+            if (!$sessions_table_created_result->ok) {
+                Error_Generator::generate(
+                    'Error creating sessions table in database',
+                    'The sessions table name had an error in being created in MySql through the WP_Custom_API plugin.'
+                );
+            } else {
+                $tables_created[] = Session::SESSIONS_TABLE_NAME;
+            }
+        }
+
         $models_classes_names = [];
         $class_name = 'Model';
 
@@ -279,10 +302,6 @@ final class Init
                 }
             }
         }
-
-        $tables_created = [];
-
-        $existing_tables_created = get_transient('wp_custom_api_tables_created');
 
         foreach ($models_classes_names as $model_class_name) {
             $model = new $model_class_name;
@@ -302,7 +321,7 @@ final class Init
                 if (!$table_creation_result->ok) {
                     Error_Generator::generate(
                         'Error creating table in database',
-                        'The table name "` . Database::get_table_full_name($model::table_name()) . `" had an error in being created in MySql through the WP_Custom_API plugin.'
+                        'The table name `' . Database::get_table_full_name($model::table_name()) . '` had an error in being created in MySql through the WP_Custom_API plugin.'
                     );
                 } else {
                     $tables_created[] = $model::table_name();
