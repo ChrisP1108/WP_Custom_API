@@ -254,14 +254,6 @@ final class Session
         // Get session table full name
         global $wpdb;
         $table_name = Database::get_table_full_name(self::SESSIONS_TABLE_NAME);
-        $table_exists = Database::table_exists(self::SESSIONS_TABLE_NAME);
-
-        // Make sure the sessions table exists
-        if (!$table_exists) return Response_Handler::response(
-            false,
-            500,
-            'An error occurred while attempting to get session data. The sessions table does not exist.'
-        );
 
         // Retrieve session data row from sessions table that matches session name and user id
         $query = $wpdb->prepare(
