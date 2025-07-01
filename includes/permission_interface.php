@@ -265,9 +265,8 @@ class Permission_Interface
      * @return Response_Handler The response of the logout.  Will always be successful.
      */
     
-    final public static function wp_user_logout(): Response_handler 
+    final public static function wp_user_logout(): Response_Handler 
     {
-
         // Get the current user's ID
         $user_id = get_current_user_id();
 
@@ -282,10 +281,35 @@ class Permission_Interface
         return $response_data;
     }
 
+    final public static function wp_user_data(): Response_Handler
+    {
+        // Get user ID
+        $user_id = get_current_user_id();
+
+        // Return error if no user ID found
+        if ( ! $user_id ) {
+            return Response_Handler::response(
+                false, 
+                401, 
+                'Unauthorized', 
+            );
+        }
+
+        // Get user session data
+        $token = wp_get_session_token();
+        $manager = WP_Session_Tokens::get_instance( $user_id );
+        $session = $manager->get( $token );
+
+        // Return response
+        $response_data = Response_Handler::response(true, 200, 'Success', $session);
+        return $response_data;
+    } 
+
     /**
-     * METHOD - wp_user_data
+     * METHOD - wp_user_update_session_data
      * 
-     * Retrieve the current user data
+     * Update the user session data associated with the current user.
+     * Creates an "additionals" array key if not present to store data.
      * 
      * @return Response_Handler The response of the user login data.
      */
@@ -305,7 +329,7 @@ class Permission_Interface
         }
 
         // Get user session data
-        $token   = wp_get_session_token();
+        $token = wp_get_session_token();
         $manager = WP_Session_Tokens::get_instance( $user_id );
         $session = $manager->get( $token );
 
