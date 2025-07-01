@@ -9,7 +9,7 @@ use WP_Custom_API\Includes\Password;
 use WP_Custom_API\Includes\Auth_Token;
 use WP_Custom_API\Includes\Session;
 use WP_Custom_API\Includes\Response_Handler;
-use \WP_Session_Tokens;
+use WP_Session_Tokens;
 
 /** 
  * Prevent direct access from sources other than the Wordpress environment
@@ -226,15 +226,15 @@ class Permission_Interface
     }
 
     /**
-     * METHOD - wp_user_data
+     * METHOD - wp_user_login
      * 
-     * Log in a user given their username and password
-     * 
-     * @param string $username The username of the user to log in
-     * @param string $password The password of the user to log in
-     * @param bool $remember Whether to remember the user or not
-     * 
-     * @return Response_Handler The response of the login.
+     * Logs in the user with the provided username and password.
+     *
+     * @param string $username The username of the user to log in.
+     * @param string $password The password of the user to log in.
+     * @param bool $remember Whether to remember the user's login.
+     *
+     * @return Response_Handler The response of the login operation.
      */
 
     final public static function wp_user_login(string $username, string $password, bool $remember = false): Response_Handler 
@@ -270,6 +270,14 @@ class Permission_Interface
         // Get the current user's ID
         $user_id = get_current_user_id();
 
+        if ( ! $user_id ) {
+            return Response_Handler::response(
+                false, 
+                401, 
+                'Unauthorized' 
+            );
+        }
+
         // Destroy every session this user has
         WP_Session_Tokens::get_instance($user_id)->destroy_all();
 
@@ -291,7 +299,7 @@ class Permission_Interface
             return Response_Handler::response(
                 false, 
                 401, 
-                'Unauthorized', 
+                'Unauthorized' 
             );
         }
 
@@ -299,6 +307,14 @@ class Permission_Interface
         $token = wp_get_session_token();
         $manager = WP_Session_Tokens::get_instance( $user_id );
         $session = $manager->get( $token );
+
+        if ( $session === false) {
+            return Response_Handler::response(
+                false, 
+                401, 
+                'Unauthorized' 
+            );
+        }
 
         // Return response
         $response_data = Response_Handler::response(true, 200, 'Success', $session);
@@ -324,7 +340,7 @@ class Permission_Interface
             return Response_Handler::response(
                 false, 
                 401, 
-                'Unauthorized', 
+                'Unauthorized' 
             );
         }
 
@@ -332,6 +348,14 @@ class Permission_Interface
         $token = wp_get_session_token();
         $manager = WP_Session_Tokens::get_instance( $user_id );
         $session = $manager->get( $token );
+
+        if ( $session === false) {
+            return Response_Handler::response(
+                false, 
+                401, 
+                'Unauthorized' 
+            );
+        }
 
         // Add additionals array key if not present
         if ( !isset( $session['additionals'] ) ) {
