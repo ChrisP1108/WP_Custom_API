@@ -72,7 +72,7 @@ final class Session
      * @param int $created_at Timestamp when the session was first issued.
      * @param int $expiration_at Timestamp when the session will expire.
      * @param int $updated_tally Count of how many times the session has been updated.
-     * @param int|null $last_updated_at Timestamp of the last update.
+     * @param int|null $updated_at Timestamp of the last update.
      * @param array $additionals Additional data related to the session.
      */
 
@@ -84,7 +84,7 @@ final class Session
         public readonly int $created_at,
         public readonly int $expiration_at,
         public int $updated_tally,
-        public int|null $last_updated_at,
+        public int|null $updated_at,
         public array $additionals
     ) {}
 
@@ -114,7 +114,7 @@ final class Session
             if (!$table_exists) return Response_Handler::response(
                 false,
                 500,
-                'An error occurred while attempting to delete expired sessions.'
+                'An error occurred while attempting to delete expired sessions. The sessions table does not exist.'
             );
 
             // Set current time for expiration check
@@ -210,9 +210,12 @@ final class Session
             $ok ? "Session generated successfully." : "Session generation failed."
         );
 
+        // Get session id
+        $session_id = $insert_session_result->data['id'];
+
         // Object return data
         $object_data = new static(
-            $insert_session_result->data['id'],
+            $session_id,
             $name,
             $id,
             $nonce,
@@ -248,33 +251,28 @@ final class Session
             $name = Config::AUTH_TOKEN_PREFIX . $name;
         }
 
-        // Retrieve session data from transient storage
-        $get_session_rows_by_name = Database::get_rows_data(
-            SESSION::SESSIONS_TABLE_NAME,
-            'name',
-            $name,
-            true
+        // Get session table full name
+        global $wpdb;
+        $table_name = Database::get_table_full_name(self::SESSIONS_TABLE_NAME);
+        $table_exists = Database::table_exists(self::SESSIONS_TABLE_NAME);
+
+        // Make sure the sessions table exists
+        if (!$table_exists) return Response_Handler::response(
+            false,
+            500,
+            'An error occurred while attempting to get session data. The sessions table does not exist.'
         );
 
-        // Check if retrieval was successful
-        if (!$get_session_rows_by_name->ok) {
-            return Response_Handler::response(
-                false,
-                500,
-                "Unable to retrieve session data corresponding to the name of `" . $name . "`."
-            );
-        }
-        $get_user_sessions_row = array_filter(
-            $get_session_rows_by_name->data,
-            function ($row) use ($id) {
-                return intval($row['user']) === $id;
-            }
+        // Retrieve session data row from sessions table that matches session name and user id
+        $query = $wpdb->prepare(
+            'SELECT * FROM ' . $table_name . ' WHERE name = %s AND user = %d LIMIT 1',
+            $name,
+            $id
         );
+        $user_session_data = $wpdb->get_row($query, ARRAY_A);
 
         // Determine if retrieval was successful
-        $ok = !empty($get_user_sessions_row);
-
-        $user_session_data = (array) $get_user_sessions_row[0];
+        $ok = $user_session_data !== null;
 
         // Object data
         $object_data = null;
@@ -346,7 +344,7 @@ final class Session
         $updated_expiration = max(1, intval($existing_data['expiration_at']) - time());
 
         $sql_update_data = $existing_data;
-        unset($sql_update_data['last_updated_at']);
+        unset($sql_update_data['updated_at']);
         unset($sql_update_data['created_at']);
         unset($sql_update_data['id']);
 

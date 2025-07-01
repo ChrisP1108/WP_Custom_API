@@ -210,7 +210,7 @@ final class Database
                 Error_Generator::generate('Column name error in schema', $err_msg);
                 return self::response(false, 500, $err_msg);
             }
-            $create_table_query .= esc_sql($key) . " " . esc_sql($column_query) . ", ";
+            $create_table_query .= $key . " " . $column_query . ", ";
         }
 
         $create_table_query .= "created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id)) $charset_collate;";
