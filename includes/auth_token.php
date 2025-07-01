@@ -130,8 +130,11 @@ final class Auth_Token
         // Generate a secure random nonce for replay protection
         $nonce = bin2hex(random_bytes(16));
 
+        // Expiration timestamp
+        $expires_at = $issued_at + $expiration_at;
+
         // Token data to be stored
-        $data = strval($id) . '|' . $expiration_at . '|' . $issued_at . '|' . $nonce;
+        $data = strval($id) . '|' . $expires_at . '|' . $issued_at . '|' . $nonce;
 
         // Generate random bytes for IV
         $iv = random_bytes(16);
@@ -160,12 +163,10 @@ final class Auth_Token
         // Apply auth token prefix to token name
         $token_name_prefix = Config::AUTH_TOKEN_PREFIX . $token_name;
 
-        // Store the nonce server-side in a transient (or database) to validate later through Session::generate method
-        $session = Session::generate($token_name_prefix, $id, $nonce, $expiration_at);
+        // Store the nonce server-side into the sessions table to validate later through Session::generate method
+        $session = Session::generate($token_name_prefix, $id, $nonce, $expires_at);
         
         if (!$session->ok) return self::response(false, 500, $id, "There was an error storing the token session data.");    
-
-        $expires_at = $issued_at + $expiration_at;
 
         // Set the token as a cookie in the browser
         $cookie_result = setcookie($token_name_prefix, $token, 
@@ -259,7 +260,7 @@ final class Auth_Token
         $issued_at = intval($issued_at);
 
         // Check token expiration
-        if ($expiration_at + $issued_at <= time()) {
+        if ($expiration_at <= time()) {
             self::remove_token($token_name_prefix, $id);
             return self::response(false, 401, null, "Token has expired.");
         }
@@ -271,16 +272,16 @@ final class Auth_Token
         }
 
         // Retrieve and validate nonce
-        $stored_transient = Session::get($token_name_prefix, $id);
-        $transient_nonce_value = null;
+        $session_data = Session::get($token_name_prefix, $id);
+        $nonce_value = null;
 
-        if (is_object($stored_transient->data)) {
-            $transient_nonce_value = $stored_transient->data->nonce ?? null;
+        if (is_object($session_data->data)) {
+            $nonce_value = $session_data->data->nonce ?? null;
         } else {
-            $transient_nonce_value = $stored_transient->data['nonce'] ?? null;
+            $nonce_value = $session_data->data['nonce'] ?? null;
         }
 
-        if (!$transient_nonce_value || $transient_nonce_value !== $nonce) {
+        if (!$nonce_value || $nonce_value !== $nonce) {
             self::remove_token($token_name_prefix, $id);
             return self::response(false, 401, null, "Invalid or replayed token.");
         }

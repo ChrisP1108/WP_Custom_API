@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace WP_Custom_API\Includes;
 
+use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Database;
 use WP_Custom_API\Includes\Response_Handler;
 
@@ -18,30 +19,30 @@ final class Session
      */
 
     const SESSIONS_TABLE_QUERY = [
-        'name' => 
-            [
-                'query' => 'VARCHAR(255) NOT NULL'
-            ],
-        'user' => 
-            [
-                'query' => 'BIGINT(12) NOT NULL'
-            ],
-        'nonce' => 
-            [
-                'query' => 'VARCHAR(255) NOT NULL'
-            ],
-        'expiration_at' => 
-            [
-                'query' => 'BIGINT(12) NOT NULL'
-            ],
-        'updated_tally' => 
-            [
-                'query' => 'INT(11) NOT NULL'
-            ],
-        'additionals' => 
-            [
-                'query' => 'JSON NOT NULL'
-            ]
+        'name' =>
+        [
+            'query' => 'VARCHAR(255)'
+        ],
+        'user' =>
+        [
+            'query' => 'BIGINT(12)'
+        ],
+        'nonce' =>
+        [
+            'query' => 'VARCHAR(255)'
+        ],
+        'expiration_at' =>
+        [
+            'query' => 'BIGINT(12)'
+        ],
+        'updated_tally' =>
+        [
+            'query' => 'INT(11)'
+        ],
+        'additionals' =>
+        [
+            'query' => 'JSON'
+        ]
     ];
 
     /**
@@ -68,7 +69,7 @@ final class Session
      * @param string $name Name of the session.
      * @param int $user ID of the user associated with the session.
      * @param string $nonce Nonce used for additional validation.
-     * @param int $first_issued_at Timestamp when the session was first issued.
+     * @param int $created_at Timestamp when the session was first issued.
      * @param int $expiration_at Timestamp when the session will expire.
      * @param int $updated_tally Count of how many times the session has been updated.
      * @param int|null $last_updated_at Timestamp of the last update.
@@ -80,7 +81,7 @@ final class Session
         public readonly string $name,
         public readonly int $user,
         public readonly string $nonce,
-        public readonly int $first_issued_at,
+        public readonly int $created_at,
         public readonly int $expiration_at,
         public int $updated_tally,
         public int|null $last_updated_at,
@@ -96,7 +97,8 @@ final class Session
      * @return Response_Handler Response object indicating the result of the operation.
      */
 
-    public static function delete_expired_sessions(): Response_Handler {
+    public static function delete_expired_sessions(): Response_Handler
+    {
         // Check if the expiry interval check transient is set
         $check_interval = get_transient(self::SESSIONS_INTERVAL_TRANSIENT_NAME);
 
@@ -106,9 +108,10 @@ final class Session
             // Get session table full name
             global $wpdb;
             $table_name = Database::get_table_full_name(self::SESSIONS_TABLE_NAME);
+            $table_exists = Database::table_exists(self::SESSIONS_TABLE_NAME);
 
             // Make sure the sessions table exists
-            if (!$table_name) return Response_Handler::response(
+            if (!$table_exists) return Response_Handler::response(
                 false,
                 500,
                 'An error occurred while attempting to delete expired sessions.'
@@ -116,10 +119,10 @@ final class Session
 
             // Set current time for expiration check
             $expiration = time();
-            
+
             // Delete sessions that have expired from sessions table
             $query = $wpdb->prepare(
-                'DELETE FROM '.$table_name.' WHERE expiration_at < %d', 
+                'DELETE FROM ' . $table_name . ' WHERE expiration_at < %d',
                 $expiration
             );
             $result = $wpdb->query($query);
@@ -127,8 +130,8 @@ final class Session
             // Check if the deletions were successful
             if ($result === false) {
                 return Response_Handler::response(
-                    false,  
-                    500,    
+                    false,
+                    500,
                     'An error occurred while attempting to delete expired sessions.'
                 );
             }
@@ -166,14 +169,31 @@ final class Session
 
     public static function generate(string $name, int $id, string $nonce, int $expiration_time): Response_Handler
     {
-        // Set data for table row
+        // Delete any previous sessions with the same name and user id
+        global $wpdb;
+        $table_name = Database::get_table_full_name(self::SESSIONS_TABLE_NAME);
+        $query = $wpdb->prepare(
+            'DELETE FROM ' . $table_name . ' WHERE name = %s AND user = %d',
+            $name,
+            $id
+        );
+        $result = $wpdb->query($query);
+
+        // Check if the deletions were successful
+        if ($result === false) return Response_Handler::response(
+            false, 
+            500, 
+            'An error occurred while attempting to delete previous sessions.'
+        );
+
+        // Set data for table row insert
         $data = [
             'name' => $name,
             'user' => $id,
             'nonce' => $nonce,
             'expiration_at' => $expiration_time,
             'updated_tally' => 0,
-            'additionals' => []
+            'additionals' => json_encode([])
         ];
 
         // Create session table row in sessions table
@@ -184,14 +204,19 @@ final class Session
 
         // Check if insert was successful to session table
         $ok = $insert_session_result->ok;
-        
+
+        if (!$ok) return Response_Handler::response(
+            $ok, $ok ? 200 : 500, 
+            $ok ? "Session generated successfully." : "Session generation failed."
+        );
+
         // Object return data
         $object_data = new static(
             $insert_session_result->data['id'],
-            $name, 
-            $id, 
-            $nonce, 
-            time(), 
+            $name,
+            $id,
+            $nonce,
+            time(),
             $expiration_time,
             0,
             null,
@@ -202,7 +227,7 @@ final class Session
         $return_data = Response_Handler::response($ok, $ok ? 200 : 500, $ok ? "Session generated successfully." : "Session generation failed.", $object_data);
 
         do_action('wp_custom_api_session_generated_response', $return_data);
-        
+
         return $return_data;
     }
 
@@ -218,6 +243,11 @@ final class Session
 
     public static function get(string $name, int $id): Response_Handler
     {
+        // Apply auth token prefix to token name if it doesn't exist
+        if (!str_starts_with($name, Config::AUTH_TOKEN_PREFIX)) {
+            $name = Config::AUTH_TOKEN_PREFIX . $name;
+        }
+
         // Retrieve session data from transient storage
         $get_session_rows_by_name = Database::get_rows_data(
             SESSION::SESSIONS_TABLE_NAME,
@@ -234,7 +264,6 @@ final class Session
                 "Unable to retrieve session data corresponding to the name of `" . $name . "`."
             );
         }
-
         $get_user_sessions_row = array_filter(
             $get_session_rows_by_name->data,
             function ($row) use ($id) {
@@ -253,15 +282,15 @@ final class Session
         // If retrieval was successful, set object data
         if ($ok) {
             $object_data = new static(
-                $user_session_data['id'],
-                $user_session_data['name'], 
-                $user_session_data['user'],
-                $user_session_data['nonce'], 
-                strtotime($user_session_data['created_at']), 
-                $user_session_data['expiration_at'], 
-                $user_session_data['updated_tally'], 
+                intval($user_session_data['id']),
+                $user_session_data['name'],
+                intval($user_session_data['user']),
+                $user_session_data['nonce'],
+                strtotime($user_session_data['created_at']),
+                intval($user_session_data['expiration_at']),
+                intval($user_session_data['updated_tally']),
                 strtotime($user_session_data['updated_at']) ?? null,
-                $user_session_data['additionals'] ?? []
+                json_decode($user_session_data['additionals'], true) ?? []
             );
         }
 
@@ -304,22 +333,28 @@ final class Session
 
         // Add tally to number of times updated
         if (isset($existing_data['updated_tally'])) {
+            $existing_data['updated_tally'] = intval($existing_data['updated_tally']);
             $existing_data['updated_tally'] += 1;
         } else {
             $existing_data['updated_tally'] = 1;
         }
 
         // Update additionals data
-        $existing_data['additionals'] = $updated_data;
+        $existing_data['additionals'] = json_encode($updated_data);
 
         // Update expiration time
-        $updated_expiration = max(1, $existing_data['expiration_at'] - time());
+        $updated_expiration = max(1, intval($existing_data['expiration_at']) - time());
+
+        $sql_update_data = $existing_data;
+        unset($sql_update_data['last_updated_at']);
+        unset($sql_update_data['created_at']);
+        unset($sql_update_data['id']);
 
         // Update session table row in sessions table
-        $insert_session_result = Database::insert_row(
+        $insert_session_result = Database::update_row(
             self::SESSIONS_TABLE_NAME,
-            $update_session_data->data['id'],
-            $existing_data,
+            intval($existing_data['id']),
+            $sql_update_data,
         );
 
         // Determine if the update was successful
@@ -331,15 +366,15 @@ final class Session
         // If retrieval was successful, set object data
         if ($ok) {
             $object_data = new static(
-                $existing_data['id'],
+                intval($existing_data['id']),
                 $existing_data['name'],
-                $existing_data['user'], 
-                $existing_data['nonce'], 
-                strtotime($existing_data['created_at']), 
-                $existing_data['expiration_at'], 
-                $existing_data['updated_tally'],
-                $updated_expiration, 
-                $existing_data['additionals'] ?? []
+                intval($existing_data['user']),
+                $existing_data['nonce'],
+                intval($existing_data['created_at']),
+                intval($existing_data['expiration_at']),
+                intval($existing_data['updated_tally']),
+                $updated_expiration,
+                json_decode($existing_data['additionals'], true) ?? []
             );
         }
 
@@ -347,7 +382,7 @@ final class Session
         $return_data = Response_Handler::response(
             $ok,
             $ok ? 200 : 500,
-            $ok ? "Session data updated successfully corresponding to session name of `" . $name ."`." : "Session update failed corresponding to session name of `" . $name . "`.",
+            $ok ? "Session data updated successfully corresponding to session name of `" . $name . "`." : "Session update failed corresponding to session name of `" . $name . "`.",
             $object_data
         );
 
@@ -380,15 +415,18 @@ final class Session
             );
         }
 
+        // Get session ID
+        $id = (array) $get_session_data->data;
+
         // Delete session row
         $delete_row_result = Database::delete_row(
             SESSION::SESSIONS_TABLE_NAME,
-            $get_session_data->data['id']
+            $id['id']
         );
 
         // Check if deletion was successful
         $ok = $delete_row_result->ok;
-        
+
         // Return response
         return Response_Handler::response(
             $ok,

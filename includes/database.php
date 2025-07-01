@@ -197,7 +197,15 @@ final class Database
                 Error_Generator::generate('Column query type not specified', $err_msg);
                 return self::response(false, 500, $err_msg);
             }
-            if (!preg_match('/^(?:INT|BIGINT|MEDIUMINT|TEXT|LONGTEXT|BOOLEAN|TINYINT\(1\)|JSON|VARCHAR\(\d+\))$/i', $column_query)) {
+            $pattern = '/^
+            (?:
+                    (?:TINYINT|INT|MEDIUMINT|BIGINT|VARCHAR|TEXT|LONGTEXT|JSON|BOOLEAN)
+                    (?:\(\d+\))?
+                )
+                (?:\s+UNSIGNED)?
+                (?:\s+NOT\s+NULL)?
+            $/ix';
+            if (!preg_match($pattern, $column_query)) {
                 $err_msg = 'Column query for column name of `' . $key . '` contained invalid characters.';
                 Error_Generator::generate('Column name error in schema', $err_msg);
                 return self::response(false, 500, $err_msg);

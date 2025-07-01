@@ -88,7 +88,7 @@ final class Config
      * If this constant is set to true, then auth token cookies will only be stored on the client if over HTTPS.
      */
 
-    public const TOKEN_OVER_HTTPS_ONLY = true;
+    public const TOKEN_OVER_HTTPS_ONLY = false;
 
     /**
      * CONSTANT
@@ -115,5 +115,5 @@ final class Config
      * Sets whether detailed messages about errors are returned when hitting API routes for debugging.
      */
 
-    public const DEBUG_MESSAGE_MODE = false;
+    public const DEBUG_MESSAGE_MODE = true;
 }

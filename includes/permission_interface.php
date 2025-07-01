@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) exit;
  * @since 1.0.0
  */
 
-final class Permission_Interface
+class Permission_Interface
 {
     
     /**
@@ -35,7 +35,7 @@ final class Permission_Interface
      * @return bool Returns true to allow route to be public
      */
     
-    public static function public(): bool {
+    final public static function public(): bool {
         return true;
     }
 
@@ -48,7 +48,7 @@ final class Permission_Interface
      * @return WP_Error as Error - Returns an error indicating unauthorized access.
      */
     
-    public static function unauthorized_response(): object {
+    final public static function unauthorized_response(): object {
         return Response_Handler::response(false, 401, 'Unauthorized', null, false);
     }
 
@@ -65,7 +65,7 @@ final class Permission_Interface
      * @return Response_Handler The response of the password hash operation.
      */
 
-    public static function password_hash(string $string): Response_Handler 
+    final public static function password_hash(string $string): Response_Handler 
     {
         return Password::hash($string);
     }
@@ -85,7 +85,7 @@ final class Permission_Interface
      * @return Response_Handler The response of the password verify operation.
      */
 
-    public static function password_verify(string $entered_password = '', string $hashed_password = ''): Response_Handler 
+    final public static function password_verify(string $entered_password = '', string $hashed_password = ''): Response_Handler 
     {
         return Password::verify($entered_password, $hashed_password);
     }
@@ -106,7 +106,7 @@ final class Permission_Interface
     * @return Response_Handler The response of the token_generate operation.
     */
 
-    public static function token_generate(string $token_name, int $id, int $expiration = Config::TOKEN_EXPIRATION): Response_Handler
+    final public static function token_generate(string $token_name, int $id, int $expiration = Config::TOKEN_EXPIRATION): Response_Handler
     {
         return Auth_Token::generate($token_name, $id, $expiration);
     }
@@ -126,7 +126,7 @@ final class Permission_Interface
     * @return Response_Handler The response of the token_validate operation.
     */
 
-    public static function token_validate(string $token_name, int $logout_time = 0): Response_Handler 
+    final public static function token_validate(string $token_name, int $logout_time = 0): Response_Handler 
     {
         return Auth_Token::validate($token_name, $logout_time);
     }
@@ -145,7 +145,7 @@ final class Permission_Interface
     * @return Response_Handler The response of the token remove operation from the self::response() method.
     */
 
-    public static function token_remove(string $token_name, string|int $id = 0): Response_Handler 
+    final public static function token_remove(string $token_name, string|int $id = 0): Response_Handler 
     {
         return Auth_Token::remove_token($token_name, $id);
     }
@@ -164,7 +164,7 @@ final class Permission_Interface
     * @return Response_Handler The response of the get session data operation.
     */
 
-    public static function token_session_data(string $token_name, int $id): Response_Handler
+    final public static function token_session_data(string $token_name, int $id): Response_Handler
     {
         return Session::get($token_name, $id);
     }
@@ -184,7 +184,7 @@ final class Permission_Interface
      * @return Response_Handler The response of the update operation.
      */
 
-    public static function token_update_session_data(string $token_name, int $id, array $updated_data): Response_Handler 
+    final public static function token_update_session_data(string $token_name, int $id, array $updated_data): Response_Handler 
     {
         // Update the session additionals and return the response
         return Session::update_additionals($token_name, $id, $updated_data);
@@ -204,7 +204,7 @@ final class Permission_Interface
      * @return Response_Handler The response of the token parse operation.
      */
 
-    public static function token_parser(string $token_name, int $logout_time = 0): Response_Handler
+    final public static function token_parser(string $token_name, int $logout_time = 0): Response_Handler
     {
         // Validate token and get the id if valid.
         $token_validate = Auth_Token::validate($token_name, $logout_time);
@@ -228,26 +228,6 @@ final class Permission_Interface
     /**
      * METHOD - wp_user_data
      * 
-     * Retrieve the current user data
-     * 
-     * @return Response_Handler The response of the user login data.
-     */
-
-    public static function wp_user_data(): Response_Handler 
-    {
-        $user_data = wp_get_current_user();
-
-        // Check if user is logged in
-        $ok = $user_data->ID !== 0;
-
-        // Return response
-        $response_data = Response_Handler::response($ok, $ok ? 200 : 401, $ok ? 'Success' : 'Unauthorized', $user_data);
-        return $response_data;
-    }
-
-    /**
-     * METHOD - wp_user_data
-     * 
      * Log in a user given their username and password
      * 
      * @param string $username The username of the user to log in
@@ -257,7 +237,7 @@ final class Permission_Interface
      * @return Response_Handler The response of the login.
      */
 
-    public static function wp_user_login(string $username, string $password, bool $remember = false): Response_Handler 
+    final public static function wp_user_login(string $username, string $password, bool $remember = false): Response_Handler 
     {       
         // Compile credentials
         $credentials = [
@@ -285,7 +265,7 @@ final class Permission_Interface
      * @return Response_Handler The response of the logout.  Will always be successful.
      */
     
-    public static function wp_user_logout(): Response_handler 
+    final public static function wp_user_logout(): Response_handler 
     {
 
         // Get the current user's ID
@@ -299,6 +279,47 @@ final class Permission_Interface
 
         // Return response
         $response_data = Response_Handler::response(true, 200, 'Success', null);
+        return $response_data;
+    }
+
+    /**
+     * METHOD - wp_user_data
+     * 
+     * Retrieve the current user data
+     * 
+     * @return Response_Handler The response of the user login data.
+     */
+
+    final public static function wp_user_update_session_data(array $data): Response_Handler 
+    {
+        // Get user ID
+        $user_id = get_current_user_id();
+
+        // Return error if no user ID found
+        if ( ! $user_id ) {
+            return Response_Handler::response(
+                false, 
+                401, 
+                'Unauthorized', 
+            );
+        }
+
+        // Get user session data
+        $token   = wp_get_session_token();
+        $manager = WP_Session_Tokens::get_instance( $user_id );
+        $session = $manager->get( $token );
+
+        // Add additionals array key if not present
+        if ( !isset( $session['additionals'] ) ) {
+            $session['additionals'] = [];
+        }
+
+        // Update additionals
+        $session['additionals'] = $data;
+        $manager->update( $token, $session );
+
+        // Return response
+        $response_data = Response_Handler::response(true, 200, 'Success', $data);
         return $response_data;
     }
 }
