@@ -259,7 +259,7 @@ class Permission_Interface
         $ok = !is_wp_error($login);
 
         // Return response
-        $response_data = Response_Handler::response($ok, $ok ? 200 : 401, $ok ? 'Success' : 'Unauthorized', $login);
+        $response_data = Response_Handler::response($ok, $ok ? 200 : 401, $ok ? 'Successfully logged in Wordpress user.' : 'Wordpress user login failed.  Invalid credentials.', $login);
         return $response_data;
     }
     
@@ -280,7 +280,7 @@ class Permission_Interface
             return Response_Handler::response(
                 false, 
                 401, 
-                'Unauthorized' 
+                'No Wordpress user ID found' 
             );
         }
 
@@ -291,7 +291,7 @@ class Permission_Interface
         wp_logout();
 
         // Return response
-        $response_data = Response_Handler::response(true, 200, 'Success', null);
+        $response_data = Response_Handler::response(true, 200, 'Successfully logged out Wordpress user.', null);
         return $response_data;
     }
 
@@ -305,7 +305,7 @@ class Permission_Interface
             return Response_Handler::response(
                 false, 
                 401, 
-                'Unauthorized' 
+                'No Wordpress user ID found' 
             );
         }
 
@@ -318,12 +318,12 @@ class Permission_Interface
             return Response_Handler::response(
                 false, 
                 401, 
-                'Unauthorized' 
+                'Could not retrieve Wordpress user session data.' 
             );
         }
 
         // Return response
-        $response_data = Response_Handler::response(true, 200, 'Success', $session);
+        $response_data = Response_Handler::response(true, 200, 'Successfully retrieved Wordpress user data.', $session);
         return $response_data;
     } 
 
@@ -346,7 +346,7 @@ class Permission_Interface
             return Response_Handler::response(
                 false, 
                 401, 
-                'Unauthorized' 
+                'No Wordpress user ID found.' 
             );
         }
 
@@ -359,7 +359,7 @@ class Permission_Interface
             return Response_Handler::response(
                 false, 
                 401, 
-                'Unauthorized' 
+                'Could not retrieve Wordpress user session data.' 
             );
         }
 
@@ -373,7 +373,7 @@ class Permission_Interface
         $manager->update( $token, $session );
 
         // Return response
-        $response_data = Response_Handler::response(true, 200, 'Success', $data);
+        $response_data = Response_Handler::response(true, 200, 'Successfully update Wordpress user session data', $data);
         return $response_data;
     }
 }
