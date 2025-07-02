@@ -120,12 +120,17 @@ final class Session
             // Set current time for expiration check
             $expiration = time();
 
+            ob_start();
+
             // Delete sessions that have expired from sessions table
             $query = $wpdb->prepare(
                 'DELETE FROM ' . $table_name . ' WHERE expiration_at < %d',
                 $expiration
             );
+
             $result = $wpdb->query($query);
+
+            ob_end_clean();
 
             // Check if the deletions were successful
             if ($result === false) {
@@ -172,12 +177,18 @@ final class Session
         // Delete any previous sessions with the same name and user id
         global $wpdb;
         $table_name = Database::get_table_full_name(self::SESSIONS_TABLE_NAME);
+
+        ob_start();
+
         $query = $wpdb->prepare(
             'DELETE FROM ' . $table_name . ' WHERE name = %s AND user = %d',
             $name,
             $id
         );
+
         $result = $wpdb->query($query);
+
+        ob_end_clean();
 
         // Check if the deletions were successful
         if ($result === false) return Response_Handler::response(
@@ -250,13 +261,18 @@ final class Session
         global $wpdb;
         $table_name = Database::get_table_full_name(self::SESSIONS_TABLE_NAME);
 
+        ob_start();
+
         // Retrieve session data row from sessions table that matches session name and user id
         $query = $wpdb->prepare(
             'SELECT * FROM ' . $table_name . ' WHERE name = %s AND user = %d LIMIT 1',
             $name,
             $id
         );
+
         $user_session_data = $wpdb->get_row($query, ARRAY_A);
+
+        ob_end_clean();
 
         // Determine if retrieval was successful
         $ok = $user_session_data !== null;
