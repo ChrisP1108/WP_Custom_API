@@ -274,16 +274,25 @@ final class Auth_Token
         // Retrieve and validate nonce
         $session_data = Session::get($token_name_prefix, $id);
         $nonce_value = null;
+        $session_expiration_at = 0;
 
         if (is_object($session_data->data)) {
             $nonce_value = $session_data->data->nonce ?? null;
+            $session_expiration_at = $session_data->data->expiration_at ?? 0;
         } else {
             $nonce_value = $session_data->data['nonce'] ?? null;
+            $session_expiration_at = $session_data->data['expiration_at'] ?? 0;
         }
 
         if (!$nonce_value || $nonce_value !== $nonce) {
             self::remove_token($token_name_prefix, $id);
-            return self::response(false, 401, null, "Invalid or replayed token.");
+            return self::response(false, 401, null, "Invalid, replayed token, or session data for token name of `" . $token_name_prefix . "` is missing.");
+        }
+
+        // Check if session data is expired
+        if ($session_expiration_at <= time()) {
+            self::remove_token($token_name_prefix, $id);
+            return self::response(false, 401, null, "Session data for token name of `" . $token_name_prefix . "` has expired.");
         }
 
         // Token is valid

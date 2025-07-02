@@ -246,11 +246,6 @@ final class Session
 
     public static function get(string $name, int $id): Response_Handler
     {
-        // Apply auth token prefix to token name if it doesn't exist
-        if (!str_starts_with($name, Config::AUTH_TOKEN_PREFIX)) {
-            $name = Config::AUTH_TOKEN_PREFIX . $name;
-        }
-
         // Get session table full name
         global $wpdb;
         $table_name = Database::get_table_full_name(self::SESSIONS_TABLE_NAME);

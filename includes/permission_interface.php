@@ -166,7 +166,9 @@ class Permission_Interface
 
     final public static function token_session_data(string $token_name, int $id): Response_Handler
     {
-        return Session::get($token_name, $id);
+        $token_prefixed = Config::AUTH_TOKEN_PREFIX . $token_name;
+
+        return Session::get($token_prefixed, $id);
     }
 
     /**
@@ -186,8 +188,10 @@ class Permission_Interface
 
     final public static function token_update_session_data(string $token_name, int $id, array $updated_data): Response_Handler 
     {
+        $token_prefixed = Config::AUTH_TOKEN_PREFIX . $token_name;
+
         // Update the session additionals and return the response
-        return Session::update_additionals($token_name, $id, $updated_data);
+        return Session::update_additionals($token_prefixed, $id, $updated_data);
     }
 
     /**
@@ -219,7 +223,9 @@ class Permission_Interface
             $id = $token_validate->data->id;
         } else $id = $token_validate->data['id'];
 
-        $token_session_data = Session::get($token_name, $id);
+        $token_prefixed = Config::AUTH_TOKEN_PREFIX . $token_name;
+
+        $token_session_data = Session::get($token_prefixed, $id);
 
         // Return token session data
         return $token_session_data;
