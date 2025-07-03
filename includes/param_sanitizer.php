@@ -101,6 +101,9 @@ class Param_Sanitizer {
             case 'integer':
                 $type_found = 'int';
                 break;
+            case 'double':
+                $type_found = 'float';
+                break;
             case 'boolean':
                 $type_found = 'boolean';
                 break;
@@ -171,13 +174,22 @@ class Param_Sanitizer {
         switch ($schema['type']) {
             case 'int':
                 // Sanitize integers
-                // If the value is numeric, cast it to an integer and return it.
+                // If the value is numeric, cast it to an integer or float and return it.
                 // Otherwise, return an error message.
-                if (is_numeric($value)) {
-                    $sanitized =  absint((int)$value);
+
+                $string_val = (string) $value;
+                $type = 'int';
+                $sanitized = $value;
+                if (is_numeric($string_val)) {
+                    if (strpos($string_val, '.') !== false) {
+                        $sanitized = round((float) $string_val, 10);
+                        $type = 'float';
+                    } else {
+                        $sanitized = absint((int) $string_val);
+                    }
                     $valid = true;
                 } 
-                $type_set = self::generate_types_response($valid, $value, 'int');
+                $type_set = self::generate_types_response($valid, $sanitized, $type);
                 $length_set = self::generate_chars_amount_response($value, $schema);
                 return new static(
                     $valid && !$length_set['char_error'],
