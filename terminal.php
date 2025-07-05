@@ -212,7 +212,8 @@ class Create
             "WP_REST_Response as Response",
             "WP_Custom_API\Includes\Controller_Interface",
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Model",
-            "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Permission"
+            "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Permission",
+            "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Utils"
         ];
         $class_content = "    public static function index(Request \$request, \$permission_params): Response \n    {\n        return self::response(null, 200, '" . ucfirst(PATH) . " route works');\n    }";
         self::create_file("controller", $dependencies, $class_content);
@@ -277,7 +278,8 @@ class Create
         $dependencies = [
             "WP_REST_Request as Request",
             "WP_Custom_API\Includes\Permission_Interface",
-            "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Model"
+            "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Model",
+            "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Utils"
         ];
         $class_content = "    public const TOKEN_NAME = '" . strtolower(str_replace('/', '_', PATH)) . "_token';\n\n    public static function authorized(Request \$request): bool|array\n    {\n        // Replace code in this method with logic for protecting a route from unauthorized access. \n\n        \$token = self::token_parser(self::TOKEN_NAME);\n        return [\$token->ok, \$token->data];\n    }";
         self::create_file("permission", $dependencies, $class_content);
@@ -299,6 +301,24 @@ class Create
     }
 
     /**
+     * Creates model file.
+     */
+
+    public static function utils()
+    {
+        $dependencies = [
+            "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Controller",
+            "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Model",
+            "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Permission"
+        ];
+
+        $model_table_name = strtolower(PATH);
+
+        $class_content = $class_content = '    // Enter utility/helper methods here.';
+        self::create_file("utils", $dependencies, $class_content);
+    }
+
+    /**
      * Creates interface.  Creates a controller, routes, model, and permission file utilizing the other methods
      */
 
@@ -308,6 +328,7 @@ class Create
         self::model();
         self::permission();
         self::routes();
+        self::utils();
     }
 }
 
@@ -336,6 +357,7 @@ class Delete
         self::delete_file("model");
         self::delete_file("permission");
         self::delete_file("routes");
+        self::delete_file("utils");
         rmdir("api/" . strtolower(PATH));
         echo "`". strtolower(PATH) . "` folder deleted inside api folder";
     }
@@ -360,7 +382,7 @@ if (COMMAND === COMMAND_CREATE) {
 // Delete commands
 
 if (COMMAND === COMMAND_DELETE) {
-    $resource_types = ['interface', 'controller', 'model', 'permission', 'routes'];
+    $resource_types = ['interface', 'controller', 'model', 'permission', 'routes', 'utils'];
     if (RESOURCE === 'interface') {
         Delete::interface();
         exit;

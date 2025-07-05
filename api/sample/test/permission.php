@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace WP_Custom_API\Api\Sample;
+namespace WP_Custom_API\Api\Sample\Test;
 
 use WP_REST_Request as Request;
 use WP_Custom_API\Includes\Permission_Interface;
-use WP_Custom_API\Api\Sample\Model;
+use WP_Custom_API\Api\Sample\Test\Model;
+use WP_Custom_API\Api\Sample\Test\Utils;
 
 /**
 * Prevent direct access from sources other than the Wordpress environment
@@ -16,7 +17,7 @@ if (!defined('ABSPATH')) exit;
 
 final class Permission extends Permission_Interface
 {
-    public const TOKEN_NAME = 'sample_token';
+    public const TOKEN_NAME = 'sample_test_token';
 
     public static function authorized(Request $request): bool|array
     {
