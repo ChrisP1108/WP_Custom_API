@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace WP_Custom_API\Api\Sample\Test;
+namespace WP_Custom_API\Api\Sample;
 
 use WP_Custom_API\Includes\Model_Interface;
 
@@ -16,7 +16,7 @@ final class Model extends Model_Interface
 {
     public static function table_name(): string 
     {
-        return 'sample/test';
+        return 'sample';
     }
 
     public static function schema(): array 
