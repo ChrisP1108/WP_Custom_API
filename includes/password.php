@@ -60,7 +60,7 @@ final class Password
     /**
      * METHOD - hash
      * 
-     * Hashes string with Bcrypt algorithm.  Cost rounds set by PASSWORD_HASH_ROUNDS constant in Config class.
+     * Hashes string with Argon2ID.  Configration for Argon2ID can be found in Config class in the PASSWORD_SETTINGS constant.
      * 
      * @param string $string - String text to be hashed.
      * 
@@ -73,11 +73,11 @@ final class Password
             return self::response(false, 500, 'String must be provided to hash in Password hash method.');
         }
 
-        $cost = (int) (Config::PASSWORD_HASH_ROUNDS ?? 12);
+        if (strlen($string) > 72) {
+            return self::response(false, 500, 'String must be less than 72 characters in length in Password hash method.');
+        }
 
-        $cost = is_int($cost) && $cost <= 20 && $cost >= 8 ? $cost : 12;
-
-        $hash = password_hash($string, PASSWORD_BCRYPT, ['cost' => $cost]);
+        $hash = password_hash($string, PASSWORD_ARGON2ID, Config::PASSWORD_SETTINGS);
 
         if ($hash === false) {
             return self::response(false, 500, 'Failed to hash the string.');

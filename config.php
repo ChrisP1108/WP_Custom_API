@@ -75,11 +75,16 @@ final class Config
     /**
      * CONSTANT
      * 
-     * @const int HASH_ROUNDS
-     * Determines number of cost rounds for password hashing.  Used primarily in the Password class.
+     * @const int PASSWORD_SETTINGS
+     * Sets the password settings for the Password class.
      */
 
-    public const PASSWORD_HASH_ROUNDS = 12;
+    public const PASSWORD_SETTINGS = 
+    [
+        'memory_cost' => 1 << 17,
+        'time_cost' => 4,
+        'threads' => 2
+    ];
 
     /**
      * CONSTANT
@@ -107,6 +112,15 @@ final class Config
      */
 
     public const TOKEN_COOKIE_SAME_SITE = 'Strict';
+
+    /**
+     * CONSTANT
+     * 
+     * @const bool DATABASE_REFRESH_INTERVAL
+     * Sets time in seconds between database refreshes.  This is used for checking for expired token sessions, and whether new tables need to be created.
+     */
+
+    public const DATABASE_REFRESH_INTERVAL = 86400;
 
     /**
      * CONSTANT

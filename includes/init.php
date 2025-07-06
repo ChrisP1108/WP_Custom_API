@@ -335,9 +335,9 @@ final class Init
         // Call Wordpress action hook
         do_action('wp_custom_api_tables_created', $tables_created);
 
-        // Store existing tables that have been created through this plugin in a Wordpress transient for better load times.  Stores it for 7 days.
+        // Store existing tables that have been created through this plugin in a Wordpress transient for better load times.
         if(!empty($tables_created)) {
-            set_transient('wp_custom_api_tables_created', $tables_created, 86400 * 7);
+            set_transient('wp_custom_api_tables_created', $tables_created, Config::DATABASE_REFRESH_INTERVAL);
         }
     }
 }

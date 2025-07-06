@@ -141,8 +141,8 @@ final class Session
                 );
             }
 
-            // Set transient to prevent deletion from running again within 24 hours
-            set_transient(self::SESSIONS_INTERVAL_TRANSIENT_NAME, true, 86400);
+            // Set transient to prevent deletion from running again within database refresh interval.
+            set_transient(self::SESSIONS_INTERVAL_TRANSIENT_NAME, true, Config::DATABASE_REFRESH_INTERVAL);
 
             // Return success response
             return Response_Handler::response(
@@ -417,12 +417,13 @@ final class Session
         }
 
         // Get session ID
-        $id = (array) $get_session_data->data;
+        $data_array = (array) $get_session_data->data;
+        $id = $data_array['id'];
 
         // Delete session row
         $delete_row_result = Database::delete_row(
-            SESSION::SESSIONS_TABLE_NAME,
-            $id['id']
+            self::SESSIONS_TABLE_NAME,
+            $id
         );
 
         // Check if deletion was successful

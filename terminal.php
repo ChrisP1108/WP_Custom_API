@@ -301,7 +301,7 @@ class Create
     }
 
     /**
-     * Creates model file.
+     * Creates utilities file.
      */
 
     public static function utils()
@@ -311,8 +311,6 @@ class Create
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Model",
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Permission"
         ];
-
-        $model_table_name = strtolower(PATH);
 
         $class_content = $class_content = '    // Enter utility/helper methods here.';
         self::create_file("utils", $dependencies, $class_content);
