@@ -9,6 +9,7 @@ use WP_Custom_API\Includes\Database;
 use WP_Custom_API\Includes\Router;
 use WP_Custom_API\Includes\Error_Generator;
 use WP_Custom_API\Includes\Session;
+use WP_Custom_API\Hooks;
 use Exception;
 
 /** 
@@ -66,23 +67,35 @@ final class Init
         return self::$files_loaded;
     }
 
+    
+
     /**
      * CONSTRUCTOR
      * 
-     * Initializes the plugin by running spl_auto_load_register for class namespacing 
-     *      and for loading files within the application folder from the FILES_TO_AUTOLOAD constant in the CONFIG class. 
-     *      create_tables method is run to create tables in database for all models that have their RUN_MIGRATION property set to true.
-     *      It will then run the init method of the Router class to register all routes to the Wordpress REST API.
+     * Creates an instance of the Init class, autoloads files, calls hooks, and sets up routes.
      * 
      * @return void
      */
 
     private function __construct()
-    {
+    {   
+        // Call before_init from the hooks class before initializing plugin
+        Hooks::before_init();
+
+        // Autoload files based on Config::FILES_TO_AUTOLOAD constant
         self::files_autoloader();
+
+        // Delete expired sessions from database
         Session::delete_expired_sessions();
+
+        // Create tables
         self::create_tables();
+
+        // Initialize routes
         Router::init();
+
+        // Call after_init from the hooks class after initializing plugin
+        Hooks::after_init();
     }
 
     /**
