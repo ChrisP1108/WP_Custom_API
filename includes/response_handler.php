@@ -73,7 +73,9 @@ final class Response_Handler
             $error_response = self::build_error_response($message, $status_code);
         } else if ($parse_responses) {
             $response_data = [];
-            if (is_object($data)) $response_data = (array) $data;
+            if (is_object($data)) {
+                $response_data = (array) $data;
+            } else $response_data = $data;
             $success_response = self::build_success_response($message, $status_code, $response_data);
         }
 
