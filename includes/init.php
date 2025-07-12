@@ -67,7 +67,7 @@ final class Init
         return self::$files_loaded;
     }
 
-    
+
 
     /**
      * CONSTRUCTOR
@@ -78,7 +78,7 @@ final class Init
      */
 
     private function __construct()
-    {   
+    {
         // Call before_init from the hooks class before initializing plugin
         Hooks::before_init();
 
@@ -105,9 +105,9 @@ final class Init
      */
     public static function run(): void
     {
-        // Autoload classes and files with the same namespace as the plugin
-        self::namespaces_autoloader();
-        
+        // Register namespaces_autoloader_callback for autoloading
+        spl_autoload_register([self::class, 'namespaces_autoloader_callback']);
+
         // Check if the request is for the plugin and if the plugin hasn't been instantiated yet
         if (!self::$instantiated && self::request_to_plugin()) {
             new self();
@@ -219,23 +219,30 @@ final class Init
     }
 
     /**
-     * METHOD - namespaces_autoloader
+     * CALLBACK - namespaces_autoloader_callback
      * 
-     * Runs spl_auto_load_register for class importing based upon namespace
+     * Callback used with spl_autoload_register for autoloading classes.
+     * Only loads classes that start with the namespace WP_Custom_API.
      * 
+     * @param string $class  Fully qualified class name
      * @return void
      */
 
-    private static function namespaces_autoloader(): void
+    private static function namespaces_autoloader_callback(string $class): void
     {
-        spl_autoload_register(function ($class) {
-            if (strpos($class, 'WP_Custom_API') !== 0) {
-                return;
-            }
-            $relative_class = str_replace('WP_Custom_API\\', '', $class);
-            $file = WP_CUSTOM_API_FOLDER_PATH . strtolower($relative_class) . '.php';
-            self::load_file($file, $class);
-        });
+        // Check if the class starts with the WP_Custom_API namespace
+        if (strpos($class, 'WP_Custom_API') !== 0) {
+            return;
+        }
+
+        // Get the relative class name by removing the namespace
+        $relative_class = str_replace('WP_Custom_API\\', '', $class);
+
+        // Create the file path by converting the class name to lowercase and adding the .php extension
+        $file = WP_CUSTOM_API_FOLDER_PATH . strtolower($relative_class) . '.php';
+
+        // Load the file and add its path to the $files_loaded property array
+        self::load_file($file, $class);
     }
 
     /**
@@ -250,14 +257,14 @@ final class Init
      */
 
     private static function files_autoloader(): void
-    {    
+    {
         $all_files_to_load = apply_filters('wp_custom_api_files_to_autoload', Config::FILES_TO_AUTOLOAD);
 
         foreach ($all_files_to_load as $filename) {
             try {
                 $path = self::$requested_route_data['folder'] . '/' . $filename . '.php';
-                if ( file_exists( $path ) ) {
-                    self::load_file( $path );
+                if (file_exists($path)) {
+                    self::load_file($path);
                 } else {
                     Error_Generator::generate('File load error', 'Error loading ' . $filename . '.php file in "api" folder');
                 }
@@ -266,7 +273,6 @@ final class Init
             }
         }
         do_action('wp_custom_api_files_autoloaded', self::$files_loaded);
-
     }
 
     /**
@@ -292,7 +298,7 @@ final class Init
             $table_exists = Database::table_exists(Session::SESSIONS_TABLE_NAME);
             if (!$table_exists) {
                 $sessions_table_created_result = Database::create_table(
-                    Session::SESSIONS_TABLE_NAME, 
+                    Session::SESSIONS_TABLE_NAME,
                     Session::SESSIONS_TABLE_QUERY
                 );
                 if (!$sessions_table_created_result->ok) {
@@ -349,7 +355,7 @@ final class Init
         do_action('wp_custom_api_tables_created', $tables_created);
 
         // Store existing tables that have been created through this plugin in a Wordpress transient for better load times.
-        if(!empty($tables_created)) {
+        if (!empty($tables_created)) {
             set_transient('wp_custom_api_tables_created', $tables_created, Config::DATABASE_REFRESH_INTERVAL);
         }
     }
