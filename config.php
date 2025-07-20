@@ -33,7 +33,7 @@ final class Config
      * Establishes prefix name to establish unique naming for plugin
      */
 
-    public const PREFIX = "custom_api_";
+    public const PREFIX = "wp_custom_api_";
 
     /**
      * CONSTANT

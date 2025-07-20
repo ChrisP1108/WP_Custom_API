@@ -6,6 +6,7 @@ namespace WP_Custom_API\Includes;
 
 use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Response_Handler;
+use WP_Custom_API\Includes\Cookie;
 use WP_Custom_API\Includes\Session;
 
 /** 
@@ -92,7 +93,10 @@ final class Auth_Token
         }
 
         // Remove cookie
-        setcookie($token_name, '', time() - 300, '/');
+        $remove_cookie_result = Cookie::remove($token_name);
+
+        // Check if cookie removal was successful
+        if (!$remove_cookie_result->ok) return self::response(false, 500, null, "Token cookie removal failed for token name of `" . $token_name . "`.");
 
         // Check if id was provided
         if ($id === 0) return self::response(false, 500, null, "No id was provided to remove token for token name `" . $token_name . "`.");
@@ -169,18 +173,9 @@ final class Auth_Token
         if (!$session->ok) return self::response(false, 500, $id, "There was an error storing the token session data.");    
 
         // Set the token as a cookie in the browser
-        $cookie_result = setcookie($token_name_prefix, $token, 
-            [
-                'expires' => $expires_at,
-                'path' => "/", 
-                'domain' => "", 
-                'secure' => Config::TOKEN_OVER_HTTPS_ONLY, 
-                'httponly' => Config::TOKEN_COOKIE_HTTP_ONLY, 
-                'samesite' => Config::TOKEN_COOKIE_SAME_SITE
-            ]
-        );
+        $cookie_result = Cookie::set($token_name_prefix, $token, $expires_at);
 
-        if (!$cookie_result) return self::response(false, 500, $id, "Token was generated but could not be stored in cookie. Headers may have already been sent.");
+        if (!$cookie_result->ok) return self::response(false, 500, $id, "Token was generated but could not be stored as a cookie in the browser. Headers may have already been sent.");
 
         return self::response(true, 200, $id, "Token successfully generated.", $issued_at, $expires_at);
     }

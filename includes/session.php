@@ -169,12 +169,14 @@ final class Session
      * @param int $id user id
      * @param string $nonce Nonce used for validation
      * @param int $expiration Timestamp when session will expire
+     * @param array $additionals The array to store in the additionals key
      * @return Response_Handler Response object
      */
 
-    public static function generate(string $name, int $id, string $nonce, int $expiration_time): Response_Handler
+    public static function generate(string $name, int $id, string $nonce, int $expiration_time, array $additionals = []): Response_Handler
     {
         // Delete any previous sessions with the same name and user id
+        
         global $wpdb;
         $table_name = Database::get_table_full_name(self::SESSIONS_TABLE_NAME);
 
@@ -197,6 +199,13 @@ final class Session
             'An error occurred while attempting to delete previous sessions.'
         );
 
+        // Check if additionals is an array
+        if (!is_array($additionals)) return Response_Handler::response(
+            false, 
+            500, 
+            'Additionals data must be an array when generating a session from the Session class.'
+        );
+
         // Set data for table row insert
         $data = [
             'name' => $name,
@@ -204,7 +213,7 @@ final class Session
             'nonce' => $nonce,
             'expiration_at' => $expiration_time,
             'updated_tally' => 0,
-            'additionals' => json_encode([])
+            'additionals' => json_encode($additionals)
         ];
 
         // Create session table row in sessions table
@@ -311,7 +320,7 @@ final class Session
      * 
      * @param string $name Name of the session
      * @param int $id User ID
-     * @param array $key The array to store in the additionals key
+     * @param array $updated_data The array to store in the additionals key
      * @return Response_Handler Response object containing session data or error details
      */
 
