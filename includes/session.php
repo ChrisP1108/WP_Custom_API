@@ -170,10 +170,11 @@ final class Session
      * @param string $nonce Nonce used for validation
      * @param int $expiration Timestamp when session will expire
      * @param array $additionals The array to store in the additionals key
+     * @param string|null $refresh_nonce Nonce used for refreshing the session
      * @return Response_Handler Response object
      */
 
-    public static function generate(string $name, int $id, string $nonce, int $expiration_time, array $additionals = []): Response_Handler
+    public static function generate(string $name, int $id, string $nonce, int $expiration_time, array $additionals = [], string|null $refresh_nonce = null): Response_Handler
     {
         // Delete any previous sessions with the same name and user id
         
@@ -211,6 +212,7 @@ final class Session
             'name' => $name,
             'user' => $id,
             'nonce' => $nonce,
+            'refresh_nonce' => $refresh_nonce,
             'expiration_at' => $expiration_time,
             'updated_tally' => 0,
             'additionals' => json_encode($additionals)
@@ -286,6 +288,16 @@ final class Session
         // Determine if retrieval was successful
         $ok = $user_session_data !== null;
 
+        // Check if session has expired
+        if ($ok && time() > intval($user_session_data['expiration_at'])) {
+            self::delete($name, $id);
+            return Response_Handler::response(
+                false,
+                401,
+                "Session has expired."
+            );
+        }
+
         // Object data
         $object_data = null;
 
@@ -321,10 +333,11 @@ final class Session
      * @param string $name Name of the session
      * @param int $id User ID
      * @param array $updated_data The array to store in the additionals key
+     * @param string|null $refresh_nonce Nonce used for refreshing the session
      * @return Response_Handler Response object containing session data or error details
      */
 
-    public static function update_additionals(string $name, int $id, array $updated_data): Response_Handler
+    public static function update_additionals(string $name, int $id, array $updated_data, string|null $refresh_nonce = null): Response_Handler
     {
         // Retrieve the session
         $update_session_data = self::get($name, $id);
@@ -356,9 +369,13 @@ final class Session
         $updated_expiration = max(1, intval($existing_data['expiration_at']) - time());
 
         $sql_update_data = $existing_data;
+
+        // Remove unnecessary data
         unset($sql_update_data['updated_at']);
         unset($sql_update_data['created_at']);
         unset($sql_update_data['id']);
+
+        $sql_update_data['refresh_nonce'] = $refresh_nonce;
 
         // Update session table row in sessions table
         $insert_session_result = Database::update_row(

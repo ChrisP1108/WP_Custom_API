@@ -73,7 +73,7 @@ final class Cookie {
      *
      * @param string $name The name of the cookie.
      * @param string $value The value of the cookie (leave empty to remove cookie).
-     * @param int $expires_at The expiration time of the cookie (in seconds).
+     * @param int $expires_at The expiration time of the cookie.
      * @param string $path The path on the server in which the cookie will be available (default is '/').
      * @param string $domain The domain that the cookie is available to (default is '').
      * @return Response_Handler A response handler object indicating success or failure.

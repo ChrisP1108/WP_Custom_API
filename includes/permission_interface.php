@@ -265,14 +265,17 @@ class Permission_Interface
         // Prefix the session name with the configured prefix
         $prefixed_name = Config::PREFIX . $name;
 
+        // Generate a refresh nonce
+        $refresh_nonce = bin2hex(random_bytes(16));
+
         // Generate the session data
-        $session_result = Session::generate($prefixed_name, $id, $nonce, $expiration_time, $additionals);
+        $session_result = Session::generate($prefixed_name, $id, $nonce, $expiration_time, $additionals, $refresh_nonce);
         
         // If an error occurred while creating the session data, return the error response
         if (!$session_result->ok) return $session_result;
 
         // Set the session nonce in a cookie
-        $cookie_result = Cookie::set($prefixed_name, $nonce, $expiration_time);
+        $cookie_result = Cookie::set($prefixed_name, $id . '.' . $nonce . '.' . $refresh_nonce, $expiration_time);
 
         // If an error occurred while setting the cookie, return the error response
         if (!$cookie_result->ok) return $cookie_result;
@@ -299,16 +302,71 @@ class Permission_Interface
         // Prefix the session name with the configured prefix
         $prefixed_name = Config::PREFIX . $name;
 
-        $existing_session_result = Session::update_additionals($prefixed_name, $id, $updated_data);
+        $cookie_result = Cookie::get($prefixed_name);
 
-        // If the session update failed, remove the cookie and return the error response
-        if (!$existing_session_result->ok) {
+        // If the cookie does not exist, return an error response
+        if (!$cookie_result->ok) return $cookie_result;
+
+        // Split the cookie value into parts
+        $cookie_value_split = explode('.', $cookie_result->data['value']);
+
+        // If the cookie value does not have 3 parts, return an error response
+        if (count($cookie_value_split) !== 3) return Response_Handler::response(
+            false, 
+            401, 
+            "Cookie value for session `" . $name . "` is invalid. Expected 3 values, received " . count($cookie_value_split)
+        );
+
+        [$cookie_id, $cookie_nonce, $cookie_refresh_nonce] = $cookie_value_split;
+
+        $check_existing_session = Session::get($prefixed_name, intval($cookie_id));
+
+        if (!$check_existing_session->ok) return $check_existing_session;
+
+        $existing_session_data = (array) $check_existing_session->data;
+
+        // If the cookie nonce does not match the session nonce, return an error response
+        if ($cookie_nonce !== $existing_session_data['nonce']) {
             Cookie::remove($prefixed_name);
-            return $existing_session_result;
+            Session::delete($prefixed_name, intval($cookie_id));
+            return Response_Handler::response(
+                false, 
+                401, 
+                "Cookie nonce for session `" . $name . "` does not match the session nonce."
+            );
+        }
+
+        // If the cookie refresh nonce does not match the session refresh nonce, return an error response
+        if ($cookie_refresh_nonce !== $existing_session_data['refresh_nonce']) {
+            Cookie::remove($prefixed_name);
+            Session::delete($prefixed_name, intval($cookie_id));
+            return Response_Handler::response(
+                false, 
+                401, 
+                "Cookie refresh nonce for session `" . $name . "` does not match the session refresh nonce."
+            );
+        }
+
+        // Generate a refresh nonce
+        $refresh_nonce = bin2hex(random_bytes(16));
+
+        $update_cookie_result = Cookie::set($prefixed_name, $cookie_id . '.' . $cookie_nonce . '.' . $refresh_nonce, $existing_session_data['expiration_time']);
+
+        // If the cookie update failed, return the error response
+        if (!$update_cookie_result->ok) return $update_cookie_result;
+
+        // Update the session data
+        $update_existing_session_result = Session::update_additionals($prefixed_name, intval($cookie_id), $updated_data, $refresh_nonce);
+
+        // If the session update failed, remove the cookie and existing session if it exsits and return the error response
+        if (!$update_existing_session_result->ok) {
+            Cookie::remove($prefixed_name);
+            Session::delete($prefixed_name, intval($cookie_id));
+            return $update_existing_session_result;
         }
 
         // Return the successful session update response
-        return $existing_session_result;
+        return $update_existing_session_result;
     }
 
     /**
