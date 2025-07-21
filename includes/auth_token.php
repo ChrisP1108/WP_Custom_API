@@ -162,7 +162,7 @@ final class Auth_Token
         $token = $iv_64 . '.' . $encrypted_data_64 . '.' . $hmac_64;
 
         // Check if the connection is using HTTPS
-        if (!wp_is_using_https() && Config::TOKEN_OVER_HTTPS_ONLY) return self::response(false, 500, $id, "Token could not be stored as a cookie on the client, as the `TOKEN_OVER_HTTPS_ONLY` config variable is set to true and the server is not using HTTPS.");
+        if (!wp_is_using_https() && Config::TOKEN_OVER_HTTPS_ONLY) return self::response(false, 500, $id, "Token of `" . $token_name . "` could not be stored as a cookie on the client, as the `TOKEN_OVER_HTTPS_ONLY` config variable is set to true and the server is not using HTTPS.");
 
         // Apply auth token prefix to token name
         $token_name_prefix = Config::AUTH_TOKEN_PREFIX . $token_name;
@@ -200,11 +200,11 @@ final class Auth_Token
         $token_name_prefix = Config::AUTH_TOKEN_PREFIX . $token_name;
 
         // Check if token exists
-        $token = $_COOKIE[$token_name_prefix] ?? null;
-        if (!$token) return self::response(false, 401, null, "No token with the name of `" . $token_name_prefix . "` was found.");
+        $token = Cookie::get($token_name_prefix);
+        if (!$token->ok) return self::response(false, 401, null, "No token with the name of `" . $token_name_prefix . "` was found.");
 
         // Split the token into encrypted data and HMAC and check that it is valid.
-        $token_split = explode(".", $token, 3);
+        $token_split = explode(".", $token->data['value'], 3);
         if(count($token_split) !== 3) return self::response(false, 401, null, "Inadequate data from existing token. May be invalid.");
 
         // Split token data into encrypted data and HMAC

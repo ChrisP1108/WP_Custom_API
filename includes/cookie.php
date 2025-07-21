@@ -22,9 +22,31 @@ final class Cookie {
      * @return Response_Handler A response handler object indicating success or failure.
      */
 
-    public static function set(string $name, string $value, int $expires_at = 0, string $path = '/', string $domain = ''): Response_Handler {
+    public static function set(string $name, string $value, int $expires_at = 0, string $path = '/', string $domain = ''): Response_Handler 
+    {
         // Delegate to the cookie setter method to handle cookie creation
         return self::cookie_setter($name, $value, $expires_at, $path, $domain);
+    }
+
+    /**
+     * METHOD - get
+     * 
+     * Get a cookie with the given name.
+     * 
+     * @param string $name The name of the cookie.
+     * @return Response_Handler A response handler object indicating success or failure.
+     */
+
+    public static function get(string $name): Response_Handler 
+    {
+        // Get the cookie from the $_COOKIE superglobal array
+        $cookie_result = $_COOKIE[$name] ?? null;
+
+        // Set the $ok variable to true if the cookie is found and false otherwise
+        $ok = $cookie_result !== null;
+
+        // Return a response handler object with the appropriate status code and message
+        return Response_Handler::response($ok, $ok ? 200 : 500, $ok ? 'Cookie `' . $name . '` found.' : 'Cookie `' . $name . '` not found.', ['value' => $cookie_result]);
     }
 
     /**
@@ -38,7 +60,8 @@ final class Cookie {
      * @return Response_Handler A response handler object indicating success or failure.
      */
 
-    public static function remove(string $name, string $path = '/', string $domain = ''): Response_Handler {
+    public static function remove(string $name, string $path = '/', string $domain = ''): Response_Handler 
+    {
         return self::cookie_setter($name, '', time() - 3600, $path, $domain);
     }
 
@@ -56,7 +79,8 @@ final class Cookie {
      * @return Response_Handler A response handler object indicating success or failure.
      */
 
-    private static function cookie_setter(string $name, string $value = '', int $expires_at = 0, string $path = '/', string $domain = ''): Response_Handler {
+    private static function cookie_setter(string $name, string $value = '', int $expires_at = 0, string $path = '/', string $domain = ''): Response_Handler 
+    {
         $cookie_result = setcookie($name, $value, 
             [
                 'expires' => $expires_at,

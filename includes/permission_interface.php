@@ -8,6 +8,7 @@ use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Password;
 use WP_Custom_API\Includes\Auth_Token;
 use WP_Custom_API\Includes\Session;
+use WP_Custom_API\Includes\Cookie;
 use WP_Custom_API\Includes\Response_Handler;
 use WP_Session_Tokens;
 
@@ -229,6 +230,121 @@ class Permission_Interface
 
         // Return token session data
         return $token_session_data;
+    }
+
+    /**
+     * METHOD - generate_custom_session
+     * 
+     * Generates a custom session and stores it as a cookie for the specified user.
+     *
+     * This method checks the HTTPS connection, generates a secure nonce for the session,
+     * and creates session data which is then stored as a cookie.
+     *
+     * @param string $name The name of the session.
+     * @param int $id The user ID for whom the session is generated.
+     * @param int $expiration_time The time at which the session should expire.
+     * @param array $additionals Any additional data to be stored with the session.
+     *
+     * @return Response_Handler The response of the session generation operation.
+     */
+
+    final public static function generate_custom_session(string $name, int $id, int $expiration_time, array $additionals = []): Response_Handler 
+    {
+        // Check if the connection is using HTTPS for secure cookie transmission
+        if (!wp_is_using_https() && Config::TOKEN_OVER_HTTPS_ONLY) {
+            return Response_Handler::response(
+                false, 
+                500, 
+                "Custom session of `" . $name . "` can not be stored as a cookie on the client, as the `TOKEN_OVER_HTTPS_ONLY` config variable is set to true and the server is not using HTTPS."
+            );
+        }
+
+        // Generate a secure random nonce for replay protection
+        $nonce = bin2hex(random_bytes(16));
+
+        // Prefix the session name with the configured prefix
+        $prefixed_name = Config::PREFIX . $name;
+
+        // Generate the session data
+        $session_result = Session::generate($prefixed_name, $id, $nonce, $expiration_time, $additionals);
+        
+        // If an error occurred while creating the session data, return the error response
+        if (!$session_result->ok) return $session_result;
+
+        // Set the session nonce in a cookie
+        $cookie_result = Cookie::set($prefixed_name, $nonce, $expiration_time);
+
+        // If an error occurred while setting the cookie, return the error response
+        if (!$cookie_result->ok) return $cookie_result;
+
+        // Return the successful session creation response
+        return $session_result;
+    }
+
+    /**
+     * METHOD - update_custom_session
+     * 
+     * Update a custom session. This method updates the session data stored in the database. If the session does not exist, it returns an error response.
+     * If the session exists, it updates the session data and returns a success response.
+     *
+     * @param string $name The name of the session to update.
+     * @param int $id The user ID for whom the session is updated.
+     * @param array $updated_data The updated session data.
+     *
+     * @return Response_Handler The response of the session update operation.
+     */
+
+    final public static function update_custom_session(string $name, int $id, array $updated_data): Response_Handler 
+    {
+        // Prefix the session name with the configured prefix
+        $prefixed_name = Config::PREFIX . $name;
+
+        $existing_session_result = Session::update_additionals($prefixed_name, $id, $updated_data);
+
+        // If the session update failed, remove the cookie and return the error response
+        if (!$existing_session_result->ok) {
+            Cookie::remove($prefixed_name);
+            return $existing_session_result;
+        }
+
+        // Return the successful session update response
+        return $existing_session_result;
+    }
+
+    /**
+     * METHOD - delete_custom_session
+     * 
+     * Delete a custom session by name and user ID.
+     *
+     * This method deletes the session data from the database and removes the cookie
+     * associated with the session.
+     *
+     * @param string $name The name of the session to delete.
+     * @param int $id The user ID for whom the session is deleted.
+     *
+     * @return Response_Handler The response of the session deletion operation.
+     */
+
+    final public static function delete_custom_session(string $name, int $id): Response_Handler 
+    {
+        // Prefix the session name with the configured prefix
+        $prefixed_name = Config::PREFIX . $name;
+
+        $existing_session_result = Session::delete($prefixed_name, $id);
+
+        // If the session deletion failed, remove the cookie and return the error response
+        if (!$existing_session_result->ok) {
+            Cookie::remove($prefixed_name);
+            return $existing_session_result;
+        }
+
+        $cookie_removal_result = Cookie::remove($prefixed_name);
+
+        // If the cookie removal failed, return the error response
+        if (!$cookie_removal_result->ok) return $cookie_removal_result;
+
+        // Return the successful session deletion response
+        return $existing_session_result;
     }
 
     /**
