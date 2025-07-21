@@ -275,7 +275,7 @@ class Permission_Interface
         if (!$session_result->ok) return $session_result;
 
         // Set the session nonce in a cookie
-        $cookie_result = Cookie::set($prefixed_name, $id . '.' . $nonce . '.' . $refresh_nonce, $expiration_time);
+        $cookie_result = Cookie::set($prefixed_name, base64_encode(strval($id)) . '.' . base64_encode($nonce) . '.' . base64_encode($refresh_nonce), $expiration_time);
 
         // If an error occurred while setting the cookie, return the error response
         if (!$cookie_result->ok) return $cookie_result;
@@ -317,7 +317,13 @@ class Permission_Interface
             "Cookie value for session `" . $name . "` is invalid. Expected 3 values, received " . count($cookie_value_split)
         );
 
+        // Split the cookie value into parts
         [$cookie_id, $cookie_nonce, $cookie_refresh_nonce] = $cookie_value_split;
+
+        // Decode the base64 values from the cookie value parts
+        $cookie_id = base64_decode($cookie_id, true);
+        $cookie_nonce = base64_decode($cookie_nonce, true);
+        $cookie_refresh_nonce = base64_decode($cookie_refresh_nonce, true);
 
         $check_existing_session = Session::get($prefixed_name, intval($cookie_id));
 
@@ -350,7 +356,7 @@ class Permission_Interface
         // Generate a refresh nonce
         $refresh_nonce = bin2hex(random_bytes(16));
 
-        $update_cookie_result = Cookie::set($prefixed_name, $cookie_id . '.' . $cookie_nonce . '.' . $refresh_nonce, $existing_session_data['expiration_time']);
+        $update_cookie_result = Cookie::set($prefixed_name, base64_encode($cookie_id) . '.' . base64_encode($cookie_nonce) . '.' . base64_encode($refresh_nonce), $existing_session_data['expiration_time']);
 
         // If the cookie update failed, return the error response
         if (!$update_cookie_result->ok) return $update_cookie_result;
