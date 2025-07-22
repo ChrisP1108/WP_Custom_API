@@ -31,6 +31,10 @@ final class Session
         [
             'query' => 'VARCHAR(255)'
         ],
+        'refresh_nonce' =>
+        [
+            'query' => 'VARCHAR(255)'
+        ],
         'expiration_at' =>
         [
             'query' => 'BIGINT(12)'
@@ -69,6 +73,7 @@ final class Session
      * @param string $name Name of the session.
      * @param int $user ID of the user associated with the session.
      * @param string $nonce Nonce used for additional validation.
+     * @param string $refresh_nonce Nonce used for refreshing the session.
      * @param int $created_at Timestamp when the session was first issued.
      * @param int $expiration_at Timestamp when the session will expire.
      * @param int $updated_tally Count of how many times the session has been updated.
@@ -81,6 +86,7 @@ final class Session
         public readonly string $name,
         public readonly int $user,
         public readonly string $nonce,
+        public readonly string $refresh_nonce,
         public readonly int $created_at,
         public readonly int $expiration_at,
         public int $updated_tally,
@@ -241,6 +247,7 @@ final class Session
             $name,
             $id,
             $nonce,
+            $refresh_nonce,
             time(),
             $expiration_time,
             0,
@@ -290,7 +297,21 @@ final class Session
 
         // Check if session has expired
         if ($ok && time() > intval($user_session_data['expiration_at'])) {
-            self::delete($name, $id);
+
+            // Delete expired session
+            $delete_session_result = Database::delete_row(
+                self::SESSIONS_TABLE_NAME,
+                $user_session_data['id']
+            );
+
+            // Check if deletion was successful
+            if (!$delete_session_result->ok) return Response_Handler::response(
+                false,
+                500,
+                "An error occurred while attempting to delete expired session."
+            );
+
+            // Session has expired return response
             return Response_Handler::response(
                 false,
                 401,
@@ -308,6 +329,7 @@ final class Session
                 $user_session_data['name'],
                 intval($user_session_data['user']),
                 $user_session_data['nonce'],
+                $user_session_data['refresh_nonce'],
                 strtotime($user_session_data['created_at']),
                 intval($user_session_data['expiration_at']),
                 intval($user_session_data['updated_tally']),
@@ -326,7 +348,7 @@ final class Session
     }
 
     /**
-     * METHOD - update_additionals
+     * METHOD - update
      * 
      * Retrieves the session, updates the additional data, and then saves the session.
      * 
@@ -337,7 +359,7 @@ final class Session
      * @return Response_Handler Response object containing session data or error details
      */
 
-    public static function update_additionals(string $name, int $id, array $updated_data, string|null $refresh_nonce = null): Response_Handler
+    public static function update(string $name, int $id, array $updated_data, string|null $refresh_nonce = null): Response_Handler
     {
         // Retrieve the session
         $update_session_data = self::get($name, $id);
@@ -364,9 +386,6 @@ final class Session
 
         // Update additionals data
         $existing_data['additionals'] = json_encode($updated_data);
-
-        // Update expiration time
-        $updated_expiration = max(1, intval($existing_data['expiration_at']) - time());
 
         $sql_update_data = $existing_data;
 
@@ -397,10 +416,11 @@ final class Session
                 $existing_data['name'],
                 intval($existing_data['user']),
                 $existing_data['nonce'],
+                $refresh_nonce,
                 intval($existing_data['created_at']),
                 intval($existing_data['expiration_at']),
                 intval($existing_data['updated_tally']),
-                $updated_expiration,
+                intval($existing_data['updated_at']),
                 json_decode($existing_data['additionals'], true) ?? []
             );
         }

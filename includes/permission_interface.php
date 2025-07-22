@@ -192,7 +192,7 @@ class Permission_Interface
         $token_prefixed = Config::AUTH_TOKEN_PREFIX . $token_name;
 
         // Update the session additionals and return the response
-        return Session::update_additionals($token_prefixed, $id, $updated_data);
+        return Session::update($token_prefixed, $id, $updated_data);
     }
 
     /**
@@ -308,7 +308,7 @@ class Permission_Interface
         if (!$cookie_result->ok) return $cookie_result;
 
         // Split the cookie value into parts
-        $cookie_value_split = explode('.', $cookie_result->data['value']);
+        $cookie_value_split = explode('.', $cookie_result->data['value'], 3);
 
         // If the cookie value does not have 3 parts, return an error response
         if (count($cookie_value_split) !== 3) return Response_Handler::response(
@@ -362,7 +362,7 @@ class Permission_Interface
         if (!$update_cookie_result->ok) return $update_cookie_result;
 
         // Update the session data
-        $update_existing_session_result = Session::update_additionals($prefixed_name, intval($cookie_id), $updated_data, $refresh_nonce);
+        $update_existing_session_result = Session::update($prefixed_name, intval($cookie_id), $updated_data, $refresh_nonce);
 
         // If the session update failed, remove the cookie and existing session if it exsits and return the error response
         if (!$update_existing_session_result->ok) {
