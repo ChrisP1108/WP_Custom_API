@@ -315,8 +315,11 @@ final class Auth_Token
         // Base 64 decode refresh cookie value
         $refresh_cookie_value = base64_decode($refresh_cookie->data['value'], true);
 
+        // Convert session data to array
+        $session_data = (array) $session_data->data;
+
         // Check if refresh cookie value matches session data refresh nonce value
-        if ($refresh_cookie_value !== $session_data->data['refresh_nonce']) {
+        if ($refresh_cookie_value !== $session_data['refresh_nonce']) {
             self::remove_token($token_name_prefix, $id);
             return self::response(false, 401, null, "Invalid refresh token for token name of `" . $token_name_prefix . "`.");
         }
@@ -325,13 +328,13 @@ final class Auth_Token
         $updated_refresh_cookie_value = bin2hex(random_bytes(16));
 
         // Update refresh cookie value
-        $updated_refresh_cookie = Cookie::set($token_name_prefix . '_refresh', base64_encode($updated_refresh_cookie_value), $session_data->data['expiration_at']);
+        $updated_refresh_cookie = Cookie::set($token_name_prefix . '_refresh', base64_encode($updated_refresh_cookie_value), intval($session_data['expiration_at']));
 
         // If an error occurred while updating the refresh cookie, return the error response
         if (!$updated_refresh_cookie->ok) return $updated_refresh_cookie;
 
         // Update session data for new refresh nonce
-        $updated_session_data = Session::update($token_name_prefix, $id, $session_data->data['additionals'], $updated_refresh_cookie_value);
+        $updated_session_data = Session::update($token_name_prefix, $id, $session_data['additionals'], $updated_refresh_cookie_value);
 
         // If an error occurred while updating the session data, return the error response
         if (!$updated_session_data->ok) return $updated_session_data;

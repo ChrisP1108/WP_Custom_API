@@ -327,7 +327,10 @@ class Permission_Interface
 
         $check_existing_session = Session::get($prefixed_name, intval($cookie_id));
 
-        if (!$check_existing_session->ok) return $check_existing_session;
+        if (!$check_existing_session->ok) {
+            Cookie::remove($prefixed_name);
+            return $check_existing_session;
+        }
 
         $existing_session_data = (array) $check_existing_session->data;
 
@@ -356,7 +359,7 @@ class Permission_Interface
         // Generate a refresh nonce
         $refresh_nonce = bin2hex(random_bytes(16));
 
-        $update_cookie_result = Cookie::set($prefixed_name, base64_encode($cookie_id) . '.' . base64_encode($cookie_nonce) . '.' . base64_encode($refresh_nonce), $existing_session_data['expiration_time']);
+        $update_cookie_result = Cookie::set($prefixed_name, base64_encode($cookie_id) . '.' . base64_encode($cookie_nonce) . '.' . base64_encode($refresh_nonce), $existing_session_data['expiration_at']);
 
         // If the cookie update failed, return the error response
         if (!$update_cookie_result->ok) return $update_cookie_result;
