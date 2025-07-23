@@ -29,15 +29,15 @@ final class Session
         ],
         'nonce' =>
         [
-            'query' => 'VARCHAR(255)'
+            'query' => 'VARBINARY(100)'
         ],
         'refresh_nonce' =>
         [
-            'query' => 'VARCHAR(255)'
+            'query' => 'VARBINARY(100)'
         ],
         'header_nonce' =>
         [
-            'query' => 'VARCHAR(255)'
+            'query' => 'VARBINARY(100)'
         ],
         'expiration_at' =>
         [

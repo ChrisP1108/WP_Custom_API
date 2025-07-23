@@ -199,7 +199,7 @@ final class Database
             }
             $pattern = '/^
             (?:
-                    (?:TINYINT|INT|MEDIUMINT|BIGINT|VARCHAR|TEXT|LONGTEXT|JSON|BOOLEAN)
+                    (?:TINYINT|INT|MEDIUMINT|BIGINT|VARBINARY|BINARY|VARCHAR|TEXT|LONGTEXT|JSON|BOOLEAN)
                     (?:\(\d+\))?
                 )
                 (?:\s+UNSIGNED)?
@@ -527,15 +527,19 @@ final class Database
             }
 
             $type = strtoupper($col['Type']);
-            if (preg_match('/^INT/i', $type)) {
+            if (preg_match('/^(?:TINY|SMALL|MEDIUM|BIG)?INT/i', $type)) {
                 $query_type = 'INT';
             } elseif (preg_match('/^VARCHAR\((\d+)\)/i', $type, $m)) {
                 $query_type = "VARCHAR({$m[1]})";
+            } elseif (preg_match('/^(VAR)?BINARY\((\d+)\)/i', $type, $m)) {
+                // m[1] is "VAR" or empty
+                $query_type = ($m[1] ? 'VARBINARY' : 'BINARY') . "({$m[2]})";
             } elseif (strpos($type, 'TEXT') === 0) {
                 $query_type = 'TEXT';
+            } elseif (preg_match('/^BLOB/i', $type)) {
+                $query_type = 'BLOB';
             } else {
-                // if you hit something you don’t support, skip it
-                continue;
+                continue; // unsupported type
             }
 
             $schema[$name] = [
