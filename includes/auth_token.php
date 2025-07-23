@@ -187,7 +187,7 @@ final class Auth_Token
         // Store the nonce server-side into the sessions table to validate later through Session::generate method
         $session = Session::generate($token_name_prefix, $id, $nonce, $expires_at, [], $refresh_nonce, $header_nonce);
         
-        if (!$session->ok) return self::response(false, 500, $id, "There was an error storing the token session data.");    
+        if (!$session->ok) return self::response(false, 500, $id, "There was an error storing the token session data.");
 
         // Set the token as a cookie in the browser
         $cookie_result = Cookie::set($token_name_prefix, $token, $expires_at);

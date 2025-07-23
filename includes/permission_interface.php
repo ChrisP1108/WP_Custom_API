@@ -122,14 +122,15 @@ class Permission_Interface
     * a logout time is specified.
     *
     * @param string $token_name The token name to validate.
+    * @param bool $validate_header_nonce - Optional parameter to validate the header nonce.
     * @param int $logout_time The time when the token should be invalidated (optional).
     *
     * @return Response_Handler The response of the token_validate operation.
     */
 
-    final public static function token_validate(string $token_name, int $logout_time = 0): Response_Handler 
+    final public static function token_validate(string $token_name, bool $validate_header_nonce = false,int $logout_time = 0): Response_Handler 
     {
-        return Auth_Token::validate($token_name, $logout_time);
+        return Auth_Token::validate($token_name, $validate_header_nonce, $logout_time);
     }
 
     /**
@@ -204,15 +205,16 @@ class Permission_Interface
      * associated session data for the given token name and user ID.
      *
      * @param string $token_name The name of the token to parse.
+     * @param bool $validate_header_nonce - Optional parameter to validate the header nonce.
      * @param int $logout_time The time at which the token should expire.
      *
      * @return Response_Handler The response of the token parse operation.
      */
 
-    final public static function token_parser(string $token_name, int $logout_time = 0): Response_Handler
+    final public static function token_parser(string $token_name, bool $validate_header_nonce = false, int $logout_time = 0): Response_Handler
     {
         // Validate token and get the id if valid.
-        $token_validate = Auth_Token::validate($token_name, $logout_time);
+        $token_validate = Auth_Token::validate($token_name, $validate_header_nonce, $logout_time);
 
         // If token is invalid, return error
         if (!$token_validate->ok) return $token_validate;
@@ -268,8 +270,11 @@ class Permission_Interface
         // Generate a refresh nonce
         $refresh_nonce = bin2hex(random_bytes(16));
 
+        // Set header nonce
+        $header_nonce = bin2hex(random_bytes(16));
+
         // Generate the session data
-        $session_result = Session::generate($prefixed_name, $id, $nonce, $expiration_time, $additionals, $refresh_nonce);
+        $session_result = Session::generate($prefixed_name, $id, $nonce, $expiration_time, $additionals, $refresh_nonce, $header_nonce);
         
         // If an error occurred while creating the session data, return the error response
         if (!$session_result->ok) return $session_result;
@@ -279,6 +284,9 @@ class Permission_Interface
 
         // If an error occurred while setting the cookie, return the error response
         if (!$cookie_result->ok) return $cookie_result;
+
+        // Set header for header nonce
+        header(Config::HEADER_NONCE_PREFIX . ': ' . $header_nonce);
 
         // Return the successful session creation response
         return $session_result;
@@ -292,12 +300,13 @@ class Permission_Interface
      *
      * @param string $name The name of the session to update.
      * @param int $id The user ID for whom the session is updated.
+     * @param bool $validate_header_nonce - Optional parameter to validate the header nonce.
      * @param array $updated_data The updated session data.
      *
      * @return Response_Handler The response of the session update operation.
      */
 
-    final public static function update_custom_session(string $name, int $id, array $updated_data): Response_Handler 
+    final public static function update_custom_session(string $name, int $id, bool $validate_header_nonce = false, array $updated_data): Response_Handler 
     {
         // Prefix the session name with the configured prefix
         $prefixed_name = Config::PREFIX . $name;
@@ -334,6 +343,17 @@ class Permission_Interface
 
         $existing_session_data = (array) $check_existing_session->data;
 
+        if ($validate_header_nonce) {
+            $header_nonce = $_SERVER[Config::HEADER_NONCE_PREFIX] ?? null;
+            if (!$header_nonce ||$header_nonce !== $existing_session_data['header_nonce']) {
+                return Response_Handler::response(
+                    false, 
+                    401, 
+                    "Header nonce for session `" . $name . "` does not match the session header nonce."
+                );
+            }
+        }
+
         // If the cookie nonce does not match the session nonce, return an error response
         if ($cookie_nonce !== $existing_session_data['nonce']) {
             Cookie::remove($prefixed_name);
@@ -364,8 +384,11 @@ class Permission_Interface
         // If the cookie update failed, return the error response
         if (!$update_cookie_result->ok) return $update_cookie_result;
 
+        // Regenerate header nonce value
+        $updated_header_nonce_value = bin2hex(random_bytes(16));
+
         // Update the session data
-        $update_existing_session_result = Session::update($prefixed_name, intval($cookie_id), $updated_data, $refresh_nonce);
+        $update_existing_session_result = Session::update($prefixed_name, intval($cookie_id), $updated_data, $refresh_nonce, $updated_header_nonce_value);
 
         // If the session update failed, remove the cookie and existing session if it exsits and return the error response
         if (!$update_existing_session_result->ok) {
@@ -373,6 +396,9 @@ class Permission_Interface
             Session::delete($prefixed_name, intval($cookie_id));
             return $update_existing_session_result;
         }
+
+        // Reset header for header nonce
+        header(Config::HEADER_NONCE_PREFIX . ': ' . $updated_header_nonce_value);
 
         // Return the successful session update response
         return $update_existing_session_result;
