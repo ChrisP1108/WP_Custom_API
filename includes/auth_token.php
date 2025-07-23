@@ -184,6 +184,9 @@ final class Auth_Token
         // Set header nonce
         $header_nonce = bin2hex(random_bytes(16));
 
+        // Hash nonce
+        $nonce_hash = hash_hmac('sha256', $nonce, Config::DB_SESSION_SECRET_KEY, true);
+
         // Hash refresh nonce
         $refresh_nonce_hash = hash_hmac('sha256', $refresh_nonce, Config::DB_SESSION_SECRET_KEY, true);
 
@@ -191,7 +194,7 @@ final class Auth_Token
         $header_nonce_hash = hash_hmac('sha256', $header_nonce, Config::DB_SESSION_SECRET_KEY, true);
 
         // Store the nonce server-side into the sessions table to validate later through Session::generate method
-        $session = Session::generate($token_name_prefix, $id, $nonce, $expires_at, [], $refresh_nonce_hash, $header_nonce_hash);
+        $session = Session::generate($token_name_prefix, $id, $nonce_hash, $expires_at, [], $refresh_nonce_hash, $header_nonce_hash);
         
         if (!$session->ok) return self::response(false, 500, $id, "There was an error storing the token session data.");
 
