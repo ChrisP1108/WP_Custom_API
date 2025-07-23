@@ -346,7 +346,7 @@ class Permission_Interface
         if ($validate_header_nonce) {
             $headers_lowercased = array_change_key_case(getallheaders(), CASE_LOWER);
             $header_nonce_value = $headers_lowercased[strtolower(Config::HEADER_NONCE_PREFIX)] ?? null;
-            if (!$header_nonce_value ||$header_nonce_value !== $existing_session_data['header_nonce']) {
+            if (!$header_nonce_value || $header_nonce_value !== $existing_session_data['header_nonce']) {
                 return Response_Handler::response(
                     false, 
                     401, 
