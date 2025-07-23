@@ -75,6 +75,15 @@ final class Config
     /**
      * CONSTANT
      * 
+     * @const string HEADER_NONCE_PREFIX
+     * Sets a prefix name for a header key name for header nonces for authentication..
+     */
+
+    public const HEADER_NONCE_PREFIX = 'WP-CUSTOM-API-NONCE';
+
+    /**
+     * CONSTANT
+     * 
      * @const int PASSWORD_SETTINGS
      * Sets the password settings for the Password class.
      */

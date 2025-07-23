@@ -181,8 +181,11 @@ final class Auth_Token
 
         if (!$refresh_cookie_result->ok) return self::response(false, 500, $id, "Token was generated but could not be stored as a cookie in the browser. Headers may have already been sent.");
 
+        // Set header nonce
+        $header_nonce = bin2hex(random_bytes(16));
+
         // Store the nonce server-side into the sessions table to validate later through Session::generate method
-        $session = Session::generate($token_name_prefix, $id, $nonce, $expires_at, [], $refresh_nonce);
+        $session = Session::generate($token_name_prefix, $id, $nonce, $expires_at, [], $refresh_nonce, $header_nonce);
         
         if (!$session->ok) return self::response(false, 500, $id, "There was an error storing the token session data.");    
 
@@ -191,6 +194,9 @@ final class Auth_Token
 
         if (!$cookie_result->ok) return self::response(false, 500, $id, "Token was generated but could not be stored as a cookie in the browser. Headers may have already been sent.");
 
+        // Set header for header nonce
+        header(Config::HEADER_NONCE_PREFIX . ': ' . $header_nonce);
+        
         return self::response(true, 200, $id, "Token successfully generated.", $issued_at, $expires_at);
     }
 
@@ -200,12 +206,13 @@ final class Auth_Token
      * Checks that token is valid.  If not, cookie is removed and false value is returned
      * 
      * @param string $token_name - Name of token to verify. Stored as http only cookie with the same name
+     * @param bool $validate_header_nonce - Optional parameter to validate the header nonce.
      * @param int|null $logout_time - Optional timestamp of the user's last logout.
      * 
      * @return Response_Handler The response of the token validate operation from the self::response() method.
      */
 
-    public static function validate(string $token_name, int $logout_time = 0): Response_Handler
+    public static function validate(string $token_name, bool $validate_header_nonce = false, int $logout_time = 0): Response_Handler
     {
         // Check if token name was provided.  If not return error
         if (!$token_name) return self::response(false, 500, null, "A token name must be provided for validation.");
@@ -288,35 +295,39 @@ final class Auth_Token
 
         // Retrieve and validate nonce
         $session_data = Session::get($token_name_prefix, $id);
-        $nonce_value = null;
-        $session_expiration_at = 0;
 
-        // Check if session data exists
-        if (is_object($session_data->data)) {
-            $nonce_value = $session_data->data->nonce ?? null;
-            $session_expiration_at = $session_data->data->expiration_at ?? 0;
-        } else {
-            $nonce_value = $session_data->data['nonce'] ?? null;
-            $session_expiration_at = $session_data->data['expiration_at'] ?? 0;
+        // Check if session data retrieval was successful
+        if (!$session_data->ok) {
+            self::remove_token($token_name_prefix, $id);
+            return self::response(false, 401, null, "Unable to retrieve session data for token name of `" . $token_name_prefix . "`.");
         }
 
+        // Convert session data to array
+        $session_data = (array) $session_data->data;
+
         // Check if nonce is valid
-        if (!$nonce_value || $nonce_value !== $nonce) {
+        if (!$session_data['nonce'] || $session_data['nonce'] !== $nonce) {
             self::remove_token($token_name_prefix, $id);
             return self::response(false, 401, null, "Invalid, replayed token, or session data for token name of `" . $token_name_prefix . "` is missing.");
         }
 
+        // Check if header nonce is valid if validate_header_nonce is set to true
+        if ($validate_header_nonce) {
+            $header_nonce_value = $_SERVER[Config::HEADER_NONCE_PREFIX] ?? null;
+            if (!$header_nonce_value || $header_nonce_value !== $session_data['header_nonce']) {
+                self::remove_token($token_name_prefix, $id);
+                return self::response(false, 401, null, "Invalid header nonce for token name of `" . $token_name_prefix . "`.");
+            }
+        }
+
         // Check if session data is expired
-        if ($session_expiration_at <= time()) {
+        if ($session_data['expiration_at'] <= time()) {
             self::remove_token($token_name_prefix, $id);
             return self::response(false, 401, null, "Session data for token name of `" . $token_name_prefix . "` has expired.");
         }
 
         // Base 64 decode refresh cookie value
         $refresh_cookie_value = base64_decode($refresh_cookie->data['value'], true);
-
-        // Convert session data to array
-        $session_data = (array) $session_data->data;
 
         // Check if refresh cookie value matches session data refresh nonce value
         if ($refresh_cookie_value !== $session_data['refresh_nonce']) {
@@ -333,11 +344,20 @@ final class Auth_Token
         // If an error occurred while updating the refresh cookie, return the error response
         if (!$updated_refresh_cookie->ok) return $updated_refresh_cookie;
 
+        // Regenerate header nonce value
+        $updated_header_nonce_value = bin2hex(random_bytes(16));
+
         // Update session data for new refresh nonce
-        $updated_session_data = Session::update($token_name_prefix, $id, $session_data['additionals'], $updated_refresh_cookie_value);
+        $updated_session_data = Session::update($token_name_prefix, $id, $session_data['additionals'], $updated_refresh_cookie_value, $updated_header_nonce_value);
 
         // If an error occurred while updating the session data, return the error response
-        if (!$updated_session_data->ok) return $updated_session_data;
+        if (!$updated_session_data->ok) {
+            self::remove_token($token_name_prefix, $id);
+            return $updated_session_data;
+        }
+
+        // Reset header for header nonce
+        header(Config::HEADER_NONCE_PREFIX . ': ' . $updated_header_nonce_value);
 
         // Token is valid
         return self::response(true, 200, $id, "Token authenticated.", $issued_at, $expiration_at);

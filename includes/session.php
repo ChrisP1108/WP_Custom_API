@@ -35,6 +35,10 @@ final class Session
         [
             'query' => 'VARCHAR(255)'
         ],
+        'header_nonce' =>
+        [
+            'query' => 'VARCHAR(255)'
+        ],
         'expiration_at' =>
         [
             'query' => 'BIGINT(12)'
@@ -74,6 +78,7 @@ final class Session
      * @param int $user ID of the user associated with the session.
      * @param string $nonce Nonce used for additional validation.
      * @param string $refresh_nonce Nonce used for refreshing the session.
+     * @param string $header_nonce Nonce used for refreshing and validating the session in the request header.
      * @param int $created_at Timestamp when the session was first issued.
      * @param int $expiration_at Timestamp when the session will expire.
      * @param int $updated_tally Count of how many times the session has been updated.
@@ -87,6 +92,7 @@ final class Session
         public readonly int $user,
         public readonly string $nonce,
         public readonly string $refresh_nonce,
+        public readonly string $header_nonce,
         public readonly int $created_at,
         public readonly int $expiration_at,
         public int $updated_tally,
@@ -176,11 +182,12 @@ final class Session
      * @param string $nonce Nonce used for validation
      * @param int $expiration Timestamp when session will expire
      * @param array $additionals The array to store in the additionals key
-     * @param string|null $refresh_nonce Nonce used for refreshing the session
+     * @param string $refresh_nonce Nonce used for refreshing the session
+     * @param string $header_nonce Nonce used for refreshing the session in the request header
      * @return Response_Handler Response object
      */
 
-    public static function generate(string $name, int $id, string $nonce, int $expiration_time, array $additionals = [], string|null $refresh_nonce = null): Response_Handler
+    public static function generate(string $name, int $id, string $nonce, int $expiration_time, array $additionals = [], string $refresh_nonce = '', string $header_nonce = ''): Response_Handler
     {
         // Delete any previous sessions with the same name and user id
         
@@ -219,6 +226,7 @@ final class Session
             'user' => $id,
             'nonce' => $nonce,
             'refresh_nonce' => $refresh_nonce,
+            'header_nonce' => $header_nonce,
             'expiration_at' => $expiration_time,
             'updated_tally' => 0,
             'additionals' => json_encode($additionals)
@@ -248,6 +256,7 @@ final class Session
             $id,
             $nonce,
             $refresh_nonce,
+            $header_nonce,
             time(),
             $expiration_time,
             0,
@@ -330,6 +339,7 @@ final class Session
                 intval($user_session_data['user']),
                 $user_session_data['nonce'],
                 $user_session_data['refresh_nonce'],
+                $user_session_data['header_nonce'],
                 strtotime($user_session_data['created_at']),
                 intval($user_session_data['expiration_at']),
                 intval($user_session_data['updated_tally']),
@@ -355,11 +365,12 @@ final class Session
      * @param string $name Name of the session
      * @param int $id User ID
      * @param array $updated_data The array to store in the additionals key
-     * @param string|null $refresh_nonce Nonce used for refreshing the session
+     * @param string $refresh_nonce Nonce used for refreshing the session
+     * @param string $header_nonce Nonce used for refreshing the session in the request header
      * @return Response_Handler Response object containing session data or error details
      */
 
-    public static function update(string $name, int $id, array $updated_data, string|null $refresh_nonce = null): Response_Handler
+    public static function update(string $name, int $id, array $updated_data, string $refresh_nonce = '', string $header_nonce = ''): Response_Handler
     {
         // Retrieve the session
         $update_session_data = self::get($name, $id);
@@ -395,6 +406,7 @@ final class Session
         unset($sql_update_data['id']);
 
         $sql_update_data['refresh_nonce'] = $refresh_nonce;
+        $sql_update_data['header_nonce'] = $header_nonce;
 
         // Update session table row in sessions table
         $insert_session_result = Database::update_row(
@@ -417,6 +429,7 @@ final class Session
                 intval($existing_data['user']),
                 $existing_data['nonce'],
                 $refresh_nonce,
+                $header_nonce,
                 intval($existing_data['created_at']),
                 intval($existing_data['expiration_at']),
                 intval($existing_data['updated_tally']),
