@@ -48,6 +48,15 @@ final class Config
     /**
      * CONSTANT
      * 
+     * @const string DB_SESSION_SECRET_KEY
+     * Secret key used for database nonce hash generation
+     */
+
+    public const DB_SESSION_SECRET_KEY = 'df16db6e6d82895228abfae40bcb420acc0b1fe4f9bc2bff8c978cf215e42176';
+
+    /**
+     * CONSTANT
+     * 
      * @const string SECRET_KEY
      * Secret key used for auth token generation
      */

@@ -405,6 +405,7 @@ final class Session
         unset($sql_update_data['created_at']);
         unset($sql_update_data['id']);
 
+        // Add refresh and header nonces
         $sql_update_data['refresh_nonce'] = $refresh_nonce;
         $sql_update_data['header_nonce'] = $header_nonce;
 

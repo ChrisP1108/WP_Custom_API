@@ -264,6 +264,9 @@ class Permission_Interface
         // Generate a secure random nonce for replay protection
         $nonce = bin2hex(random_bytes(16));
 
+        // Hash the nonce
+        $nonce_hash = hash_hmac('sha256', $nonce, Config::DB_SESSION_SECRET_KEY, true);
+
         // Prefix the session name with the configured prefix
         $prefixed_name = Config::PREFIX . $name;
 
@@ -273,8 +276,14 @@ class Permission_Interface
         // Set header nonce
         $header_nonce = bin2hex(random_bytes(16));
 
+        // Hash refresh nonce
+        $refresh_nonce_hash = hash_hmac('sha256', $refresh_nonce, Config::DB_SESSION_SECRET_KEY, true);
+
+        // Hash header nonce
+        $header_nonce_hash = hash_hmac('sha256', $header_nonce, Config::DB_SESSION_SECRET_KEY, true);
+
         // Generate the session data
-        $session_result = Session::generate($prefixed_name, $id, $nonce, $expiration_time, $additionals, $refresh_nonce, $header_nonce);
+        $session_result = Session::generate($prefixed_name, $id, $nonce_hash, $expiration_time, $additionals, $refresh_nonce_hash, $header_nonce_hash);
         
         // If an error occurred while creating the session data, return the error response
         if (!$session_result->ok) return $session_result;
@@ -346,7 +355,20 @@ class Permission_Interface
         if ($validate_header_nonce) {
             $headers_lowercased = array_change_key_case(getallheaders(), CASE_LOWER);
             $header_nonce_value = $headers_lowercased[strtolower(Config::HEADER_NONCE_PREFIX)] ?? null;
-            if (!$header_nonce_value || $header_nonce_value !== $existing_session_data['header_nonce']) {
+
+            // If the header nonce value is not found, return an error response
+            if (!$header_nonce_value) {
+                return Response_Handler::response(
+                    false, 
+                    401, 
+                    "Header nonce for session `" . $name . "` not found."
+                );
+            }
+
+            // Hash header nonce
+            $hashed_header_nonce_value = hash_hmac('sha256', $header_nonce_value, Config::DB_SESSION_SECRET_KEY, true);
+
+            if (!hash_equals($existing_session_data['header_nonce'], $hashed_header_nonce_value)) {
                 return Response_Handler::response(
                     false, 
                     401, 
@@ -355,8 +377,11 @@ class Permission_Interface
             }
         }
 
+        // Hash the cookie nonce
+        $hashed_cookie_nonce = hash_hmac('sha256', $cookie_nonce, Config::DB_SESSION_SECRET_KEY, true);
+
         // If the cookie nonce does not match the session nonce, return an error response
-        if ($cookie_nonce !== $existing_session_data['nonce']) {
+        if (!hash_equals($existing_session_data['nonce'], $hashed_cookie_nonce)) {
             Cookie::remove($prefixed_name);
             Session::delete($prefixed_name, intval($cookie_id));
             return Response_Handler::response(
@@ -366,8 +391,11 @@ class Permission_Interface
             );
         }
 
+        // Hash cookie refresh nonce
+        $hashed_cookie_refresh_nonce = hash_hmac('sha256', $cookie_refresh_nonce, Config::DB_SESSION_SECRET_KEY, true);
+
         // If the cookie refresh nonce does not match the session refresh nonce, return an error response
-        if ($cookie_refresh_nonce !== $existing_session_data['refresh_nonce']) {
+        if (!hash_equals($existing_session_data['refresh_nonce'], $hashed_cookie_refresh_nonce)) {
             Cookie::remove($prefixed_name);
             Session::delete($prefixed_name, intval($cookie_id));
             return Response_Handler::response(
@@ -388,8 +416,14 @@ class Permission_Interface
         // Regenerate header nonce value
         $updated_header_nonce_value = bin2hex(random_bytes(16));
 
+        // Hash regenerated refresh nonce
+        $hashed_refresh_nonce = hash_hmac('sha256', $refresh_nonce, Config::DB_SESSION_SECRET_KEY, true);
+
+        // Hash regenerated header nonce value
+        $hashed_header_nonce_value = hash_hmac('sha256', $updated_header_nonce_value, Config::DB_SESSION_SECRET_KEY, true);
+
         // Update the session data
-        $update_existing_session_result = Session::update($prefixed_name, intval($cookie_id), $updated_data, $refresh_nonce, $updated_header_nonce_value);
+        $update_existing_session_result = Session::update($prefixed_name, intval($cookie_id), $updated_data, $hashed_refresh_nonce, $hashed_header_nonce_value);
 
         // If the session update failed, remove the cookie and existing session if it exsits and return the error response
         if (!$update_existing_session_result->ok) {

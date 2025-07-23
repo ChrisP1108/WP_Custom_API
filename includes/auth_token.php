@@ -184,8 +184,14 @@ final class Auth_Token
         // Set header nonce
         $header_nonce = bin2hex(random_bytes(16));
 
+        // Hash refresh nonce
+        $refresh_nonce_hash = hash_hmac('sha256', $refresh_nonce, Config::DB_SESSION_SECRET_KEY, true);
+
+        // Hash header nonce
+        $header_nonce_hash = hash_hmac('sha256', $header_nonce, Config::DB_SESSION_SECRET_KEY, true);
+
         // Store the nonce server-side into the sessions table to validate later through Session::generate method
-        $session = Session::generate($token_name_prefix, $id, $nonce, $expires_at, [], $refresh_nonce, $header_nonce);
+        $session = Session::generate($token_name_prefix, $id, $nonce, $expires_at, [], $refresh_nonce_hash, $header_nonce_hash);
         
         if (!$session->ok) return self::response(false, 500, $id, "There was an error storing the token session data.");
 
@@ -293,7 +299,7 @@ final class Auth_Token
             return self::response(false, 401, null, "Token was issued before or at the last logout time.");
         }
 
-        // Retrieve and validate nonce
+        // Retrieve session data
         $session_data = Session::get($token_name_prefix, $id);
 
         // Check if session data retrieval was successful
@@ -305,8 +311,11 @@ final class Auth_Token
         // Convert session data to array
         $session_data = (array) $session_data->data;
 
+        // Hash nonce for validation
+        $hashed_nonce = hash_hmac('sha256', $nonce, Config::DB_SESSION_SECRET_KEY, true);
+
         // Check if nonce is valid
-        if (!$session_data['nonce'] || $session_data['nonce'] !== $nonce) {
+        if (!hash_equals($session_data['nonce'], $hashed_nonce)) {
             self::remove_token($token_name_prefix, $id);
             return self::response(false, 401, null, "Invalid, replayed token, or session data for token name of `" . $token_name_prefix . "` is missing.");
         }
@@ -315,7 +324,18 @@ final class Auth_Token
         if ($validate_header_nonce) {
             $headers_lowercased = array_change_key_case(getallheaders(), CASE_LOWER);
             $header_nonce_value = $headers_lowercased[strtolower(Config::HEADER_NONCE_PREFIX)] ?? null;
-            if (!$header_nonce_value || $header_nonce_value !== $session_data['header_nonce']) {
+
+            // Check if header nonce is missing. If so, remove token
+            if (!$header_nonce_value) {
+                self::remove_token($token_name_prefix, $id);
+                return self::response(false, 401, null, "Header nonce for token name of `" . $token_name_prefix . "` is missing.");
+            }
+
+            // Hash header nonce
+            $hashed_header_nonce_value = hash_hmac('sha256', $header_nonce_value, Config::DB_SESSION_SECRET_KEY, true);
+
+            // Check if header nonce matches
+            if (!hash_equals($session_data['header_nonce'], $hashed_header_nonce_value)) {
                 self::remove_token($token_name_prefix, $id);
                 return self::response(false, 401, null, "Invalid header nonce for token name of `" . $token_name_prefix . "`.");
             }
@@ -330,8 +350,11 @@ final class Auth_Token
         // Base 64 decode refresh cookie value
         $refresh_cookie_value = base64_decode($refresh_cookie->data['value'], true);
 
+        // Hash refresh nonce value for validation
+        $hashed_refresh_cookie_value = hash_hmac('sha256', $refresh_cookie_value, Config::DB_SESSION_SECRET_KEY, true);
+
         // Check if refresh cookie value matches session data refresh nonce value
-        if ($refresh_cookie_value !== $session_data['refresh_nonce']) {
+        if (!hash_equals($session_data['refresh_nonce'], $hashed_refresh_cookie_value)) {
             self::remove_token($token_name_prefix, $id);
             return self::response(false, 401, null, "Invalid refresh token for token name of `" . $token_name_prefix . "`.");
         }
@@ -348,8 +371,14 @@ final class Auth_Token
         // Regenerate header nonce value
         $updated_header_nonce_value = bin2hex(random_bytes(16));
 
+        // Hash refresh cookie value
+        $hashed_updated_refresh_cookie_value = hash_hmac('sha256', $updated_refresh_cookie_value, Config::DB_SESSION_SECRET_KEY, true);
+
+        // Hash header nonce value
+        $hashed_updated_header_nonce_value = hash_hmac('sha256', $updated_header_nonce_value, Config::DB_SESSION_SECRET_KEY, true);
+
         // Update session data for new refresh nonce
-        $updated_session_data = Session::update($token_name_prefix, $id, $session_data['additionals'], $updated_refresh_cookie_value, $updated_header_nonce_value);
+        $updated_session_data = Session::update($token_name_prefix, $id, $session_data['additionals'], $hashed_updated_refresh_cookie_value, $hashed_updated_header_nonce_value);
 
         // If an error occurred while updating the session data, return the error response
         if (!$updated_session_data->ok) {
