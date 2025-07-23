@@ -33,7 +33,7 @@ final class Config
      * Establishes prefix name to establish unique naming for plugin
      */
 
-    public const PREFIX = "wp_custom_api_";
+    public const PREFIX = "custom_api_";
 
     /**
      * CONSTANT
@@ -88,7 +88,7 @@ final class Config
      * Sets the password settings for the Password class.
      */
 
-    public const PASSWORD_SETTINGS = 
+    public const PASSWORD_SETTINGS =
     [
         'memory_cost' => 1 << 17,
         'time_cost' => 4,

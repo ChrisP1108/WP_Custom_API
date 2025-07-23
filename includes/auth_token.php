@@ -313,7 +313,8 @@ final class Auth_Token
 
         // Check if header nonce is valid if validate_header_nonce is set to true
         if ($validate_header_nonce) {
-            $header_nonce_value = $_SERVER[Config::HEADER_NONCE_PREFIX] ?? null;
+            $headers_lowercased = array_change_key_case(getallheaders(), CASE_LOWER);
+            $header_nonce_value = $headers_lowercased[strtolower(Config::HEADER_NONCE_PREFIX)] ?? null;
             if (!$header_nonce_value || $header_nonce_value !== $session_data['header_nonce']) {
                 self::remove_token($token_name_prefix, $id);
                 return self::response(false, 401, null, "Invalid header nonce for token name of `" . $token_name_prefix . "`.");

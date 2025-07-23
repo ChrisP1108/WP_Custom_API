@@ -128,7 +128,7 @@ class Permission_Interface
     * @return Response_Handler The response of the token_validate operation.
     */
 
-    final public static function token_validate(string $token_name, bool $validate_header_nonce = false,int $logout_time = 0): Response_Handler 
+    final public static function token_validate(string $token_name, bool $validate_header_nonce = false, int $logout_time = 0): Response_Handler 
     {
         return Auth_Token::validate($token_name, $validate_header_nonce, $logout_time);
     }
@@ -306,7 +306,7 @@ class Permission_Interface
      * @return Response_Handler The response of the session update operation.
      */
 
-    final public static function update_custom_session(string $name, int $id, bool $validate_header_nonce = false, array $updated_data): Response_Handler 
+    final public static function update_custom_session(string $name, int $id, bool $validate_header_nonce, array $updated_data): Response_Handler 
     {
         // Prefix the session name with the configured prefix
         $prefixed_name = Config::PREFIX . $name;
@@ -344,8 +344,9 @@ class Permission_Interface
         $existing_session_data = (array) $check_existing_session->data;
 
         if ($validate_header_nonce) {
-            $header_nonce = $_SERVER[Config::HEADER_NONCE_PREFIX] ?? null;
-            if (!$header_nonce ||$header_nonce !== $existing_session_data['header_nonce']) {
+            $headers_lowercased = array_change_key_case(getallheaders(), CASE_LOWER);
+            $header_nonce_value = $headers_lowercased[strtolower(Config::HEADER_NONCE_PREFIX)] ?? null;
+            if (!$header_nonce_value ||$header_nonce_value !== $existing_session_data['header_nonce']) {
                 return Response_Handler::response(
                     false, 
                     401, 
