@@ -108,10 +108,6 @@ final class Auth_Token
         if ($id === 0) return self::response(false, 500, null, "No id was provided to remove token for token name `" . $token_name . "`.");
         $id = intval($id);
 
-        // Check that session data exists corresponding to token
-        $session = Session::get($token_name, $id);
-        if (!$session->ok) return self::response(false, 500, null, "No token with the name of `" . $token_name . "` was found.");
-
         // Remove session data corresponding to token
         $remove_session = Session::delete($token_name, $id);
 
@@ -196,7 +192,10 @@ final class Auth_Token
         // Store the nonce server-side into the sessions table to validate later through Session::generate method
         $session = Session::generate($token_name_prefix, $id, $nonce_hash, $expires_at, [], $refresh_nonce_hash, $header_nonce_hash);
         
-        if (!$session->ok) return self::response(false, 500, $id, "There was an error storing the token session data.");
+        if (!$session->ok) {
+            Cookie::remove($token_name_prefix);
+            return self::response(false, 500, $id, "There was an error storing the token session data.");
+        }
 
         // Set the token as a cookie in the browser
         $cookie_result = Cookie::set($token_name_prefix, $token, $expires_at);

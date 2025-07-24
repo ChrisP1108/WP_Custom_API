@@ -273,6 +273,12 @@ class Permission_Interface
         // Generate a refresh nonce
         $refresh_nonce = bin2hex(random_bytes(16));
 
+        // Set the session nonce in a cookie
+        $cookie_result = Cookie::set($prefixed_name, base64_encode(strval($id)) . '.' . base64_encode($nonce) . '.' . base64_encode($refresh_nonce), $expiration_time);
+
+        // If an error occurred while setting the cookie, return the error response
+        if (!$cookie_result->ok) return $cookie_result;
+
         // Set header nonce
         $header_nonce = bin2hex(random_bytes(16));
 
@@ -286,13 +292,10 @@ class Permission_Interface
         $session_result = Session::generate($prefixed_name, $id, $nonce_hash, $expiration_time, $additionals, $refresh_nonce_hash, $header_nonce_hash);
         
         // If an error occurred while creating the session data, return the error response
-        if (!$session_result->ok) return $session_result;
-
-        // Set the session nonce in a cookie
-        $cookie_result = Cookie::set($prefixed_name, base64_encode(strval($id)) . '.' . base64_encode($nonce) . '.' . base64_encode($refresh_nonce), $expiration_time);
-
-        // If an error occurred while setting the cookie, return the error response
-        if (!$cookie_result->ok) return $cookie_result;
+        if (!$session_result->ok) {
+            Cookie::remove($prefixed_name);
+            return $session_result;
+        }
 
         // Set header for header nonce
         header(Config::HEADER_NONCE_PREFIX . ': ' . $header_nonce);
@@ -308,14 +311,13 @@ class Permission_Interface
      * If the session exists, it updates the session data and returns a success response.
      *
      * @param string $name The name of the session to update.
-     * @param int $id The user ID for whom the session is updated.
      * @param bool $validate_header_nonce - Optional parameter to validate the header nonce.
      * @param array $updated_data The updated session data.
      *
      * @return Response_Handler The response of the session update operation.
      */
 
-    final public static function update_custom_session(string $name, int $id, bool $validate_header_nonce, array $updated_data): Response_Handler 
+    final public static function update_custom_session(string $name, bool $validate_header_nonce, array $updated_data): Response_Handler 
     {
         // Prefix the session name with the configured prefix
         $prefixed_name = Config::PREFIX . $name;
@@ -408,6 +410,7 @@ class Permission_Interface
         // Generate a refresh nonce
         $refresh_nonce = bin2hex(random_bytes(16));
 
+        // Update the cookie
         $update_cookie_result = Cookie::set($prefixed_name, base64_encode($cookie_id) . '.' . base64_encode($cookie_nonce) . '.' . base64_encode($refresh_nonce), $existing_session_data['expiration_at']);
 
         // If the cookie update failed, return the error response
