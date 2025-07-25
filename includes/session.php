@@ -74,6 +74,7 @@ final class Session
      *
      * Initializes a session object with the given parameters.
      *
+     * @param int $id ID of the session.
      * @param string $name Name of the session.
      * @param int $user ID of the user associated with the session.
      * @param string $nonce Nonce used for additional validation.
@@ -178,7 +179,7 @@ final class Session
      * Generate a session with the given parameters
      * 
      * @param string $name Session name
-     * @param int $id user id
+     * @param int $user_id user id
      * @param string $nonce Nonce used for validation
      * @param int $expiration Timestamp when session will expire
      * @param array $additionals The array to store in the additionals key
@@ -187,7 +188,7 @@ final class Session
      * @return Response_Handler Response object
      */
 
-    public static function generate(string $name, int $id, string $nonce, int $expiration_time, array $additionals = [], string $refresh_nonce = '', string $header_nonce = ''): Response_Handler
+    public static function generate(string $name, int $user_id, string $nonce, int $expiration_time, array $additionals = [], string $refresh_nonce = '', string $header_nonce = ''): Response_Handler
     {
         // Delete any previous sessions with the same name and user id
         
@@ -199,7 +200,7 @@ final class Session
         $query = $wpdb->prepare(
             'DELETE FROM ' . $table_name . ' WHERE name = %s AND user = %d',
             $name,
-            $id
+            $user_id
         );
 
         $result = $wpdb->query($query);
@@ -223,7 +224,7 @@ final class Session
         // Set data for table row insert
         $data = [
             'name' => $name,
-            'user' => $id,
+            'user' => $user_id,
             'nonce' => $nonce,
             'refresh_nonce' => $refresh_nonce,
             'header_nonce' => $header_nonce,
@@ -253,7 +254,7 @@ final class Session
         $object_data = new static(
             $session_id,
             $name,
-            $id,
+            $user_id,
             $nonce,
             $refresh_nonce,
             $header_nonce,
@@ -277,40 +278,39 @@ final class Session
      * 
      * Retrieve a session based on user ID and session name.
      *
-     * @param int $id User ID
+     * @param int $id Session ID
+     * @param int $user_id User ID
      * @param string $name Name of session
      * @return Response_Handler Response object containing session data or error details
      */
 
-    public static function get(string $name, int $id): Response_Handler
+    public static function get(int $id, string $name, int $user_id): Response_Handler
     {
-        // Get session table full name
-        global $wpdb;
-        $table_name = Database::get_table_full_name(self::SESSIONS_TABLE_NAME);
-
         ob_start();
 
-        // Retrieve session data row from sessions table that matches session name and user id
-        $query = $wpdb->prepare(
-            'SELECT * FROM ' . $table_name . ' WHERE name = %s AND user = %d LIMIT 1',
-            $name,
-            $id
+        // Retrieve session data row from sessions table that matches session id
+        $get_session_data = Database::get_rows_data(
+            self::SESSIONS_TABLE_NAME,
+            'id',
+            $id,
+            false
         );
-
-        $user_session_data = $wpdb->get_row($query, ARRAY_A);
 
         ob_end_clean();
 
         // Determine if retrieval was successful
-        $ok = $user_session_data !== null;
+        $ok = $get_session_data->ok;
+
+        // Session data
+        $session_data = (array) $get_session_data->data;
 
         // Check if session has expired
-        if ($ok && time() > intval($user_session_data['expiration_at'])) {
+        if ($ok && time() > intval($session_data['expiration_at'])) {
 
             // Delete expired session
             $delete_session_result = Database::delete_row(
                 self::SESSIONS_TABLE_NAME,
-                $user_session_data['id']
+                $session_data['id']
             );
 
             // Check if deletion was successful
@@ -328,23 +328,30 @@ final class Session
             );
         }
 
+        // Check that name and user match session data
+        if ($ok && $session_data['name'] !== $name || $session_data['user'] !== $user_id) return Response_Handler::response(
+            false,
+            401,
+            "Session name and user data provided do not match session data."
+        );
+
         // Object data
         $object_data = null;
 
         // If retrieval was successful, set object data
         if ($ok) {
             $object_data = new static(
-                intval($user_session_data['id']),
-                $user_session_data['name'],
-                intval($user_session_data['user']),
-                $user_session_data['nonce'],
-                $user_session_data['refresh_nonce'],
-                $user_session_data['header_nonce'],
-                strtotime($user_session_data['created_at']),
-                intval($user_session_data['expiration_at']),
-                intval($user_session_data['updated_tally']),
-                strtotime($user_session_data['updated_at']) ?? null,
-                json_decode($user_session_data['additionals'], true) ?? []
+                intval($session_data['id']),
+                $session_data['name'],
+                intval($session_data['user']),
+                $session_data['nonce'],
+                $session_data['refresh_nonce'],
+                $session_data['header_nonce'],
+                strtotime($session_data['created_at']),
+                intval($session_data['expiration_at']),
+                intval($session_data['updated_tally']),
+                strtotime($session_data['updated_at']) ?? null,
+                json_decode($session_data['additionals'], true) ?? []
             );
         }
 
@@ -362,18 +369,19 @@ final class Session
      * 
      * Retrieves the session, updates the additional data, and then saves the session.
      * 
+     * @param int $id Session ID
      * @param string $name Name of the session
-     * @param int $id User ID
+     * @param int $userid User ID
      * @param array $updated_data The array to store in the additionals key
      * @param string $refresh_nonce Nonce used for refreshing the session
      * @param string $header_nonce Nonce used for refreshing the session in the request header
      * @return Response_Handler Response object containing session data or error details
      */
 
-    public static function update(string $name, int $id, array $updated_data, string $refresh_nonce = '', string $header_nonce = ''): Response_Handler
+    public static function update(int $id, string $name, int $user_id, array $updated_data, string $refresh_nonce = '', string $header_nonce = ''): Response_Handler
     {
         // Retrieve the session
-        $update_session_data = self::get($name, $id);
+        $update_session_data = self::get($id, $name, $user_id);
 
         // If retrieval failed, return the error response
         if (!$update_session_data->ok) {
@@ -457,28 +465,12 @@ final class Session
      * 
      * Delete a session based on user ID and session name.
      * 
-     * @param string $name Session name
-     * @param int $id User ID
+     * @param int $id Session ID
      * @return Response_Handler Response object containing information about the deletion
      */
 
-    public static function delete(string $name, int $id): Response_Handler
+    public static function delete(int $id): Response_Handler
     {
-        // Retrieve session data
-        $get_session_data = self::get($name, $id);
-
-        // Check if retrieval was successful
-        if (!$get_session_data->ok) {
-            return Response_Handler::response(
-                false,
-                500,
-                "Unable to retrieve session data corresponding to the name of `" . $name . "` for deletion."
-            );
-        }
-
-        // Get session ID
-        $data_array = (array) $get_session_data->data;
-        $id = $data_array['id'];
 
         // Delete session row
         $delete_row_result = Database::delete_row(
@@ -488,6 +480,9 @@ final class Session
 
         // Check if deletion was successful
         $ok = $delete_row_result->ok;
+
+        // Session name
+        $name = $delete_row_result->data['name'];
 
         // Return response
         return Response_Handler::response(

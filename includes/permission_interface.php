@@ -142,14 +142,15 @@ class Permission_Interface
     * token based on the provided token name and optional user ID.
     *
     * @param string $token_name The name of the token to remove.
-    * @param string|int $id The user ID associated with the token (optional).
+    * @param string|int $user_id The user ID associated with the token (optional).
+    * @param string|int $session_id The session ID associated with the token (optional).
     *
     * @return Response_Handler The response of the token remove operation from the self::response() method.
     */
 
-    final public static function token_remove(string $token_name, string|int $id = 0): Response_Handler 
+    final public static function token_remove(string $token_name, string|int $user_id = 0, string|int $session_id = 0): Response_Handler 
     {
-        return Auth_Token::remove_token($token_name, $id);
+        return Auth_Token::remove_token($token_name, $user_id, $session_id);
     }
 
     /**
@@ -160,17 +161,18 @@ class Permission_Interface
     * This method retrieves the session data associated with an authentication
     * token for the given token name and user ID.
     *
+    * @param int $session_id The session_id associated with the token.
     * @param string $token_name The name of the token to retrieve the session data for.
-    * @param int $id The user ID associated with the token.
+    * @param int $user_id The user ID associated with the token.
     *
     * @return Response_Handler The response of the get session data operation.
     */
 
-    final public static function token_session_data(string $token_name, int $id): Response_Handler
+    final public static function token_session_data(int $session_id, string $token_name, int $user_id): Response_Handler
     {
         $token_prefixed = Config::AUTH_TOKEN_PREFIX . $token_name;
 
-        return Session::get($token_prefixed, $id);
+        return Session::get($session_id, $token_prefixed, $user_id);
     }
 
     /**
@@ -181,19 +183,22 @@ class Permission_Interface
      * This method utilizes the Session class to update additional data
      * for a session corresponding to the given token name and user ID.
      *
+     * @param int $session_id The session_id associated with the token.
      * @param string $token_name The name of the token for which the session data should be updated.
-     * @param int $id The user ID associated with the token.
+     * @param int $user_id The user ID associated with the token.
      * @param array $updated_data The updated data to be stored in the session.
+     * @param string $refresh_nonce - Optional parameter to refresh the nonce.
+     * @param string $header_nonce - Optional parameter to update the header nonce.
      *
      * @return Response_Handler The response of the update operation.
      */
 
-    final public static function token_update_session_data(string $token_name, int $id, array $updated_data): Response_Handler 
+    final public static function token_update_session_data(int $session_id, string $token_name, int $user_id, array $updated_data, string $refresh_nonce = '', string $header_nonce = ''): Response_Handler 
     {
         $token_prefixed = Config::AUTH_TOKEN_PREFIX . $token_name;
 
         // Update the session additionals and return the response
-        return Session::update($token_prefixed, $id, $updated_data);
+        return Session::update($session_id, $token_prefixed, $user_id, $updated_data, $refresh_nonce, $header_nonce);
     }
 
     /**
@@ -221,14 +226,13 @@ class Permission_Interface
 
         // If token was validated, gather token session data
 
-        $id = null;
-        if (is_object($token_validate->data)) {
-            $id = $token_validate->data->id;
-        } else $id = $token_validate->data['id'];
+        $cookie_data = (array) $token_validate->data;
+        $user_id = intval($cookie_data['user_id']);
+        $session_id = intval($cookie_data['session_id']);
 
         $token_prefixed = Config::AUTH_TOKEN_PREFIX . $token_name;
 
-        $token_session_data = Session::get($token_prefixed, $id);
+        $token_session_data = Session::get($session_id, $token_prefixed, $user_id);
 
         // Return token session data
         return $token_session_data;
@@ -273,12 +277,6 @@ class Permission_Interface
         // Generate a refresh nonce
         $refresh_nonce = bin2hex(random_bytes(16));
 
-        // Set the session nonce in a cookie
-        $cookie_result = Cookie::set($prefixed_name, base64_encode(strval($id)) . '.' . base64_encode($nonce) . '.' . base64_encode($refresh_nonce), $expiration_time);
-
-        // If an error occurred while setting the cookie, return the error response
-        if (!$cookie_result->ok) return $cookie_result;
-
         // Set header nonce
         $header_nonce = bin2hex(random_bytes(16));
 
@@ -293,9 +291,14 @@ class Permission_Interface
         
         // If an error occurred while creating the session data, return the error response
         if (!$session_result->ok) {
-            Cookie::remove($prefixed_name);
             return $session_result;
         }
+
+        // Set the session nonce in a cookie
+        $cookie_result = Cookie::set($prefixed_name, base64_encode(strval($id)) . '.' . base64_encode($nonce) . '.' . base64_encode($refresh_nonce) . '.' . base64_encode($session_result->data['id']), $expiration_time);
+
+        // If an error occurred while setting the cookie, return the error response
+        if (!$cookie_result->ok) return $cookie_result;
 
         // Set header for header nonce
         header(Config::HEADER_NONCE_PREFIX . ': ' . $header_nonce);
@@ -330,22 +333,26 @@ class Permission_Interface
         // Split the cookie value into parts
         $cookie_value_split = explode('.', $cookie_result->data['value'], 3);
 
-        // If the cookie value does not have 3 parts, return an error response
-        if (count($cookie_value_split) !== 3) return Response_Handler::response(
+        // If the cookie value does not have 4 parts, return an error response
+        if (count($cookie_value_split) !== 4) return Response_Handler::response(
             false, 
             401, 
             "Cookie value for session `" . $name . "` is invalid. Expected 3 values, received " . count($cookie_value_split)
         );
 
         // Split the cookie value into parts
-        [$cookie_id, $cookie_nonce, $cookie_refresh_nonce] = $cookie_value_split;
+        [$cookie_id, $cookie_nonce, $cookie_refresh_nonce, $session_id] = $cookie_value_split;
 
         // Decode the base64 values from the cookie value parts
         $cookie_id = base64_decode($cookie_id, true);
         $cookie_nonce = base64_decode($cookie_nonce, true);
         $cookie_refresh_nonce = base64_decode($cookie_refresh_nonce, true);
+        $session_id = base64_decode($session_id, true);
 
-        $check_existing_session = Session::get($prefixed_name, intval($cookie_id));
+        // Convert the session ID to an integer
+        $session_id = intval($session_id);
+
+        $check_existing_session = Session::get($session_id, $prefixed_name, intval($cookie_id));
 
         if (!$check_existing_session->ok) {
             Cookie::remove($prefixed_name);
@@ -385,7 +392,7 @@ class Permission_Interface
         // If the cookie nonce does not match the session nonce, return an error response
         if (!hash_equals($existing_session_data['nonce'], $hashed_cookie_nonce)) {
             Cookie::remove($prefixed_name);
-            Session::delete($prefixed_name, intval($cookie_id));
+            Session::delete($session_id);
             return Response_Handler::response(
                 false, 
                 401, 
@@ -399,7 +406,7 @@ class Permission_Interface
         // If the cookie refresh nonce does not match the session refresh nonce, return an error response
         if (!hash_equals($existing_session_data['refresh_nonce'], $hashed_cookie_refresh_nonce)) {
             Cookie::remove($prefixed_name);
-            Session::delete($prefixed_name, intval($cookie_id));
+            Session::delete($session_id);
             return Response_Handler::response(
                 false, 
                 401, 
@@ -411,7 +418,7 @@ class Permission_Interface
         $refresh_nonce = bin2hex(random_bytes(16));
 
         // Update the cookie
-        $update_cookie_result = Cookie::set($prefixed_name, base64_encode($cookie_id) . '.' . base64_encode($cookie_nonce) . '.' . base64_encode($refresh_nonce), $existing_session_data['expiration_at']);
+        $update_cookie_result = Cookie::set($prefixed_name, base64_encode($cookie_id) . '.' . base64_encode($cookie_nonce) . '.' . base64_encode($refresh_nonce) . '.' . base64_encode(strval($session_id)), $existing_session_data['created_at'], $existing_session_data['expiration_at']);
 
         // If the cookie update failed, return the error response
         if (!$update_cookie_result->ok) return $update_cookie_result;
@@ -426,12 +433,12 @@ class Permission_Interface
         $hashed_header_nonce_value = hash_hmac('sha256', $updated_header_nonce_value, Config::DB_SESSION_SECRET_KEY, true);
 
         // Update the session data
-        $update_existing_session_result = Session::update($prefixed_name, intval($cookie_id), $updated_data, $hashed_refresh_nonce, $hashed_header_nonce_value);
+        $update_existing_session_result = Session::update($session_id, $prefixed_name, intval($cookie_id), $updated_data, $hashed_refresh_nonce, $hashed_header_nonce_value);
 
         // If the session update failed, remove the cookie and existing session if it exsits and return the error response
         if (!$update_existing_session_result->ok) {
             Cookie::remove($prefixed_name);
-            Session::delete($prefixed_name, intval($cookie_id));
+            Session::delete($session_id);
             return $update_existing_session_result;
         }
 
@@ -451,17 +458,17 @@ class Permission_Interface
      * associated with the session.
      *
      * @param string $name The name of the session to delete.
-     * @param int $id The user ID for whom the session is deleted.
+     * @param int $id The session ID.
      *
      * @return Response_Handler The response of the session deletion operation.
      */
 
-    final public static function delete_custom_session(string $name, int $id): Response_Handler 
+    final public static function delete_custom_session(string $name, int $session_id): Response_Handler 
     {
         // Prefix the session name with the configured prefix
         $prefixed_name = Config::PREFIX . $name;
 
-        $existing_session_result = Session::delete($prefixed_name, $id);
+        $existing_session_result = Session::delete($session_id);
 
         // If the session deletion failed, remove the cookie and return the error response
         if (!$existing_session_result->ok) {
