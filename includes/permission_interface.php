@@ -295,7 +295,7 @@ class Permission_Interface
         }
 
         // Set the session nonce in a cookie
-        $cookie_result = Cookie::set($prefixed_name, base64_encode(strval($id)) . '.' . base64_encode($nonce) . '.' . base64_encode($refresh_nonce) . '.' . base64_encode($session_result->data['id']), $expiration_time);
+        $cookie_result = Cookie::set($prefixed_name, base64_encode(strval($id)) . '.' . base64_encode($nonce) . '.' . base64_encode($refresh_nonce) . '.' . base64_encode(strval($session_result->data['id'])), $expiration_time);
 
         // If an error occurred while setting the cookie, return the error response
         if (!$cookie_result->ok) return $cookie_result;
