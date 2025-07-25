@@ -206,7 +206,8 @@ final class Auth_Token
         }
 
         // Get session id
-        $session_id = intval($session->data['id']);
+        $session_data = (array) $session->data;
+        $session_id = intval($session_data['id']);
 
         // Add the session id to the token
         $token = $token . '.' . base64_encode(strval($session_id));

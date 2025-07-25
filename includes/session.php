@@ -329,7 +329,7 @@ final class Session
         }
 
         // Check that name and user match session data
-        if ($ok && $session_data['name'] !== $name || $session_data['user'] !== $user_id) return Response_Handler::response(
+        if ($ok && $session_data['name'] !== $name || intval($session_data['user']) !== $user_id) return Response_Handler::response(
             false,
             401,
             "Session name and user data provided do not match session data."
@@ -481,14 +481,11 @@ final class Session
         // Check if deletion was successful
         $ok = $delete_row_result->ok;
 
-        // Session name
-        $name = $delete_row_result->data['name'];
-
         // Return response
         return Response_Handler::response(
             $ok,
             $ok ? 200 : 500,
-            $ok ? "Session deleted successfully for session name of `" . $name . "`." : "Session deletion failed for session name of `" . $name . "`."
+            $ok ? "Session deleted successfully" : "Session deletion failed "
         );
     }
 }

@@ -294,8 +294,14 @@ class Permission_Interface
             return $session_result;
         }
 
+        // Get the session data
+        $session_data = (array) $session_result->data;
+
+        // Get the session id
+        $session_id = $session_data['id'];
+
         // Set the session nonce in a cookie
-        $cookie_result = Cookie::set($prefixed_name, base64_encode(strval($id)) . '.' . base64_encode($nonce) . '.' . base64_encode($refresh_nonce) . '.' . base64_encode(strval($session_result->data['id'])), $expiration_time);
+        $cookie_result = Cookie::set($prefixed_name, base64_encode(strval($id)) . '.' . base64_encode($nonce) . '.' . base64_encode($refresh_nonce) . '.' . base64_encode(strval($session_id)), $expiration_time);
 
         // If an error occurred while setting the cookie, return the error response
         if (!$cookie_result->ok) return $cookie_result;
@@ -331,7 +337,7 @@ class Permission_Interface
         if (!$cookie_result->ok) return $cookie_result;
 
         // Split the cookie value into parts
-        $cookie_value_split = explode('.', $cookie_result->data['value'], 3);
+        $cookie_value_split = explode('.', $cookie_result->data['value'], 4);
 
         // If the cookie value does not have 4 parts, return an error response
         if (count($cookie_value_split) !== 4) return Response_Handler::response(
@@ -367,6 +373,8 @@ class Permission_Interface
 
             // If the header nonce value is not found, return an error response
             if (!$header_nonce_value) {
+                Cookie::remove($prefixed_name);
+                Session::delete($session_id);
                 return Response_Handler::response(
                     false, 
                     401, 
@@ -378,6 +386,8 @@ class Permission_Interface
             $hashed_header_nonce_value = hash_hmac('sha256', $header_nonce_value, Config::DB_SESSION_SECRET_KEY, true);
 
             if (!hash_equals($existing_session_data['header_nonce'], $hashed_header_nonce_value)) {
+                Cookie::remove($prefixed_name);
+                Session::delete($session_id);
                 return Response_Handler::response(
                     false, 
                     401, 
@@ -418,7 +428,7 @@ class Permission_Interface
         $refresh_nonce = bin2hex(random_bytes(16));
 
         // Update the cookie
-        $update_cookie_result = Cookie::set($prefixed_name, base64_encode($cookie_id) . '.' . base64_encode($cookie_nonce) . '.' . base64_encode($refresh_nonce) . '.' . base64_encode(strval($session_id)), $existing_session_data['created_at'], $existing_session_data['expiration_at']);
+        $update_cookie_result = Cookie::set($prefixed_name, base64_encode($cookie_id) . '.' . base64_encode($cookie_nonce) . '.' . base64_encode($refresh_nonce) . '.' . base64_encode(strval($session_id)), $existing_session_data['expiration_at']);
 
         // If the cookie update failed, return the error response
         if (!$update_cookie_result->ok) return $update_cookie_result;
