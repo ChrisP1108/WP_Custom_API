@@ -461,6 +461,76 @@ final class Session
     }
 
     /**
+     * METHOD - update_additionals
+     * 
+     * Updates only the `additionals` JSON column for a given session ID.
+     * Does not modify tallies, timestamps, or other fields.
+     * 
+     * @param int $id Session ID
+     * @param array $additionals The new additionals data (array will be JSON encoded)
+     * @return Response_Handler Response object indicating the result of the operation.
+     */
+    public static function update_additionals(int $id, array $additionals): Response_Handler
+    {
+        global $wpdb;
+
+        // Ensure additionals is an array
+        if (!is_array($additionals)) {
+            return Response_Handler::response(
+                false,
+                500,
+                'Additionals data must be an array.'
+            );
+        }
+
+        // Get session table full name and check it exists
+        $table_name = Database::get_table_full_name(self::SESSIONS_TABLE_NAME);
+        $table_exists = Database::table_exists(self::SESSIONS_TABLE_NAME);
+
+        if (!$table_exists) return Response_Handler::response(
+            false,
+            500,
+            'Unable to update additionals data: sessions table does not exist.'
+        );
+
+        ob_start();
+
+        // Update additionals column only for the specified session based on id
+        $query = $wpdb->prepare(
+            'UPDATE ' . $table_name . ' SET additionals = %s WHERE id = %d',
+            json_encode($additionals),
+            $id
+        );
+        $result = $wpdb->query($query);
+        ob_end_clean();
+
+        // Evaluate result
+        if ($result === false) {
+            return Response_Handler::response(
+                false,
+                500,
+                'An error occurred while updating additionals data.'
+            );
+        }
+
+        // If no rows were updated
+        if ($result === 0) {
+            return Response_Handler::response(
+                true,
+                200,
+                'No changes made to additionals (same data or invalid session ID).'
+            );
+        }
+
+        // Return success
+        return Response_Handler::response(
+            true,
+            200,
+            'Additionals data updated successfully.'
+        );
+    }
+
+    /**
      * METHOD - delete
      * 
      * Delete a session based on user ID and session name.

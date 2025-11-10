@@ -202,6 +202,21 @@ class Permission_Interface
     }
 
     /**
+     * METHOD - token_update_session_additionals
+     * 
+     * Updates the additionals only data associated with a session.
+     * 
+     * @param int $session_id The session_id associated with the token.
+     * @param array $additionals The new additionals data (array will be JSON encoded)
+     * @return Response_Handler The response of the update operation.
+     */
+    
+    final public static function token_update_session_additionals(int $session_id, array $additionals): Response_Handler
+    {
+        return Session::update_additionals($session_id, $additionals);
+    }
+
+    /**
      * METHOD - token_parser
      * 
      * Validates an authentication token and retrieves the associated session data.
