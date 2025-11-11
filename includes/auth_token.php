@@ -130,12 +130,13 @@ final class Auth_Token
      * 
      * @param int $user_id - Id of user for token generation
      * @param string $token_name - Name of token to be stored.  Token name is also the cookie name
+     * @param array $session_data_additionals - Additional session data to be stored
      * @param int $expiration - Set duration of token before expiring.
      * 
      * @return Response_Handler The response of the token generate operation from the self::response() method.
      */
 
-    public static function generate(string $token_name, int $user_id, int $expiration_at = Config::TOKEN_EXPIRATION): Response_Handler
+    public static function generate(string $token_name, int $user_id, array $session_data_additionals = [], int $expiration_at = Config::TOKEN_EXPIRATION): Response_Handler
     {
         // Check if token name was provided.  If not return error
         if (!$user_id || !$token_name) return self::response(false, 500, $user_id, null, "`id` and `token_name` parameters required to generate auth token.");
@@ -199,7 +200,7 @@ final class Auth_Token
         $header_nonce_hash = hash_hmac('sha256', $header_nonce, Config::DB_SESSION_SECRET_KEY, true);
 
         // Store the nonce server-side into the sessions table to validate later through Session::generate method
-        $session = Session::generate($token_name_prefix, $user_id, $nonce_hash, $expires_at, [], $refresh_nonce_hash, $header_nonce_hash);
+        $session = Session::generate($token_name_prefix, $user_id, $nonce_hash, $expires_at, $session_data_additionals, $refresh_nonce_hash, $header_nonce_hash);
         
         if (!$session->ok) {
             Cookie::remove($token_name_prefix);

@@ -110,14 +110,15 @@ abstract class Permission_Interface
     * set optionally.
     *
     * @param int $id The user ID.
+    * @param array $session_data_additionals The additionals data for the session.
     * @param int $expiration The expiration time in seconds.
     *
     * @return Response_Handler The response of the token_generate operation.
     */
 
-    final public static function token_generate(int $id, int $expiration = Config::TOKEN_EXPIRATION): Response_Handler
+    final public static function token_generate(int $id, array $session_data_additionals = [], int $expiration = Config::TOKEN_EXPIRATION): Response_Handler
     {
-        return Auth_Token::generate(static::token_name(), $id, $expiration);
+        return Auth_Token::generate(static::token_name(), $id, $session_data_additionals, $expiration);
     }
 
     /**

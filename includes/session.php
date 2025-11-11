@@ -262,7 +262,7 @@ final class Session
             $expiration_time,
             0,
             null,
-            []
+            $additionals
         );
 
         // Generate response
@@ -518,7 +518,8 @@ final class Session
             return Response_Handler::response(
                 true,
                 200,
-                'No changes made to additionals (same data or invalid session ID).'
+                'No changes made to additionals (same data or invalid session ID).',
+                $additionals
             );
         }
 
@@ -526,7 +527,8 @@ final class Session
         return Response_Handler::response(
             true,
             200,
-            'Additionals data updated successfully.'
+            'Additionals data updated successfully.',
+            $additionals
         );
     }
 
