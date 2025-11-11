@@ -22,4 +22,4 @@ if (!defined('ABSPATH')) exit;
 * Sample GET route
 */
 
-Router::get("/", [Controller::class, "index"], [Permission::class, "public"]);
+Router::get("/", [Permission::class, "public"], [Controller::class, "index"]);

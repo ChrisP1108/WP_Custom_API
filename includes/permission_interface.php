@@ -25,9 +25,18 @@ if (!defined('ABSPATH')) exit;
  * @since 1.0.0
  */
 
-class Permission_Interface
+abstract class Permission_Interface
 {
-    
+    /**
+     * ABSTRACT METHOD - token_name
+     * 
+     * Get the name of the token.
+     * 
+     * @return string
+     */
+
+    abstract public static function token_name(): string;
+
     /**
      * METHOD - public
      * 
@@ -101,15 +110,14 @@ class Permission_Interface
     * set optionally.
     *
     * @param int $id The user ID.
-    * @param string $token_name The token name.
     * @param int $expiration The expiration time in seconds.
     *
     * @return Response_Handler The response of the token_generate operation.
     */
 
-    final public static function token_generate(string $token_name, int $id, int $expiration = Config::TOKEN_EXPIRATION): Response_Handler
+    final public static function token_generate(int $id, int $expiration = Config::TOKEN_EXPIRATION): Response_Handler
     {
-        return Auth_Token::generate($token_name, $id, $expiration);
+        return Auth_Token::generate(static::token_name(), $id, $expiration);
     }
 
     /**
@@ -121,16 +129,15 @@ class Permission_Interface
     * token for the given token name. The token can also be invalidated if
     * a logout time is specified.
     *
-    * @param string $token_name The token name to validate.
-    * @param bool $validate_header_nonce - Optional parameter to validate the header nonce.
+    * @param bool $validate_header_nonce - Optional parameter to validate the header nonce. Default is true
     * @param int $logout_time The time when the token should be invalidated (optional).
     *
     * @return Response_Handler The response of the token_validate operation.
     */
 
-    final public static function token_validate(string $token_name, bool $validate_header_nonce = false, int $logout_time = 0): Response_Handler 
+    final public static function token_validate(bool $validate_header_nonce = true, int $logout_time = 0): Response_Handler 
     {
-        return Auth_Token::validate($token_name, $validate_header_nonce, $logout_time);
+        return Auth_Token::validate(static::token_name(), $validate_header_nonce, $logout_time);
     }
 
     /**
@@ -148,9 +155,9 @@ class Permission_Interface
     * @return Response_Handler The response of the token remove operation from the self::response() method.
     */
 
-    final public static function token_remove(string $token_name, string|int $user_id = 0, string|int $session_id = 0): Response_Handler 
+    final public static function token_remove(string|int $user_id = 0, string|int $session_id = 0): Response_Handler 
     {
-        return Auth_Token::remove_token($token_name, $user_id, $session_id);
+        return Auth_Token::remove_token(static::token_name(), $user_id, $session_id);
     }
 
     /**
@@ -162,15 +169,14 @@ class Permission_Interface
     * token for the given token name and user ID.
     *
     * @param int $session_id The session_id associated with the token.
-    * @param string $token_name The name of the token to retrieve the session data for.
     * @param int $user_id The user ID associated with the token.
     *
     * @return Response_Handler The response of the get session data operation.
     */
 
-    final public static function token_session_data(int $session_id, string $token_name, int $user_id): Response_Handler
+    final public static function token_session_data(int $session_id, int $user_id): Response_Handler
     {
-        $token_prefixed = Config::AUTH_TOKEN_PREFIX . $token_name;
+        $token_prefixed = Config::AUTH_TOKEN_PREFIX . static::token_name();
 
         return Session::get($session_id, $token_prefixed, $user_id);
     }
@@ -184,7 +190,6 @@ class Permission_Interface
      * for a session corresponding to the given token name and user ID.
      *
      * @param int $session_id The session_id associated with the token.
-     * @param string $token_name The name of the token for which the session data should be updated.
      * @param int $user_id The user ID associated with the token.
      * @param array $updated_data The updated data to be stored in the session.
      * @param string $refresh_nonce - Optional parameter to refresh the nonce.
@@ -193,9 +198,9 @@ class Permission_Interface
      * @return Response_Handler The response of the update operation.
      */
 
-    final public static function token_update_session_data(int $session_id, string $token_name, int $user_id, array $updated_data, string $refresh_nonce = '', string $header_nonce = ''): Response_Handler 
+    final public static function token_update_session_data(int $session_id, int $user_id, array $updated_data, string $refresh_nonce = '', string $header_nonce = ''): Response_Handler 
     {
-        $token_prefixed = Config::AUTH_TOKEN_PREFIX . $token_name;
+        $token_prefixed = Config::AUTH_TOKEN_PREFIX . static::token_name();
 
         // Update the session additionals and return the response
         return Session::update($session_id, $token_prefixed, $user_id, $updated_data, $refresh_nonce, $header_nonce);
@@ -214,43 +219,6 @@ class Permission_Interface
     final public static function token_update_session_additionals(int $session_id, array $additionals): Response_Handler
     {
         return Session::update_additionals($session_id, $additionals);
-    }
-
-    /**
-     * METHOD - token_parser
-     * 
-     * Validates an authentication token and retrieves the associated session data.
-     *
-     * This method validates the given token name and then retrieves the
-     * associated session data for the given token name and user ID.
-     *
-     * @param string $token_name The name of the token to parse.
-     * @param bool $validate_header_nonce - Optional parameter to validate the header nonce.
-     * @param int $logout_time The time at which the token should expire.
-     *
-     * @return Response_Handler The response of the token parse operation.
-     */
-
-    final public static function token_parser(string $token_name, bool $validate_header_nonce = false, int $logout_time = 0): Response_Handler
-    {
-        // Validate token and get the id if valid.
-        $token_validate = Auth_Token::validate($token_name, $validate_header_nonce, $logout_time);
-
-        // If token is invalid, return error
-        if (!$token_validate->ok) return $token_validate;
-
-        // If token was validated, gather token session data
-
-        $cookie_data = (array) $token_validate->data;
-        $user_id = intval($cookie_data['user_id']);
-        $session_id = intval($cookie_data['session_id']);
-
-        $token_prefixed = Config::AUTH_TOKEN_PREFIX . $token_name;
-
-        $token_session_data = Session::get($session_id, $token_prefixed, $user_id);
-
-        // Return token session data
-        return $token_session_data;
     }
 
     /**

@@ -27,7 +27,7 @@ final class Response_Handler
      * @param bool $ok
      * @param int $status_code
      * @param string $message
-     * @param array|null $data
+     * @param mixed $data
      * @param WP_REST_Response $error_response
      * @param WP_REST_Response $success_response
      */
@@ -36,7 +36,7 @@ final class Response_Handler
         public readonly bool $ok,
         public readonly int $status_code,
         public readonly string $message,
-        public readonly array|null|string|bool|object $data,
+        public readonly mixed $data,
         public readonly WP_REST_Response|null $error_response,
         public readonly WP_REST_Response|null $success_response
     )  {}
@@ -49,12 +49,12 @@ final class Response_Handler
      * @param bool $ok
      * @param int $status_code
      * @param string $message
-     * @param array|null $data
+     * @param mixed $data
      * 
      * @return static
      */
 
-    public static function response(bool $ok, int $status_code, string $message = '', array|null|string|bool|object $data = null, bool $parse_responses = true): static
+    public static function response(bool $ok, int $status_code, string $message = '', mixed $data = null, bool $parse_responses = true): static
     {
         // Set return message based upon if DEBUG_MESSAGE_MODE constant in Config class is set to false.  This ensures sensitive information is secured.
         if (!Config::DEBUG_MESSAGE_MODE) {
@@ -113,12 +113,12 @@ final class Response_Handler
      * 
      * @param string $message - The success message to return
      * @param int $status_code - The status code to return
-     * @param array|null|string|bool $data - The data to return
+     * @param mixed $data - The data to return
      * 
      * @return WP_REST_Response - The WP_REST_Response object
      */
 
-    private static function build_success_response(string $message, int $status_code, array|null|string|bool $data): WP_REST_Response 
+    private static function build_success_response(string $message, int $status_code, mixed $data): WP_REST_Response 
     {
         $response = ['message' => $message];
         if (!is_array($data) || !isset($data['hash'])) {

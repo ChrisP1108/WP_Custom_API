@@ -117,13 +117,13 @@ final class Router
      * 
      * @param string $method The HTTP method to register the route for.  Accepted values are GET, POST, PUT, DELETE, OPTIONS, HEAD, and PATCH.
      * @param string $route The route to register.  This is the path of the route relative to the wp-json endpoint.  Wildcards are supported.
-     * @param callable|null $callback The callback to run when the route is accessed.  If null, the method will throw an error.
      * @param callable|null $permission_callback The permission callback to run before the route is accessed.  If null, the method will throw an error.
+     * @param callable|null $callback The callback to run when the route is accessed.  If null, the method will throw an error.
      * 
      * @return void
      */
     
-    private static function register_rest_api_route(string $method, string $route, ?callable $callback, ?callable $permission_callback): void
+    private static function register_rest_api_route(string $method, string $route, callable $permission_callback, callable $callback): void
     {
         // Check that route matches the request.  If not, the route will not be registered
         if (!self::route_matches_request($method, $route)) return;
@@ -258,15 +258,15 @@ final class Router
      * 
      * Registers a GET request route.
      * @param string $route The route URL.
-     * @param callable|null $callback - The function that runs when the route is accessed.
      * @param callable|null $permission_callback - Callback for checking permissions.
+     * @param callable|null $callback - The function that runs when the route is accessed.
      * 
      * @return void
      */
 
-    public static function get(string $route = '', ?callable $callback = null, ?callable $permission_callback = null): void
+    public static function get(string $route, callable $permission_callback, callable $callback): void
     {
-        self::register_rest_api_route("GET", $route, $callback, $permission_callback);
+        self::register_rest_api_route("GET", $route, $permission_callback, $callback);
     }
 
     /**
@@ -274,15 +274,15 @@ final class Router
      * 
      * Registers a POST request route.
      * @param string $route The route URL.
-     * @param callable|null $callback - The function that runs when the route is accessed.
      * @param callable|null $permission_callback - Callback for checking permissions.
+     * @param callable|null $callback - The function that runs when the route is accessed.
      * 
      * @return void
      */
 
-    public static function post(string $route = '', ?callable $callback = null, ?callable $permission_callback = null): void
+    public static function post(string $route, callable $permission_callback, callable $callback): void
     {
-        self::register_rest_api_route("POST", $route, $callback, $permission_callback);
+        self::register_rest_api_route("POST", $route, $permission_callback, $callback);
     }
 
     /**
@@ -290,15 +290,15 @@ final class Router
      * 
      * Registers a PUT request route.
      * @param string $route The route URL.
-     * @param callable|null $callback - The function that runs when the route is accessed.
      * @param callable|null $permission_callback - Callback for checking permissions.
+     * @param callable|null $callback - The function that runs when the route is accessed.
      * 
      * @return void
      */
 
-    public static function put(string $route = '', ?callable $callback = null, ?callable $permission_callback = null): void
+    public static function put(string $route, callable $permission_callback, callable $callback): void
     {
-        self::register_rest_api_route("PUT", $route, $callback, $permission_callback);
+        self::register_rest_api_route("PUT", $route, $permission_callback, $callback);
     }
 
     /**
@@ -306,13 +306,13 @@ final class Router
      * 
      * Registers a DELETE request route.
      * @param string $route The route URL.
-     * @param callable|null $callback - The function that runs when the route is accessed.
      * @param callable|null $permission_callback - Callback for checking permissions.
+     * @param callable|null $callback - The function that runs when the route is accessed.
      * 
      * @return void
      */
 
-    public static function delete(string $route = '', ?callable $callback = null, ?callable $permission_callback = null): void
+    public static function delete(string $route, callable $permission_callback, callable $callback): void
     {
         self::register_rest_api_route("DELETE", $route, $callback, $permission_callback);
     }
@@ -323,16 +323,16 @@ final class Router
      * Registers multiple routes for different HTTP methods.
      * @param array $methods An array of HTTP methods.
      * @param string $route The route URL.
-     * @param callable|null $callback - The function that runs when the route is accessed.
      * @param callable|null $permission_callback - Callback for checking permissions.
+     * @param callable|null $callback - The function that runs when the route is accessed.
      * 
      * @return void
      */
 
-    public static function match(array $methods, string $route, ?callable $callback, ?callable $permission_callback = null): void
+    public static function match(array $methods, string $route, callable $permission_callback, callable $callback): void
     {
         foreach ($methods as $method) {
-            self::register_rest_api_route($method, $route, $callback, $permission_callback);
+            self::register_rest_api_route($method, $route, $permission_callback, $callback);
         }
     }
 }

@@ -28,14 +28,15 @@ final class Auth_Token
     /**
      * CONSTRUCTOR
      *
-     * @param int|null $id The user ID associated with this token.
+     * @param int|null $user_id The user ID associated with this token.
+     * @param array $session_data The session data linked to the token.
      * @param string|null $issued_at The timestamp when the token was issued.
      * @param string|null $expiration_at The timestamp when the token will expire.
      */
 
     private function __construct(
         public readonly int|null $user_id,
-        public readonly int|null $session_id,
+        public readonly array $session_data,
         public readonly string|null $issued_at,
         public readonly string|null $expiration_at
     ) {}
@@ -48,7 +49,7 @@ final class Auth_Token
      * @param bool $ok - Whether the token validation was successful.
      * @param int $status_code - The HTTP status code for the response.
      * @param string|int|null $user_id - The user ID from the token.
-     * @param string|int|null $session_id - The session ID from the token.
+     * @param array|object|null $session_data - The session data linked to the token.
      * @param string|null $message - A descriptive response message.
      * @param int|null $issued_at - Timestamp when the token was issued.
      * @param int|null $expires_at - Timestamp when the token will expire.
@@ -56,10 +57,9 @@ final class Auth_Token
      * @return Response_Handler - Returns a structured response from the Response_Handler::response() method.
      */
 
-    private static function response(bool $ok, int $status_code, string|int|null $user_id, string|int|null $session_id, string $message, int $issued_at = 0, int $expiration_at = 0): Response_Handler
+    private static function response(bool $ok, int $status_code, string|int|null $user_id, array|object|null $session_data, string $message, int $issued_at = 0, int $expiration_at = 0): Response_Handler
     {
         $user_id = $user_id !== '' ? intval($user_id) : null;
-        $session_id = $session_id !== '' ? intval($session_id) : null;
 
         if ($issued_at !== 0) {
             $issued_at = date("Y-m-d H:i:s", $issued_at);
@@ -69,7 +69,7 @@ final class Auth_Token
             $expiration_at = date("Y-m-d H:i:s", $expiration_at);
         } else $expiration_at = null;
 
-        $object_data = new static($user_id, $session_id, $issued_at, $expiration_at);
+        $object_data = new static($user_id, (array) $session_data, $issued_at, $expiration_at);
 
         $return_data = Response_Handler::response($ok, $status_code, $message, $object_data);
 
@@ -114,14 +114,15 @@ final class Auth_Token
 
         // Convert session_id to int
         $session_id = intval($session_id);
+        $session_data = ['id' => $session_id];
 
         // Remove session data corresponding to token if session_id is not equal to 0
         if ($session_id !== 0) {
             $remove_session = Session::delete($session_id);
-            if (!$remove_session->ok) return self::response(false, 500, $user_id, $session_id, "Token session data removal failed for token name of `" . $token_name . "`.");
+            if (!$remove_session->ok) return self::response(false, 500, $user_id, $session_data, "Token session data removal failed for token name of `" . $token_name . "`.");
         }
 
-        return self::response(true, 200, $user_id, $session_id, "Token removed successfully for token name of `" . $token_name . "` along with its session data.");
+        return self::response(true, 200, $user_id, $session_data, "Token removed successfully for token name of `" . $token_name . "` along with its session data.");
     }
 
     /**
@@ -215,12 +216,12 @@ final class Auth_Token
         // Set the token as a cookie in the browser
         $cookie_result = Cookie::set($token_name_prefix, $token, $expires_at);
 
-        if (!$cookie_result->ok) return self::response(false, 500, $user_id, $session_id,"Token was generated but could not be stored as a cookie in the browser. Headers may have already been sent.");
+        if (!$cookie_result->ok) return self::response(false, 500, $user_id, $session_data, "Token was generated but could not be stored as a cookie in the browser. Headers may have already been sent.");
 
         // Set header for header nonce
         header(Config::HEADER_NONCE_PREFIX . ': ' . $header_nonce);
         
-        return self::response(true, 200, $user_id, $session_id, "Token successfully generated.", $issued_at, $expires_at);
+        return self::response(true, 200, $user_id, $session_data, "Token successfully generated.", $issued_at, $expires_at);
     }
 
     /**
@@ -229,13 +230,13 @@ final class Auth_Token
      * Checks that token is valid.  If not, cookie is removed and false value is returned
      * 
      * @param string $token_name - Name of token to verify. Stored as http only cookie with the same name
-     * @param bool $validate_header_nonce - Optional parameter to validate the header nonce.
+     * @param bool $validate_header_nonce - Optional parameter to validate the header nonce. Default set to true
      * @param int|null $logout_time - Optional timestamp of the user's last logout.
      * 
      * @return Response_Handler The response of the token validate operation from the self::response() method.
      */
 
-    public static function validate(string $token_name, bool $validate_header_nonce = false, int $logout_time = 0): Response_Handler
+    public static function validate(string $token_name, bool $validate_header_nonce = true, int $logout_time = 0): Response_Handler
     {
         // Check if token name was provided.  If not return error
         if (!$token_name) return self::response(false, 500, null, null, "A token name must be provided for validation.");
@@ -273,6 +274,7 @@ final class Auth_Token
 
         // Convert session id to int
         $session_id = intval($received_session_id);
+        $session_id_arr = ['id' => $session_id];
 
         // Derive keys using HKDF (same as in generate)
         $encryption_key = hash_hkdf('sha256', Config::SECRET_KEY, 32, 'encryption');
@@ -282,14 +284,14 @@ final class Auth_Token
         $computed_hmac = hash_hmac("sha256", $iv . $encrypted_data_with_iv, $hmac_key, true);
         if (!hash_equals($computed_hmac, $received_hmac)) {
             self::remove_token($token_name_prefix, 0, $session_id);
-            return self::response(false, 401, null, $session_id, "Invalid token.");
+            return self::response(false, 401, null, $session_id_arr, "Invalid token.");
         }
 
         // Decrypt the data
         $decrypted_data = openssl_decrypt($encrypted_data_with_iv, 'aes-256-cbc', $encryption_key, OPENSSL_RAW_DATA, $iv);
         if ($decrypted_data === false) {
             self::remove_token($token_name_prefix, 0, $session_id);
-            return self::response(false, 401, null, $session_id, "Decryption failed. Token may be invalid.");
+            return self::response(false, 401, null, $session_id_arr, "Decryption failed. Token may be invalid.");
         }
 
         // Extract token components
@@ -298,7 +300,7 @@ final class Auth_Token
         // Check if token structure is valid
         if (count($parts) !== 4) {
             self::remove_token($token_name_prefix, 0, $session_id);
-            return self::response(false, 401, null, $session_id, "Token structure is invalid.");
+            return self::response(false, 401, null, $session_id_arr, "Token structure is invalid.");
         }
 
         // Separate token components
@@ -311,13 +313,13 @@ final class Auth_Token
         // Check token expiration
         if ($expiration_at <= time()) {
             self::remove_token($token_name_prefix, $id, $session_id);
-            return self::response(false, 401, null, $session_id, "Token has expired.");
+            return self::response(false, 401, null, $session_id_arr, "Token has expired.");
         }
 
         // Check if token was issued before logout
         if ($logout_time !== 0 && $issued_at <= $logout_time) {
             self::remove_token($token_name_prefix, $id, $session_id);
-            return self::response(false, 401, null, $session_id, "Token was issued before or at the last logout time.");
+            return self::response(false, 401, null, $session_id_arr, "Token was issued before or at the last logout time.");
         }
 
         // Retrieve session data
@@ -326,7 +328,7 @@ final class Auth_Token
         // Check if session data retrieval was successful
         if (!$session_data->ok) {
             self::remove_token($token_name_prefix, $id, $session_id);
-            return self::response(false, 401, null, $session_id, "Unable to retrieve session data for token name of `" . $token_name_prefix . "`.");
+            return self::response(false, 401, null, $session_id_arr, "Unable to retrieve session data for token name of `" . $token_name_prefix . "`.");
         }
 
         // Convert session data to array
@@ -338,7 +340,7 @@ final class Auth_Token
         // Check if nonce is valid
         if (!hash_equals($session_data['nonce'], $hashed_nonce)) {
             self::remove_token($token_name_prefix, $id, $session_id);
-            return self::response(false, 401, null, $session_id, "Invalid, replayed token, or session data for token name of `" . $token_name_prefix . "` is missing.");
+            return self::response(false, 401, null, $session_id_arr, "Invalid, replayed token, or session data for token name of `" . $token_name_prefix . "` is missing.");
         }
 
         // Check if header nonce is valid if validate_header_nonce is set to true
@@ -349,7 +351,7 @@ final class Auth_Token
             // Check if header nonce is missing. If so, remove token
             if (!$header_nonce_value) {
                 self::remove_token($token_name_prefix, $id, $session_id);
-                return self::response(false, 401, null, $session_id, "Header nonce for token name of `" . $token_name_prefix . "` is missing.");
+                return self::response(false, 401, null, $session_id_arr, "Header nonce for token name of `" . $token_name_prefix . "` is missing.");
             }
 
             // Hash header nonce
@@ -358,14 +360,14 @@ final class Auth_Token
             // Check if header nonce matches
             if (!hash_equals($session_data['header_nonce'], $hashed_header_nonce_value)) {
                 self::remove_token($token_name_prefix, $id, $session_id);
-                return self::response(false, 401, null, $session_id, "Invalid header nonce for token name of `" . $token_name_prefix . "`.");
+                return self::response(false, 401, null, $session_id_arr, "Invalid header nonce for token name of `" . $token_name_prefix . "`.");
             }
         }
 
         // Check if session data is expired
         if ($session_data['expiration_at'] <= time()) {
             self::remove_token($token_name_prefix, $id);
-            return self::response(false, 401, null, $session_id, "Session data for token name of `" . $token_name_prefix . "` has expired.");
+            return self::response(false, 401, null, $session_id_arr, "Session data for token name of `" . $token_name_prefix . "` has expired.");
         }
 
         // Base 64 decode refresh cookie value
@@ -377,7 +379,7 @@ final class Auth_Token
         // Check if refresh cookie value matches session data refresh nonce value
         if (!hash_equals($session_data['refresh_nonce'], $hashed_refresh_cookie_value)) {
             self::remove_token($token_name_prefix, $id);
-            return self::response(false, 401, null, $session_id, "Invalid refresh token for token name of `" . $token_name_prefix . "`.");
+            return self::response(false, 401, null, $session_id_arr, "Invalid refresh token for token name of `" . $token_name_prefix . "`.");
         }
 
         // Regenerate refresh cookie value
@@ -411,6 +413,6 @@ final class Auth_Token
         header(Config::HEADER_NONCE_PREFIX . ': ' . $updated_header_nonce_value);
 
         // Token is valid
-        return self::response(true, 200, $id, $session_id, "Token authenticated.", $issued_at, $expiration_at);
+        return self::response(true, 200, $id, $session_data, "Token authenticated.", $issued_at, $expiration_at);
     }
 }

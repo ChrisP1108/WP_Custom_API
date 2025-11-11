@@ -17,13 +17,16 @@ if (!defined('ABSPATH')) exit;
 
 final class Permission extends Permission_Interface
 {
-    public const TOKEN_NAME = 'sample_token';
+    public static function token_name(): string 
+    {
+        return 'sample';
+    }
 
     public static function authorized(Request $request): bool|array
     {
         // Replace code in this method with logic for protecting a route from unauthorized access. 
 
-        $token = self::token_parser(self::TOKEN_NAME);
+        $token = self::token_validate();
         return [$token->ok, $token->data];
     }
 }
