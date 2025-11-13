@@ -495,6 +495,48 @@ final class Database
     }
 
     /**
+     * METHOD - execute_query 
+     * 
+     * Executes a custom SQL query against the database.
+     *
+     * @param string $query - The SQL query to execute.
+     * 
+     * @return Response_Handler - The response of the query execution from the self::response() method.
+     */
+    
+    public static function execute_query(string $query): Response_Handler
+    {
+        global $wpdb;
+    
+        ob_start();
+    
+        // Execute the query
+        $result = $wpdb->query($query);
+
+        ob_end_clean();
+    
+        // Check for errors
+        if ($result === false) {
+            // If an error occurred, generate an error message
+            $error_msg = !empty($wpdb->last_error)
+                ? 'SQL Error: ' . $wpdb->last_error
+                : 'An unknown error occurred while executing the query.';
+    
+            // Optionally log or trigger custom error handling
+            Error_Generator::generate('Database Query Error', $error_msg . ' | Query: ' . $query);
+    
+            return self::response(false, 500, $error_msg);
+        }
+    
+        // Return the number of affected rows
+        $data = [
+            'affected_rows' => $wpdb->rows_affected
+        ];
+    
+        return self::response(true, 200, 'Query executed successfully.', $data);
+    }
+
+    /**
      * METHOD - get_table_schema_from_db
      *
      * Pulls a table’s column definitions (minus the automatic id/created/updated)
