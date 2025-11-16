@@ -528,9 +528,6 @@ abstract class Permission_Interface
     
     final public static function cookie_custom_remove(string $name, string $path = '/', string $domain = ''): Response_Handler 
     {
-        /**
-         * Remove the cookie using the Cookie class
-         */
         return Cookie::remove($name, $path, $domain);
     }
 
