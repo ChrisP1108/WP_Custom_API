@@ -329,13 +329,13 @@ final class Database
      * 
      * @param string $table_name - The name of the table to retrieve data from.
      * @param string $column - Column name to search for based upon value
-     * @param string|int $value - The value of the column to search for
+     * @param mixed $value - The value of the column to search for
      * @param bool $multiple - Boolean to determine if more than one table row should be returned.
      * 
      * @return Response_Handler The response of the get rows data operation from the self::response() method.
      */
 
-    public static function get_rows_data(string $table_name, string $column, int|string $value, bool $multiple = true): Response_Handler
+    public static function get_rows_data(string $table_name, string $column, mixed $value, bool $multiple = true): Response_Handler
     {
         if (!self::table_exists($table_name)) return self::response(false, 500, 'Table `' . $table_name . '` does not exist and therefore no table rows data can be retrieved.');
 
@@ -493,48 +493,51 @@ final class Database
 
         return self::response(true, 200, 'Table row for `' . $table_name . '` successfully deleted.');
     }
+    
+
 
     /**
-     * METHOD - execute_query 
+     * METHOD - execute_query
      * 
-     * Executes a custom SQL query against the database.
-     *
-     * @param string $query - The SQL query to execute.
+     * Execute a SQL query directly against the database. Handles errors and logging of errors.
      * 
-     * @return Response_Handler - The response of the query execution from the self::response() method.
+     * @param string $query The SQL query to execute.
+     * 
+     * @return Response_Handler The response of the query execution from the self::response() method.
      */
-    
+
     public static function execute_query(string $query): Response_Handler
     {
         global $wpdb;
     
         ob_start();
     
-        // Execute the query
-        $result = $wpdb->query($query);
-
+        // Normalize query for detection
+        $trimmed = ltrim($query);
+        $is_select = stripos($trimmed, 'select') === 0;
+    
+        if ($is_select) {
+            // Run SELECT-type query
+            $result = $wpdb->get_results($query, ARRAY_A);
+        } else {
+            // Run write/delete query
+            $result = $wpdb->query($query);
+        }
+    
         ob_end_clean();
     
-        // Check for errors
+        // Handle errors
         if ($result === false) {
-            // If an error occurred, generate an error message
             $error_msg = !empty($wpdb->last_error)
                 ? 'SQL Error: ' . $wpdb->last_error
                 : 'An unknown error occurred while executing the query.';
     
-            // Optionally log or trigger custom error handling
-            Error_Generator::generate('Database Query Error', $error_msg . ' | Query: ' . $query);
-    
             return self::response(false, 500, $error_msg);
         }
-    
-        // Return the number of affected rows
-        $data = [
-            'affected_rows' => $wpdb->rows_affected
-        ];
-    
-        return self::response(true, 200, 'Query executed successfully.', $data);
+
+        return self::response(true, 200, 'Query executed successfully.', $result);
     }
+    
 
     /**
      * METHOD - get_table_schema_from_db

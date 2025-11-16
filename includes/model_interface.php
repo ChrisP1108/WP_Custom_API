@@ -92,7 +92,7 @@ abstract class Model_Interface
      * @return Response_Handler The response of the get rows data operation from the self::response() method.
      */
 
-    final public static function get_rows_data(string $column, int|string $value, bool $multiple = true): Response_Handler
+    final public static function get_rows_data(string $column, mixed $value, bool $multiple = true): Response_Handler
     {
         return Database::get_rows_data(static::table_name(), $column, $value, $multiple);
     }
@@ -140,5 +140,20 @@ abstract class Model_Interface
     final public static function delete_row(int $id): Response_Handler
     {
         return Database::delete_row(static::table_name(), $id);
+    }
+
+    /**
+     * METHOD - execute_query
+     * 
+     * Execute a raw SQL query.
+     * 
+     * @param string $query The raw SQL query to execute.
+     * 
+     * @return Response_Handler The response of the query operation from the self::response() method.
+     */
+
+    final public static function execute_query(string $query): Response_Handler
+    {
+        return Database::execute_query($query);
     }
 }

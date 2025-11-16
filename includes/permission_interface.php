@@ -223,7 +223,7 @@ abstract class Permission_Interface
     }
 
     /**
-     * METHOD - generate_custom_session
+     * METHOD - session_custom_generate
      * 
      * Generates a custom session and stores it as a cookie for the specified user.
      *
@@ -238,7 +238,7 @@ abstract class Permission_Interface
      * @return Response_Handler The response of the session generation operation.
      */
 
-    final public static function generate_custom_session(string $name, int $id, int $expiration_time, array $additionals = []): Response_Handler 
+    final public static function session_custom_generate(string $name, int $id, int $expiration_time, array $additionals = []): Response_Handler 
     {
         // Check if the connection is using HTTPS for secure cookie transmission
         if (!wp_is_using_https() && Config::TOKEN_OVER_HTTPS_ONLY) {
@@ -298,7 +298,7 @@ abstract class Permission_Interface
     }
 
     /**
-     * METHOD - update_custom_session
+     * METHOD - session_custom_update
      * 
      * Update a custom session. This method updates the session data stored in the database. If the session does not exist, it returns an error response.
      * If the session exists, it updates the session data and returns a success response.
@@ -310,7 +310,7 @@ abstract class Permission_Interface
      * @return Response_Handler The response of the session update operation.
      */
 
-    final public static function update_custom_session(string $name, bool $validate_header_nonce, array $updated_data): Response_Handler 
+    final public static function session_custom_update(string $name, bool $validate_header_nonce, array $updated_data): Response_Handler 
     {
         // Prefix the session name with the configured prefix
         $prefixed_name = Config::PREFIX . $name;
@@ -444,7 +444,7 @@ abstract class Permission_Interface
     }
 
     /**
-     * METHOD - delete_custom_session
+     * METHOD - session_custom_delete
      * 
      * Delete a custom session by name and user ID.
      *
@@ -457,7 +457,7 @@ abstract class Permission_Interface
      * @return Response_Handler The response of the session deletion operation.
      */
 
-    final public static function delete_custom_session(string $name, int $session_id): Response_Handler 
+    final public static function session_custom_delete(string $name, int $session_id): Response_Handler 
     {
         // Prefix the session name with the configured prefix
         $prefixed_name = Config::PREFIX . $name;
@@ -477,6 +477,61 @@ abstract class Permission_Interface
 
         // Return the successful session deletion response
         return $existing_session_result;
+    }
+
+    /**
+     * 
+     * METHOD - cookie_custom_set
+     * 
+     * Set a custom cookie with the provided name, value, expiration time, path, and domain.
+     * 
+     * @param string $name The name of the cookie to set.
+     * @param string $value The value of the cookie to set.
+     * @param int $expires_at The expiration time of the cookie in seconds since the Unix Epoch (January 1, 1970, 00:00:00 GMT).
+     * @param string $path The path of the cookie to set.
+     * @param string $domain The domain of the cookie to set.
+     * 
+     * @return Response_Handler The response of the cookie set operation.
+     */
+
+    final public static function cookie_custom_set(string $name, string $value, int $expires_at = 0, string $path = '/', string $domain = ''): Response_Handler 
+    {
+        return Cookie::set($name, $value, $expires_at, $path, $domain);
+    }
+
+    /**
+     * METHOD - cookie_custom_get
+     * 
+     * Get a custom cookie with the provided name.
+     * 
+     * @param string $name The name of the cookie to get.
+     * 
+     * @return Response_Handler The response of the cookie get operation.
+     */
+
+    final public static function cookie_custom_get(string $name): Response_Handler
+    {
+        return Cookie::get($name);
+    }
+
+    /**
+     * METHOD - cookie_custom_remove
+     * 
+     * Remove a custom cookie with the provided name, path, and domain.
+     * 
+     * @param string $name The name of the cookie to remove.
+     * @param string $path The path of the cookie to remove.
+     * @param string $domain The domain of the cookie to remove.
+     * 
+     * @return Response_Handler The response of the cookie removal operation.
+     */
+    
+    final public static function cookie_custom_remove(string $name, string $path = '/', string $domain = ''): Response_Handler 
+    {
+        /**
+         * Remove the cookie using the Cookie class
+         */
+        return Cookie::remove($name, $path, $domain);
     }
 
     /**
