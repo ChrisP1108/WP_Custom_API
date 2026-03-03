@@ -72,12 +72,14 @@ abstract class Model_Interface
      * 
      * Retrieve all data from the table.
      *
+     * @param bool $get_all_rows - Determines if all rows should be returned or if pagination should be used.
      * @return Response_Handler The response of the get table data operation from the self::response() method.
      */
 
-    final public static function get_table_data(): Response_Handler
+
+    final public static function get_table_data(bool $get_all_rows = false): Response_Handler
     {
-        return Database::get_table_data(static::table_name());
+        return Database::get_table_data(static::table_name(), $get_all_rows);
     }
 
     /**
