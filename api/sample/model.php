@@ -45,6 +45,8 @@ final class Model extends Model_Interface
 
     public static function create_table(): bool 
     {
+        // When schema is updated, update this method to return true to have the table created.
+        
         return false;
     }
 }
