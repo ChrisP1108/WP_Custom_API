@@ -314,7 +314,7 @@ final class Router
 
     public static function delete(string $route, callable $permission_callback, callable $callback): void
     {
-        self::register_rest_api_route("DELETE", $route, $permission_callback,$callback);
+        self::register_rest_api_route("DELETE", $route, $permission_callback, $callback);
     }
 
     /**
