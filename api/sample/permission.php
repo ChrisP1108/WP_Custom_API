@@ -17,11 +17,6 @@ if (!defined('ABSPATH')) exit;
 
 final class Permission extends Permission_Interface
 {
-    public static function token_name(): string 
-    {
-        return 'sample';
-    }
-
     public static function authorized(Request $request): bool|array
     {
         // Replace code in this method with logic for protecting a route from unauthorized access. 

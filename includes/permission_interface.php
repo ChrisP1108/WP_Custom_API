@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace WP_Custom_API\Includes;
 
 use WP_Custom_API\Config;
+use WP_Custom_API\Includes\Plugin;
 use WP_Custom_API\Includes\Password;
 use WP_Custom_API\Includes\Auth_Token;
 use WP_Custom_API\Includes\Session;
@@ -27,16 +28,6 @@ if (!defined('ABSPATH')) exit;
 
 abstract class Permission_Interface
 {
-    /**
-     * ABSTRACT METHOD - token_name
-     * 
-     * Get the name of the token.
-     * 
-     * @return string
-     */
-
-    abstract public static function token_name(): string;
-
     /**
      * METHOD - public
      * 
@@ -118,7 +109,7 @@ abstract class Permission_Interface
 
     final public static function token_generate(int $id, array $session_data_additionals = [], int $expiration = Config::TOKEN_EXPIRATION): Response_Handler
     {
-        return Auth_Token::generate(static::token_name(), $id, $session_data_additionals, $expiration);
+        return Auth_Token::generate(Plugin::get_requested_route_data()['namespace'], $id, $session_data_additionals, $expiration);
     }
 
     /**
@@ -138,7 +129,7 @@ abstract class Permission_Interface
 
     final public static function token_validate(bool $validate_header_nonce = true, int $logout_time = 0): Response_Handler 
     {
-        return Auth_Token::validate(static::token_name(), $validate_header_nonce, $logout_time);
+        return Auth_Token::validate(Plugin::get_requested_route_data()['namespace'], $validate_header_nonce, $logout_time);
     }
 
     /**
@@ -158,7 +149,7 @@ abstract class Permission_Interface
 
     final public static function token_remove(string|int $user_id = 0, string|int $session_id = 0): Response_Handler 
     {
-        return Auth_Token::remove_token(static::token_name(), $user_id, $session_id);
+        return Auth_Token::remove_token(Plugin::get_requested_route_data()['namespace'], $user_id, $session_id);
     }
 
     /**
@@ -177,7 +168,7 @@ abstract class Permission_Interface
 
     final public static function token_session_data(int $session_id, int $user_id): Response_Handler
     {
-        $token_prefixed = Config::AUTH_TOKEN_PREFIX . static::token_name();
+        $token_prefixed = Config::AUTH_TOKEN_PREFIX . Plugin::get_requested_route_data()['namespace'];
 
         return Session::get($session_id, $token_prefixed, $user_id);
     }
@@ -201,7 +192,7 @@ abstract class Permission_Interface
 
     final public static function token_update_session_data(int $session_id, int $user_id, array $updated_data, string $refresh_nonce = '', string $header_nonce = ''): Response_Handler 
     {
-        $token_prefixed = Config::AUTH_TOKEN_PREFIX . static::token_name();
+        $token_prefixed = Config::AUTH_TOKEN_PREFIX . Plugin::get_requested_route_data()['namespace'];
 
         // Update the session additionals and return the response
         return Session::update($session_id, $token_prefixed, $user_id, $updated_data, $refresh_nonce, $header_nonce);

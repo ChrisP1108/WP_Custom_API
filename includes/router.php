@@ -7,7 +7,7 @@ namespace WP_Custom_API\Includes;
 use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Error_Generator;
 use WP_Custom_API\Includes\Permission_Interface as Permission;
-use WP_Custom_API\Includes\Init;
+use WP_Custom_API\Includes\Plugin;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -56,17 +56,20 @@ final class Router
      */
     private static function route_matches_request(string $method, string $route_pattern): bool
     {
+        // Get the requested route data
+        $route_data = Plugin::get_requested_route_data();
+
         // 1) Method must match
-        if (Init::$requested_route_data['method'] !== strtoupper($method)) {
+        if ($route_data['method'] !== strtoupper($method)) {
             return false;
         }
 
         // 2) Full path after /v1/, e.g. "youtube_blogs/categories/4"
-        $requested_full = trim(Init::$requested_route_data['route'], '/');
+        $requested_full = trim($route_data['route'], '/');
 
         // 3) Derive your base folder name, e.g. "youtube_blogs/categories"
         $api_prefix = rtrim(WP_CUSTOM_API_FOLDER_PATH, '/') . '/api/';
-        $folder    = str_replace('\\', '/', Init::$requested_route_data['folder']);
+        $folder    = str_replace('\\', '/', $route_data['folder']);
         $base      = '';
         if (0 === strpos($folder, $api_prefix)) {
             $base = trim(substr($folder, strlen($api_prefix)), '/');
@@ -125,13 +128,15 @@ final class Router
     
     private static function register_rest_api_route(string $method, string $route, callable $permission_callback, callable $callback): void
     {
+        $route_data = Plugin::get_requested_route_data();
+
         // Check that route matches the request.  If not, the route will not be registered
         if (!self::route_matches_request($method, $route)) return;
 
         // Check that permission callback is callable.  If not, return no_permission_callback_response and set permission_callback to true to display error message
 
         if (!is_callable($permission_callback)) {
-            $no_permission_err_msg = 'A permission callback must be registered for the ' . $method . ' route `' . Init::$requested_route_data['route'] . $route . '`.';
+            $no_permission_err_msg = 'A permission callback must be registered for the ' . $method . ' route `' . $route_data['route'] . $route . '`.';
             Error_Generator::generate('No Permission Callback', $no_permission_err_msg);
             $callback = function() use ($no_permission_err_msg) { 
                 return new WP_Rest_Response(['message' => $no_permission_err_msg], 500);
@@ -142,9 +147,9 @@ final class Router
         $route = trim($route, '/');
 
         self::$routes[] = [
-            'name' => Init::$requested_route_data['folder'],
+            'name' => $route_data['folder'],
             'method' => strtoupper($method),
-            'route' => self::parse_wildcards(Init::$requested_route_data['route_without_remainder'] . $route),
+            'route' => self::parse_wildcards($route_data['route_without_remainder'] . $route),
             'callback' => $callback,
             'permission_callback' => $permission_callback
         ];

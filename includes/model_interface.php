@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace WP_Custom_API\Includes;
 
+use WP_Custom_API\Includes\Plugin;
 use WP_Custom_API\Includes\Database;
 use WP_Custom_API\Includes\Response_Handler;
 
@@ -24,16 +25,6 @@ if (!defined('ABSPATH')) exit;
 
 abstract class Model_Interface
 {
-    /**
-     * ABSTRACT METHOD - table_name
-     * 
-     * Get the name of the table.
-     * 
-     * @return string
-     */
-
-    abstract public static function table_name(): string;
-
     /**
      * ABSTRACT METHOD - schema
      * 
@@ -64,7 +55,7 @@ abstract class Model_Interface
 
     final public static function table_exists(): bool
     {
-        return Database::table_exists(static::table_name());
+        return Database::table_exists(Plugin::get_requested_route_data()['namespace']);
     }
 
     /**
@@ -79,7 +70,7 @@ abstract class Model_Interface
 
     final public static function get_table_data(bool $get_all_rows = false): Response_Handler
     {
-        return Database::get_table_data(static::table_name(), $get_all_rows);
+        return Database::get_table_data(Plugin::get_requested_route_data()['namespace'], $get_all_rows);
     }
 
     /**
@@ -96,7 +87,7 @@ abstract class Model_Interface
 
     final public static function get_rows_data(string $column, mixed $value, bool $multiple = true): Response_Handler
     {
-        return Database::get_rows_data(static::table_name(), $column, $value, $multiple);
+        return Database::get_rows_data(Plugin::get_requested_route_data()['namespace'], $column, $value, $multiple);
     }
 
     /**
@@ -110,7 +101,7 @@ abstract class Model_Interface
 
     final public static function insert_row(array $data): Response_Handler
     {
-        return Database::insert_row(static::table_name(), $data);
+        return Database::insert_row(Plugin::get_requested_route_data()['namespace'], $data);
     }
 
     /**
@@ -126,7 +117,7 @@ abstract class Model_Interface
 
     final public static function update_row(int $id, array $data): Response_Handler
     {
-        return Database::update_row(static::table_name(), $id, $data);
+        return Database::update_row(Plugin::get_requested_route_data()['namespace'], $id, $data);
     }
 
     /**
@@ -141,7 +132,7 @@ abstract class Model_Interface
 
     final public static function delete_row(int $id): Response_Handler
     {
-        return Database::delete_row(static::table_name(), $id);
+        return Database::delete_row(Plugin::get_requested_route_data()['namespace'], $id);
     }
 
     /**

@@ -14,11 +14,6 @@ if (!defined('ABSPATH')) exit;
 
 final class Model extends Model_Interface
 {
-    public static function table_name(): string 
-    {
-        return 'sample';
-    }
-
     public static function schema(): array 
     {
         // Below is a sample schema, feel free to update/delete as needed.

@@ -19,22 +19,22 @@ use Exception;
 if (!defined('ABSPATH')) exit;
 
 /** 
- * Runs spl_autoload_register for all classes throughout the plugin based upon namespaces
+ * Runs spl_autoload_register for all classes throughout the plugin based upon namespaces and the Config::FILES_TO_AUTOLOAD constant
  * 
  * @since 1.0.0
  */
 
-final class Init
+final class Plugin
 {
 
     /**
      * PROPERTY
      * 
      * @bool instantiated
-     * Determines if Init class has been instantiated.
+     * Determines if Init class has been instantiated for single instantiation.
      */
 
-    private static bool $instantiated = false;
+    public static self|null $instantiated = null;
 
     /**
      * PROPERTY
@@ -52,7 +52,7 @@ final class Init
      * Stores data about the requested route
      */
 
-    public static array $requested_route_data;
+    private static array $requested_route_data;
 
     /**
      * METHOD - get_files_loaded
@@ -67,7 +67,18 @@ final class Init
         return self::$files_loaded;
     }
 
-
+    /**
+     * METHOD - get_requested_route_data
+     * 
+     * Returns data about the requested route
+     * 
+     * @return array
+     */
+    
+    public static function get_requested_route_data(): array
+    {
+        return self::$requested_route_data;
+    }
 
     /**
      * CONSTRUCTOR
@@ -79,41 +90,45 @@ final class Init
 
     private function __construct()
     {
-        // Call before_init from the hooks class before initializing plugin
-        Hooks::before_init();
+        // Autoload classes based on namespaces
+        spl_autoload_register([self::class, 'namespaces_autoloader_callback']);
 
-        // Autoload files based on Config::FILES_TO_AUTOLOAD constant
-        self::files_autoloader();
+        if ($this->request_to_plugin()) {
+            // Call before_init from the hooks class before initializing plugin
+            Hooks::before_init();
 
-        // Delete expired sessions from database
-        Session::delete_expired_sessions();
+            // Autoload files based on Config::FILES_TO_AUTOLOAD constant
+            $this->files_autoloader();
 
-        // Create tables
-        self::create_tables();
+            // Delete expired sessions from database
+            Session::delete_expired_sessions();
 
-        // Initialize routes
-        Router::init();
+            // Create tables
+            $this->create_tables();
 
-        // Call after_init from the hooks class after initializing plugin
-        Hooks::after_init();
+            // Initialize routes
+            Router::init();
+
+            // Call after_init from the hooks class after initializing plugin
+            Hooks::after_init();
+
+            do_action('wp_custom_api_loaded', $this);
+        }
     }
 
     /**
-     * Runs the plugin by autoloading classes and files, creating tables in the database, and registering routes with the Wordpress REST API.
+     * Runs the plugin instance once by autoloading classes and files, creating tables where needed in the database, and registering routes with the Wordpress REST API.
      * 
-     * @return void
+     * @return self
      */
-    public static function run(): void
+    public static function get_instance(): self
     {
-        // Register namespaces_autoloader_callback for autoloading
-        spl_autoload_register([self::class, 'namespaces_autoloader_callback']);
-
         // Check if the request is for the plugin and if the plugin hasn't been instantiated yet
-        if (!self::$instantiated && self::request_to_plugin()) {
-            new self();
-            self::$instantiated = true;
-            do_action('wp_custom_api_loaded', self::$files_loaded);
+        if (!self::$instantiated) {
+            self::$instantiated = new self();
         }
+
+        return self::$instantiated;
     }
 
     /**
@@ -125,7 +140,7 @@ final class Init
      * @return bool True if the request is for the plugin, false otherwise.
      */
 
-    private static function request_to_plugin(): bool
+    private function request_to_plugin(): bool
     {
         $uri    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $prefix = '/wp-json/' . Config::BASE_API_ROUTE . '/';
@@ -172,7 +187,9 @@ final class Init
             'method' => $_SERVER['REQUEST_METHOD'],
             'route'  => $route_path,
             'route_without_remainder' => $route_without_remainder,
-            'remainder' => $remainder
+            'remainder' => $remainder,
+            'namespace' => str_replace('/', '_', $route_path),
+            'model_schema' => [] 
         ];
 
         return true;
@@ -186,7 +203,7 @@ final class Init
      * @return void
      */
 
-    private static function load_file(string $file, string|null $class = null): void
+    private function load_file(string $file, string|null $class = null): void
     {
         $file = str_replace('\\', '/', $file);
         $file = preg_replace('#/+#', '/', $file);
@@ -228,7 +245,7 @@ final class Init
      * @return void
      */
 
-    private static function namespaces_autoloader_callback(string $class): void
+    private function namespaces_autoloader_callback(string $class): void
     {
         // Check if the class starts with the WP_Custom_API namespace
         if (strpos($class, 'WP_Custom_API') !== 0) {
@@ -242,7 +259,7 @@ final class Init
         $file = WP_CUSTOM_API_FOLDER_PATH . strtolower($relative_class) . '.php';
 
         // Load the file and add its path to the $files_loaded property array
-        self::load_file($file, $class);
+        $this->load_file($file, $class);
     }
 
     /**
@@ -256,7 +273,7 @@ final class Init
      * @return void
      */
 
-    private static function files_autoloader(): void
+    private function files_autoloader(): void
     {
         $all_files_to_load = apply_filters('wp_custom_api_files_to_autoload', Config::FILES_TO_AUTOLOAD);
 
@@ -285,7 +302,7 @@ final class Init
      * @return void
      */
 
-    private static function create_tables(): void
+    private function create_tables(): void
     {
         // Get existing tables created to avoid iterating through tables that have already been created
         $existing_tables_created = get_transient('wp_custom_api_tables_created');
@@ -308,11 +325,13 @@ final class Init
                     );
                 } else {
                     $tables_created[] = Session::SESSIONS_TABLE_NAME;
+                    do_action('wp_custom_api_sessions_table_created', ['name' =>Session::SESSIONS_TABLE_NAME, 'schema' => Session::SESSIONS_TABLE_QUERY]);
                 }
             }
         }
 
-        $models_classes_names = [];
+        // Get model class based upon request route
+        $model_class_name = null;
         $class_name = 'Model';
 
         foreach (self::$files_loaded as $file_data) {
@@ -320,24 +339,35 @@ final class Init
                 $class_name = $file_data['namespace'] . '\\' . $file_data['name'];
 
                 if (class_exists($class_name)) {
-                    $models_classes_names[] = $class_name;
+                    $model_class_name = $class_name;
                 }
             }
         }
 
-        foreach ($models_classes_names as $model_class_name) {
-            $model = new $model_class_name;
+        // Check if model class was found, if not, return
+        if (!$model_class_name) {
+            return;
+        }
 
-            // Skip if table has already been created based upon Wordpress transient data.
-            if ($existing_tables_created && in_array($model::table_name(), $existing_tables_created)) {
-                continue;
-            }
+        // Instantiate model class
+        $model = new $model_class_name;
 
-            $table_exists = Database::table_exists($model::table_name());
+        // Get model table name from request route namespace
+        $model_table_name = self::$requested_route_data['namespace'];
 
-            if (!$table_exists && $model::table_name() !== '' && method_exists($model, 'create_table') && $model::create_table() && !empty($model::schema())) {
+        // Check if model table exists, if not, create it
+        $table_exists = Database::table_exists($model_table_name);
+
+        // Get model schema
+        if (method_exists($model, 'schema') && !empty($model::schema())) {
+            self::$requested_route_data['model_schema'] = $model::schema();
+        }
+
+        if ($model_class_name && !$existing_tables_created && !$table_exists && $model_table_name !== '' 
+            && method_exists($model, 'create_table') 
+            && $model::create_table() && method_exists($model, 'schema') && !empty($model::schema())) {
                 $table_creation_result = Database::create_table(
-                    $model::table_name(),
+                    $model_table_name,
                     $model::schema()
                 );
                 if (!$table_creation_result->ok) {
@@ -346,9 +376,9 @@ final class Init
                         'The table name `' . Database::get_table_full_name($model::table_name()) . '` had an error in being created in MySql through the WP_Custom_API plugin.'
                     );
                 } else {
-                    $tables_created[] = $model::table_name();
+                    $tables_created[] = $model_table_name;
+                    do_action('wp_custom_api_model_table_created', ['name' => $model_table_name, 'schema' => $model::schema()]);
                 }
-            }
         }
 
         // Call Wordpress action hook

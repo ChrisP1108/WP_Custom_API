@@ -46,9 +46,9 @@ use WP_Custom_API\Includes\Error_Generator;
  * Load Init class to initialize plugin.
  */
 
-require_once WP_CUSTOM_API_FOLDER_PATH . 'includes/init.php';
+require_once WP_CUSTOM_API_FOLDER_PATH . 'includes/plugin.php';
 
-use WP_Custom_API\Includes\Init;
+use WP_Custom_API\Includes\Plugin;
 
 /** 
  * Check that Wordpress is running PHP version 8.1 or higher.
@@ -58,7 +58,7 @@ use WP_Custom_API\Includes\Init;
 if (!version_compare(PHP_VERSION, '8.1.0', '>=')) {
     Error_Generator::generate('WP Custom API plugin is currently not running', 'This plugin requires PHP version 8.1 or higher to be installed.');
 } else {
-    Init::run();
+    Plugin::get_instance();
 }
 
 /** 

@@ -232,11 +232,6 @@ class Create
         $model_table_name = strtolower(PATH);
 
         $class_content = $class_content = <<<PHP
-                public static function table_name(): string 
-                {
-                    return '$model_table_name';
-                }
-
                 public static function schema(): array 
                 {
                     // Below is a sample schema, feel free to update/delete as needed.
@@ -285,11 +280,6 @@ class Create
         ];
         $token_name = strtolower(str_replace('/', '_', PATH));
         $class_content = <<<PHP
-                public static function token_name(): string 
-                {
-                    return '$token_name';
-                }
-
                 public static function authorized(Request \$request): bool|array
                 {
                     // Replace code in this method with logic for protecting a route from unauthorized access. 
