@@ -43,7 +43,7 @@ require_once WP_CUSTOM_API_FOLDER_PATH . 'includes/error_generator.php';
 use WP_Custom_API\Includes\Error_Generator;
 
 /** 
- * Load Init class to initialize plugin.
+ * Load Plugin class to initialize plugin instance.
  */
 
 require_once WP_CUSTOM_API_FOLDER_PATH . 'includes/plugin.php';
