@@ -157,7 +157,8 @@ class Create
 
         // Add code snippet to prevent direct access to files outside Wordpress environment
 
-        $file_content .= "\n/**\n* Prevent direct access from sources other than the Wordpress environment\n*/\n\nif (!defined('ABSPATH')) exit;\n";
+        $interface_namespace = str_replace('\\', '_', strtolower(NAMESPACE_PATH));
+        $file_content .= "\n/**\n* Prevent direct access from sources other than the Wordpress environment\n*/\n\nif (!defined('ABSPATH')) exit;\n\n/**\n* Interface namespace - ". $interface_namespace . "\n*/\n";
 
         if ($type !== 'routes') {
 
@@ -215,7 +216,8 @@ class Create
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Permission",
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Utils"
         ];
-        $class_content = "    public static function index(Request \$request, mixed \$permission_params): Response \n    {\n        return self::response(null, 200, '" . ucfirst(PATH) . " route works');\n    }";
+        $interface_namespace = str_replace('\\', '_', strtolower(NAMESPACE_PATH));
+        $class_content = "    public static function index(Request \$request, mixed \$permission_params): Response \n    {\n        return self::response(null, 200, '" . $interface_namespace . " route works');\n    }";
         self::create_file("controller", $dependencies, $class_content);
     }
 
@@ -280,13 +282,7 @@ class Create
         ];
         $token_name = strtolower(str_replace('/', '_', PATH));
         $class_content = <<<PHP
-                public static function authorized(Request \$request): bool|array
-                {
-                    // Replace code in this method with logic for protecting a route from unauthorized access. 
-
-                    \$token = self::token_validate();
-                    return [\$token->ok, \$token->data];
-                }
+                // Insert permission methods here.
             PHP;
         self::create_file("permission", $dependencies, $class_content);
     }

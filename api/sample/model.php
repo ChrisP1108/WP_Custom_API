@@ -12,6 +12,10 @@ use WP_Custom_API\Includes\Model_Interface;
 
 if (!defined('ABSPATH')) exit;
 
+/**
+* Interface namespace - sample
+*/
+
 final class Model extends Model_Interface
 {
     public static function schema(): array 

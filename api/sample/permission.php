@@ -15,13 +15,11 @@ use WP_Custom_API\Api\Sample\Utils;
 
 if (!defined('ABSPATH')) exit;
 
+/**
+* Interface namespace - sample
+*/
+
 final class Permission extends Permission_Interface
 {
-    public static function authorized(Request $request): bool|array
-    {
-        // Replace code in this method with logic for protecting a route from unauthorized access. 
-
-        $token = self::token_validate();
-        return [$token->ok, $token->data];
-    }
+    // Insert permission methods here.
 }

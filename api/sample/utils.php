@@ -14,6 +14,10 @@ use WP_Custom_API\Api\Sample\Permission;
 
 if (!defined('ABSPATH')) exit;
 
+/**
+* Interface namespace - sample
+*/
+
 final class Utils
 {
     // Enter utility/helper methods here.

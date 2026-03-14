@@ -17,10 +17,14 @@ use WP_Custom_API\Api\Sample\Utils;
 
 if (!defined('ABSPATH')) exit;
 
+/**
+* Interface namespace - sample
+*/
+
 final class Controller extends Controller_Interface
 {
     public static function index(Request $request, mixed $permission_params): Response 
     {
-        return self::response(null, 200, 'Sample route works');
+        return self::response(null, 200, 'sample route works');
     }
 }

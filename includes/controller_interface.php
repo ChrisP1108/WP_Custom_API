@@ -6,6 +6,7 @@ namespace WP_Custom_API\Includes;
 
 use WP_REST_Request;
 use WP_REST_Response;
+use WP_Custom_API\Includes\Error_Generator;
 use WP_Custom_API\Includes\Database;
 use WP_Custom_API\Includes\Param_Sanitizer;
 
@@ -24,7 +25,7 @@ class Controller_Interface
 {
 
     /**
-     * The constructor is declared private to prevent instantiation of this class.
+     * The constructor is declared private to prevent instantiation of this class from the outside.
      * 
      * @param array $request_data The sanitized request data.
      * @param array $request_files The request files.
@@ -63,13 +64,19 @@ class Controller_Interface
      * @return static An object containing the sanitized request data and a flag indicating if the operation was successful.
      */
 
-    final public static function request_handler(WP_REST_Request $req, array $schema = []): static
+    final public static function request_handler(WP_REST_Request $req, array|null $schema = null): static
     {
+        // Get the request data
         $params = $req->get_params() ?? [];
         $json = json_decode($req->get_body(), true) ?? [];
         $form = $req->get_body_params() ?? [];
         $files = $req->get_file_params() ?? [];
         $headers = $req->get_headers() ?? [];
+
+        // If no schema is provided, use the schema from the current route
+        if (!$schema || !is_array($schema)) {
+            $schema = Plugin::get_requested_route_data()['model_schema'] ?? [];
+        }
 
         // Map out schema for checking data types
         $schema_data_types = [];

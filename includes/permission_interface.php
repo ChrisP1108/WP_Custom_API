@@ -49,8 +49,23 @@ abstract class Permission_Interface
      * @return WP_Error as Error - Returns an error indicating unauthorized access.
      */
     
-    final public static function unauthorized_response(): object {
+    final public static function unauthorized_response(): object 
+    {
         return Response_Handler::response(false, 401, 'Unauthorized', null, false);
+    }
+
+    /**
+     * METHOD - token_authenticate
+     * 
+     * Authenticates a user using an authentication token.
+     * 
+     * @return array Returns an array containing the authentication status and data.
+     */
+    
+    final public static function token_authenticate(): bool|array
+    {
+        $token = self::token_validate();
+        return [$token->ok, $token->data];
     }
 
     /**
