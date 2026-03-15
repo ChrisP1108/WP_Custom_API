@@ -183,18 +183,21 @@ final class Router
                 $wrapped_callback = function (WP_REST_Request $request) use ($route) {
                     
                     // Run permission callback
-                    $ok = call_user_func($route['permission_callback'], $request);
+                    $permission_callback = call_user_func($route['permission_callback'], $request);
 
                     // Check if permission callback returned true or false.  If not, return error response message.
-                    
-                    // Check if non array of true or false value
                     $non_bool_value = false;
-                    if (!is_array($ok) && !is_bool($ok)) {
+                    if (!is_array($permission_callback) && !is_bool($permission_callback)) {
                         $non_bool_value = true;
                     }
 
                     // Check if array returned with true or false value
-                    if (is_array($ok) && !is_bool($ok[0])) {
+                    if (is_array($permission_callback) && !empty($permission_callback) && !is_bool($permission_callback[0])) {
+                        $non_bool_value = true;
+                    }
+
+                    // Check that permission callback is not completely empty
+                    if (is_array($permission_callback) && empty($permission_callback)) {
                         $non_bool_value = true;
                     }
 
@@ -205,17 +208,33 @@ final class Router
                         return new WP_Rest_Response(['message' => $non_bool_message], 500);
                     }
 
+                    // Check if permission callback has third argument for if requests by user exceeded
+                    if (is_array($permission_callback) && !empty($permission_callback) && isset($permission_callback[2]) && !is_bool($permission_callback[2])) {
+                        $non_bool_message = 'The permission callback registered for the ' . $route['method'] . ' route `' . $route['route'] . '` returned a non-boolean value for user attempt request limit.  It must return true or false.';
+                        Error_Generator::generate('Non-Bool Return Value For Permission Callback', $non_bool_message);
+                        return new WP_Rest_Response(['message' => $non_bool_message], 500);
+                    }
+
                     // User for determining if user has exceeded request attempts or not
                     $user_within_request_attempts_limit = true;
 
                     // Destructure if array was returned from permission callback
                     $permission_callback_data_params = null;
-                    if (is_array($ok) && is_bool($ok[0])) {
-                        $permission_callback_data_params = $ok[1] ?? null;
-                        $ok = $ok[0];
+
+                    // Used to check if permission callback returned true or false
+                    $ok = false;
+
+                    if (is_array($permission_callback) && !empty($permission_callback) && is_bool($permission_callback[0])) {
+                        $permission_callback_data_params = $permission_callback[1] ?? null;
+                        $ok = $permission_callback[0];
 
                         // If third argument in array exists for if requests by user exceeded, set it
-                        $user_within_request_attempts_limit = $ok[2] ?? true;
+                        $user_within_request_attempts_limit = $permission_callback[2] ?? true;
+                    }
+
+                    // Set ok to true if permission callback returned boolean only and not an array
+                    if (is_bool($permission_callback)) {
+                        $ok = $permission_callback;
                     }
 
                     // Return error response if user exceeded request attempts
@@ -230,6 +249,7 @@ final class Router
                     return call_user_func($route['callback'], $request, $permission_callback_data_params);
                 };
 
+                // Register route through Wordpress REST API
                 register_rest_route(Config::BASE_API_ROUTE, $route['route'], [
                     'methods' => $route['method'],
                     'callback' => $wrapped_callback,
@@ -238,6 +258,7 @@ final class Router
             }
         });
 
+        // Run action hook when REST API routes are registered
         do_action('wp_custom_api_routes_registered', self::$routes);
     }
 

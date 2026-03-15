@@ -50,18 +50,22 @@ final class Config
      * 
      * @const string DB_SESSION_SECRET_KEY
      * Secret key used for database nonce hash generation
+     * 
+     * IMPORTANT: THIS VALUE SHOULD BE REPLACED WITH A RANDOM STRING IDEALLY FROM A .env FILE FOR BETTER SECURITY
      */
 
-    public const DB_SESSION_SECRET_KEY = 'df16db6e6d82895228abfae40bcb420acc0b1fe4f9bc2bff8c978cf215e42176';
+    public const DB_SESSION_SECRET_KEY = 'DB_SESSION_SECRET_KEY';
 
     /**
      * CONSTANT
      * 
      * @const string SECRET_KEY
      * Secret key used for auth token generation
+     * 
+     * IMPORTANT: THIS VALUE SHOULD BE REPLACED WITH A RANDOM STRING IDEALLY FROM A .env FILE FOR BETTER SECURITY
      */
 
-    public const SECRET_KEY = 'acc0b1fe4f9bc2bff8c978cf215e42176895228abfae40df16db6e6d82bcb420';
+    public const SECRET_KEY = 'SECRET_KEY';
 
     /**
      * CONSTANT
