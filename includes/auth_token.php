@@ -185,7 +185,10 @@ final class Auth_Token
         // Set refresh cookie in the browser
         $refresh_cookie_result = Cookie::set($token_name_prefix . '_refresh', base64_encode($refresh_nonce), $expires_at);
 
-        if (!$refresh_cookie_result->ok) return self::response(false, 500, $user_id, null, "Token was generated but could not be stored as a cookie in the browser. Headers may have already been sent.");
+        if (!$refresh_cookie_result->ok) {
+            Cookie::remove($token_name_prefix . '_refresh');
+            return self::response(false, 500, $user_id, null, "Token was generated but could not be stored as a cookie in the browser. Headers may have already been sent.");
+        }
 
         // Set header nonce
         $header_nonce = bin2hex(random_bytes(16));
@@ -203,7 +206,7 @@ final class Auth_Token
         $session = Session::generate($token_name_prefix, $user_id, $nonce_hash, $expires_at, $session_data_additionals, $refresh_nonce_hash, $header_nonce_hash);
         
         if (!$session->ok) {
-            Cookie::remove($token_name_prefix);
+            Cookie::remove($token_name_prefix . '_refresh');
             return self::response(false, 500, $user_id, null, "There was an error storing the token session data.");
         }
 
@@ -217,7 +220,10 @@ final class Auth_Token
         // Set the token as a cookie in the browser
         $cookie_result = Cookie::set($token_name_prefix, $token, $expires_at);
 
-        if (!$cookie_result->ok) return self::response(false, 500, $user_id, $session_data, "Token was generated but could not be stored as a cookie in the browser. Headers may have already been sent.");
+        if (!$cookie_result->ok) {
+            Cookie::remove($token_name_prefix);
+            return self::response(false, 500, $user_id, $session_data, "Token was generated but could not be stored as a cookie in the browser. Headers may have already been sent.");
+        }
 
         // Set header for header nonce
         header(Config::HEADER_NONCE_PREFIX . ': ' . $header_nonce);
