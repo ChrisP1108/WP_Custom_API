@@ -79,6 +79,45 @@ final class Auth_Token
     }
 
     /**
+     * METHOD - secrets_configured
+     * 
+     * Checks if the required secrets are configured.
+     * 
+     * @return bool - True if the required secrets are configured, false otherwise.
+     */
+
+    private static function secrets_configured(): bool
+    {
+        return Config::SECRET_KEY !== 'SECRET_KEY'
+            && Config::DB_SESSION_SECRET_KEY !== 'DB_SESSION_SECRET_KEY';
+    }
+
+    /**
+     * METHOD - request_headers
+     * 
+     * Returns an array of HTTP request headers.
+     * 
+     * @return array - An array of HTTP request headers.
+     */
+    public static function request_headers(): array
+    {
+        if (function_exists('getallheaders')) {
+            return array_change_key_case(getallheaders(), CASE_LOWER);
+        }
+
+        $headers = [];
+
+        foreach ($_SERVER as $key => $value) {
+            if (str_starts_with($key, 'HTTP_')) {
+                $header_name = strtolower(str_replace('_', '-', substr($key, 5)));
+                $headers[$header_name] = $value;
+            }
+        }
+
+        return $headers;
+    }
+
+    /**
      * METHOD - remove_token
      * 
      * Removes token by removing cookie name with corresponding name, along with its corresponding server side Wordpress transient session data.
@@ -138,6 +177,11 @@ final class Auth_Token
 
     public static function generate(string $token_name, int $user_id, array $session_data_additionals = [], int $expiration_at = Config::TOKEN_EXPIRATION): Response_Handler
     {
+        // Check if secrets are configured
+        if (!self::secrets_configured()) {
+            return self::response(false, 500, null, null, "Secure token secrets are not configured.");
+        }
+    
         // Check if token name was provided.  If not return error
         if (!$user_id || !$token_name) return self::response(false, 500, $user_id, null, "`id` and `token_name` parameters required to generate auth token.");
 
@@ -222,7 +266,16 @@ final class Auth_Token
 
         if (!$cookie_result->ok) {
             Cookie::remove($token_name_prefix);
-            return self::response(false, 500, $user_id, $session_data, "Token was generated but could not be stored as a cookie in the browser. Headers may have already been sent.");
+            Cookie::remove($token_name_prefix . '_refresh');
+            Session::delete($session_id);
+
+            return self::response(
+                false,
+                500,
+                $user_id,
+                $session_data,
+                "Token was generated but could not be stored as a cookie in the browser. Headers may have already been sent."
+            );
         }
 
         // Set header for header nonce
@@ -245,6 +298,11 @@ final class Auth_Token
 
     public static function validate(string $token_name, bool $validate_header_nonce = true, int $logout_time = 0): Response_Handler
     {
+        // Check if secrets are configured
+        if (!self::secrets_configured()) {
+            return self::response(false, 500, null, null, "Secure token secrets are not configured.");
+        }
+
         // Check if token name was provided.  If not return error
         if (!$token_name) return self::response(false, 500, null, null, "A token name must be provided for validation.");
 
@@ -352,7 +410,7 @@ final class Auth_Token
 
         // Check if header nonce is valid if validate_header_nonce is set to true
         if ($validate_header_nonce) {
-            $headers_lowercased = array_change_key_case(getallheaders(), CASE_LOWER);
+            $headers_lowercased = self::request_headers();
             $header_nonce_value = $headers_lowercased[strtolower(Config::HEADER_NONCE_PREFIX)] ?? null;
 
             // Check if header nonce is missing. If so, remove token
@@ -379,6 +437,12 @@ final class Auth_Token
 
         // Base 64 decode refresh cookie value
         $refresh_cookie_value = base64_decode($refresh_cookie->data['value'], true);
+
+        // Check if refresh cookie value is valid
+        if ($refresh_cookie_value === false) {
+            self::remove_token($token_name_prefix, $id, $session_id);
+            return self::response(false, 401, null, $session_id_arr, "Invalid refresh token format for token name of `" . $token_name_prefix . "`.");
+        }
 
         // Hash refresh nonce value for validation
         $hashed_refresh_cookie_value = hash_hmac('sha256', $refresh_cookie_value, Config::DB_SESSION_SECRET_KEY, true);

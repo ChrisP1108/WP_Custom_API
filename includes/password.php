@@ -73,10 +73,6 @@ final class Password
             return self::response(false, 500, 'String must be provided to hash in Password hash method.');
         }
 
-        if (strlen($string) > 72) {
-            return self::response(false, 500, 'String must be less than 72 characters in length in Password hash method.');
-        }
-
         $hash = password_hash($string, PASSWORD_ARGON2ID, Config::PASSWORD_SETTINGS);
 
         if ($hash === false) {

@@ -91,7 +91,7 @@ final class Plugin
     private function __construct()
     {
         // Autoload classes based on namespaces
-        spl_autoload_register([self::class, 'namespaces_autoloader_callback']);
+        spl_autoload_register([$this, 'namespaces_autoloader_callback']);
 
         if ($this->request_to_plugin()) {
             // Call before_init from the hooks class before initializing plugin
@@ -178,7 +178,12 @@ final class Plugin
         $route_path = str_replace('\\', '/', $route_path);
         $route_path = preg_replace('#/+#', '/', $route_path);
 
-        $route_without_remainder = str_replace($remainder, '', $route_path);
+        $route_without_remainder = $route_path;
+        
+        if ($remainder !== '' && str_ends_with($route_without_remainder, $remainder)) {
+            $route_without_remainder = substr($route_without_remainder, 0, -strlen($remainder));
+        }
+
         $route_without_remainder = str_replace('\\', '/', $route_without_remainder);
         $route_without_remainder = preg_replace('#/+#', '/', $route_without_remainder);
 
@@ -198,8 +203,6 @@ final class Plugin
             'namespace' => $namespace,
             'model_schema' => [] 
         ];
-
-        var_dump(self::$requested_route_data['namespace']);
 
         return true;
     }
@@ -290,7 +293,7 @@ final class Plugin
             try {
                 $path = self::$requested_route_data['folder'] . '/' . $filename . '.php';
                 if (file_exists($path)) {
-                    self::load_file($path);
+                    $this->load_file($path);
                 } else {
                     Error_Generator::generate('File load error', 'Error loading ' . $filename . '.php file in "api" folder');
                 }

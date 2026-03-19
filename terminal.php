@@ -103,7 +103,7 @@ $naming_string = implode("/", $naming_formatted);
  * Check that naming string only contains alphanumeric characters, underscores, and forward slashes
  */
 
-if (!preg_match('/^[a-zA-Z_\/]+$/', $naming_string)) {
+if (!preg_match('/^[a-zA-Z0-9_\/]+$/', $naming_string)) {
     echo "Error: Invalid resource name format.  The resource name can only contain alphanumeric characters, underscores, and forward slashes.\n";
     exit;
 }
@@ -401,14 +401,13 @@ if (COMMAND === COMMAND_EXPORT || COMMAND === COMMAND_IMPORT && RESOURCE === 'da
 
     // Load wordpress environment
     $wp_load = dirname(__DIR__, 3) . '/wp-load.php';
-    if (!file_Exists($wp_load)) {
+    if (!file_exists($wp_load)) {
         echo "Error loading Wordpress file wp-load.php from the Wordpress root directory";
         exit;
     }
     require_once $wp_load;
 
     global $wpdb;
-    exit;
 
     // Perform export command
     if (COMMAND === COMMAND_EXPORT) {
@@ -448,21 +447,22 @@ if (COMMAND === COMMAND_EXPORT || COMMAND === COMMAND_IMPORT && RESOURCE === 'da
         if (!$import_data->ok) {
             echo $import_data->message . " See list below for error details.\n";
             foreach ($import_data->data as $table => $data) {
-                if (!$table['table_created']) {
-                    echo "An error occured when creating the table " . $table . ".";
+                if (!$data['table_created']) {
+                    echo "An error occured when creating the table " . $table . ".\n";
                     $error_importing_data = true;
                 }
-                if (!$table['data_inserted']) {
-                    echo "An error occured when inserting data into the table " . $table . ".";
+                if (!$data['data_inserted']) {
+                    echo "An error occured when inserting data into the table " . $table . ".\n";
                     $error_importing_data = true;
                 }
             }
         }
-        if (!$error_importing_data) {
+        if ($error_importing_data) {
             echo "One or more errors occured while importing data.\n";
             exit;
         }
-        echo "Data import successful. \n";
+
+        echo "Data import successful.\n";
         exit;
     }
 }

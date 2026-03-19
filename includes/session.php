@@ -298,8 +298,25 @@ final class Session
 
         ob_end_clean();
 
-        // Determine if retrieval was successful
-        $ok = $get_session_data->ok;
+        if (!$get_session_data->ok) {
+            return Response_Handler::response(
+                false,
+                $get_session_data->status_code,
+                $get_session_data->message
+            );
+        }
+
+        $session_data = is_array($get_session_data->data) ? $get_session_data->data : [];
+
+        if (empty($session_data)) {
+            return Response_Handler::response(
+                false,
+                404,
+                "Session not found."
+            );
+        }
+
+        $ok = true;
 
         // Session data
         $session_data = (array) $get_session_data->data;
@@ -354,7 +371,7 @@ final class Session
                 strtotime($session_data['created_at']),
                 intval($session_data['expiration_at']),
                 intval($session_data['updated_tally']),
-                strtotime($session_data['updated_at']) ?? null,
+                isset($session_data['updated_at']) ? strtotime($session_data['updated_at']) : null,
                 json_decode($session_data['additionals'], true) ?? []
             );
         }
@@ -443,10 +460,10 @@ final class Session
                 $existing_data['nonce'],
                 $refresh_nonce,
                 $header_nonce,
-                intval($existing_data['created_at']),
+                strtotime($existing_data['created_at']),
                 intval($existing_data['expiration_at']),
                 intval($existing_data['updated_tally']),
-                intval($existing_data['updated_at']),
+                isset($existing_data['updated_at']) ? strtotime($existing_data['updated_at']) : null,
                 json_decode($existing_data['additionals'], true) ?? []
             );
         }

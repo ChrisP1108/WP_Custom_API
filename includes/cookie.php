@@ -46,7 +46,12 @@ final class Cookie {
         $ok = $cookie_result !== null;
 
         // Return a response handler object with the appropriate status code and message
-        return Response_Handler::response($ok, $ok ? 200 : 500, $ok ? 'Cookie `' . $name . '` found.' : 'Cookie `' . $name . '` not found.', ['value' => $cookie_result]);
+        return Response_Handler::response(
+            $ok,
+            $ok ? 200 : 404,
+            $ok ? 'Cookie `' . $name . '` found.' : 'Cookie `' . $name . '` not found.',
+            ['value' => $cookie_result]
+        );
     }
 
     /**

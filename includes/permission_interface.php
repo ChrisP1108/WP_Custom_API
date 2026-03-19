@@ -358,7 +358,7 @@ abstract class Permission_Interface
         $existing_session_data = (array) $check_existing_session->data;
 
         if ($validate_header_nonce) {
-            $headers_lowercased = array_change_key_case(getallheaders(), CASE_LOWER);
+            $headers_lowercased = Auth_Token::request_headers();
             $header_nonce_value = $headers_lowercased[strtolower(Config::HEADER_NONCE_PREFIX)] ?? null;
 
             // If the header nonce value is not found, return an error response

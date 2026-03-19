@@ -198,13 +198,13 @@ final class Database
                 return self::response(false, 500, $err_msg);
             }
             $pattern = '/^
-            (?:
-                    (?:TINYINT|INT|MEDIUMINT|BIGINT|VARBINARY|BINARY|VARCHAR|TEXT|LONGTEXT|JSON|BOOLEAN)
-                    (?:\(\d+\))?
-                )
-                (?:\s+UNSIGNED)?
-                (?:\s+NOT\s+NULL)?
-            $/ix';
+                (?:
+                        (?:TINYINT|SMALLINT|INT|MEDIUMINT|BIGINT|VARBINARY|BINARY|VARCHAR|TEXT|LONGTEXT|JSON|BOOLEAN|BLOB)
+                        (?:\(\d+\))?
+                    )
+                    (?:\s+UNSIGNED)?
+                    (?:\s+NOT\s+NULL)?
+                $/ix';
             if (!preg_match($pattern, $column_query)) {
                 $err_msg = 'Column query for column name of `' . $key . '` contained invalid characters.';
                 Error_Generator::generate('Column name error in schema', $err_msg);
@@ -521,25 +521,20 @@ final class Database
 
         foreach ($cols as $col) {
             $name = $col['Field'];
-            // skip your own auto‐columns
-            if (in_array($name, ['id', 'created', 'updated'], true)) {
+
+            if (in_array($name, ['id', 'created_at', 'updated_at'], true)) {
                 continue;
             }
 
-            $type = strtoupper($col['Type']);
-            if (preg_match('/^(?:TINY|SMALL|MEDIUM|BIG)?INT/i', $type)) {
-                $query_type = 'INT';
-            } elseif (preg_match('/^VARCHAR\((\d+)\)/i', $type, $m)) {
-                $query_type = "VARCHAR({$m[1]})";
-            } elseif (preg_match('/^(VAR)?BINARY\((\d+)\)/i', $type, $m)) {
-                // m[1] is "VAR" or empty
-                $query_type = ($m[1] ? 'VARBINARY' : 'BINARY') . "({$m[2]})";
-            } elseif (strpos($type, 'TEXT') === 0) {
-                $query_type = 'TEXT';
-            } elseif (preg_match('/^BLOB/i', $type)) {
-                $query_type = 'BLOB';
+            $type = strtoupper(trim(preg_replace('/\s+/', ' ', $col['Type'])));
+
+            if (
+                preg_match('/^(TINYINT|SMALLINT|INT|MEDIUMINT|BIGINT|VARBINARY|BINARY|VARCHAR)\(\d+\)(?: UNSIGNED)?$/', $type) ||
+                preg_match('/^(TEXT|LONGTEXT|JSON|BOOLEAN|BLOB)$/', $type)
+            ) {
+                $query_type = $type;
             } else {
-                continue; // unsupported type
+                continue;
             }
 
             $schema[$name] = [
