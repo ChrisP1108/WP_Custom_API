@@ -199,6 +199,8 @@ final class Plugin
             'model_schema' => [] 
         ];
 
+        var_dump(self::$requested_route_data['namespace']);
+
         return true;
     }
 
@@ -355,6 +357,15 @@ final class Plugin
 
         // Check if model class was found, if not, return
         if (!$model_class_name) {
+            $all_tables = array_values(array_unique(array_merge(
+                $existing_tables_created,
+                $tables_created
+            )));
+
+            if (!empty($all_tables)) {
+                set_transient('wp_custom_api_tables_created', $all_tables, Config::DATABASE_REFRESH_INTERVAL);
+            }
+
             return;
         }
 
@@ -393,9 +404,14 @@ final class Plugin
         // Call Wordpress action hook
         do_action('wp_custom_api_tables_created', $tables_created);
 
+        $all_tables = array_values(array_unique(array_merge(
+            $existing_tables_created,
+            $tables_created
+        )));
+
         // Store existing tables that have been created through this plugin in a Wordpress transient for better load times.
-        if (!empty($tables_created)) {
-            set_transient('wp_custom_api_tables_created', $tables_created, Config::DATABASE_REFRESH_INTERVAL);
+        if (!empty($all_tables)) {
+            set_transient('wp_custom_api_tables_created', $all_tables, Config::DATABASE_REFRESH_INTERVAL);
         }
     }
 }

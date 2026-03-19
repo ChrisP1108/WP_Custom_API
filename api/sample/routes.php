@@ -27,3 +27,5 @@ if (!defined('ABSPATH')) exit;
 */
 
 Router::get("/", [Permission::class, "public"], [Controller::class, "index"]);
+
+Router::get("/{id}", [Permission::class, "public"], [Controller::class, "index"]);
