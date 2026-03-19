@@ -382,7 +382,7 @@ final class Plugin
                 if (!$table_creation_result->ok) {
                     Error_Generator::generate(
                         'Error creating table in database',
-                        'The table name `' . Database::get_table_full_name($model::table_name()) . '` had an error in being created in MySql through the WP_Custom_API plugin.'
+                        'The table name `' . Database::get_table_full_name($model_table_name) . '` had an error in being created in MySql through the WP_Custom_API plugin.'
                     );
                 } else {
                     $tables_created[] = $model_table_name;
