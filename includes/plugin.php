@@ -182,13 +182,20 @@ final class Plugin
         $route_without_remainder = str_replace('\\', '/', $route_without_remainder);
         $route_without_remainder = preg_replace('#/+#', '/', $route_without_remainder);
 
+        $namespace = str_replace('/', '_', $route_without_remainder);
+
+        // Remove trailing underscore from namespace
+        if (str_ends_with($namespace, "_")) {
+            $namespace = substr($namespace, 0, -1);
+        }
+
         self::$requested_route_data = [
             'folder' => $api . $matched_dir,
             'method' => $_SERVER['REQUEST_METHOD'],
             'route'  => $route_path,
             'route_without_remainder' => $route_without_remainder,
             'remainder' => $remainder,
-            'namespace' => str_replace('/', '_', $route_path),
+            'namespace' => $namespace,
             'model_schema' => [] 
         ];
 
@@ -307,11 +314,13 @@ final class Plugin
         // Get existing tables created to avoid iterating through tables that have already been created
         $existing_tables_created = get_transient('wp_custom_api_tables_created');
 
+        $existing_tables_created = is_array($existing_tables_created) ? $existing_tables_created : [];
+
         // List for gathering table names created
         $tables_created = [];
 
         // Check if sessions table was created.  If not, create it.
-        if (!is_array($existing_tables_created) || !in_array(Session::SESSIONS_TABLE_NAME, $existing_tables_created)) {
+        if (!in_array(Session::SESSIONS_TABLE_NAME, $existing_tables_created)) {
             $table_exists = Database::table_exists(Session::SESSIONS_TABLE_NAME);
             if (!$table_exists) {
                 $sessions_table_created_result = Database::create_table(
@@ -363,7 +372,7 @@ final class Plugin
             self::$requested_route_data['model_schema'] = $model::schema();
         }
 
-        if ($model_class_name && !$existing_tables_created && !$table_exists && $model_table_name !== '' 
+        if (!in_array($model_table_name, $existing_tables_created) && !$table_exists && $model_table_name !== '' 
             && method_exists($model, 'create_table') 
             && $model::create_table() && method_exists($model, 'schema') && !empty($model::schema())) {
                 $table_creation_result = Database::create_table(

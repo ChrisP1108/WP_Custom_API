@@ -328,12 +328,16 @@ final class Session
             );
         }
 
-        // Check that name and user match session data
-        if ($ok && $session_data['name'] !== $name || intval($session_data['user']) !== $user_id) return Response_Handler::response(
-            false,
-            401,
-            "Session name and user data provided do not match session data."
-        );
+        // Check that name and user match session data, return error if not
+        if ($ok) {
+            if ($session_data['name'] !== $name || intval($session_data['user']) !== $user_id) {
+                return Response_Handler::response(
+                    false,
+                    401,
+                    "Session name and user data provided do not match session data."
+                );
+            }
+        }
 
         // Object data
         $object_data = null;

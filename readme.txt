@@ -132,7 +132,6 @@ Available helpers include:
 - `insert_row($data)`
 - `update_row($id, $data)`
 - `delete_row($id)`
-- `execute_query($query)`
 
 Tables are created automatically on matching requests when `create_table()` returns `true`.
 

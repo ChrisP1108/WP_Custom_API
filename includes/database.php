@@ -493,51 +493,6 @@ final class Database
 
         return self::response(true, 200, 'Table row for `' . $table_name . '` successfully deleted.');
     }
-    
-
-
-    /**
-     * METHOD - execute_query
-     * 
-     * Execute a SQL query directly against the database. Handles errors and logging of errors.
-     * 
-     * @param string $query The SQL query to execute.
-     * 
-     * @return Response_Handler The response of the query execution from the self::response() method.
-     */
-
-    public static function execute_query(string $query): Response_Handler
-    {
-        global $wpdb;
-    
-        ob_start();
-    
-        // Normalize query for detection
-        $trimmed = ltrim($query);
-        $is_select = stripos($trimmed, 'select') === 0;
-    
-        if ($is_select) {
-            // Run SELECT-type query
-            $result = $wpdb->get_results($query, ARRAY_A);
-        } else {
-            // Run write/delete query
-            $result = $wpdb->query($query);
-        }
-    
-        ob_end_clean();
-    
-        // Handle errors
-        if ($result === false) {
-            $error_msg = !empty($wpdb->last_error)
-                ? 'SQL Error: ' . $wpdb->last_error
-                : 'An unknown error occurred while executing the query.';
-    
-            return self::response(false, 500, $error_msg);
-        }
-
-        return self::response(true, 200, 'Query executed successfully.', $result);
-    }
-    
 
     /**
      * METHOD - get_table_schema_from_db

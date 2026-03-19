@@ -134,19 +134,4 @@ abstract class Model_Interface
     {
         return Database::delete_row(Plugin::get_requested_route_data()['namespace'], $id);
     }
-
-    /**
-     * METHOD - execute_query
-     * 
-     * Execute a raw SQL query.
-     * 
-     * @param string $query The raw SQL query to execute.
-     * 
-     * @return Response_Handler The response of the query operation from the self::response() method.
-     */
-
-    final public static function execute_query(string $query): Response_Handler
-    {
-        return Database::execute_query($query);
-    }
 }
