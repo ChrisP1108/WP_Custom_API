@@ -431,7 +431,7 @@ final class Auth_Token
 
         // Check if session data is expired
         if ($session_data['expiration_at'] <= time()) {
-            self::remove_token($token_name_prefix, $id);
+            self::remove_token($token_name_prefix, $id, $session_id);
             return self::response(false, 401, null, $session_id_arr, "Session data for token name of `" . $token_name_prefix . "` has expired.");
         }
 

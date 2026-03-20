@@ -333,7 +333,7 @@ abstract class Permission_Interface
         if (count($cookie_value_split) !== 4) return Response_Handler::response(
             false, 
             401, 
-            "Cookie value for session `" . $name . "` is invalid. Expected 3 values, received " . count($cookie_value_split)
+            "Cookie value for session `" . $name . "` is invalid. Expected 4 values, received " . count($cookie_value_split)
         );
 
         // Split the cookie value into parts
@@ -344,6 +344,15 @@ abstract class Permission_Interface
         $cookie_nonce = base64_decode($cookie_nonce, true);
         $cookie_refresh_nonce = base64_decode($cookie_refresh_nonce, true);
         $session_id = base64_decode($session_id, true);
+
+        if ($cookie_id === false || $cookie_nonce === false || $cookie_refresh_nonce === false || $session_id === false) {
+            Cookie::remove($prefixed_name);
+            return Response_Handler::response(
+                false,
+                401,
+                "Cookie value for session `" . $name . "` contains invalid base64 data."
+            );
+        }
 
         // Convert the session ID to an integer
         $session_id = intval($session_id);

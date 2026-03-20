@@ -67,9 +67,10 @@ class Controller_Interface
     final public static function request_handler(WP_REST_Request $req, array|null $schema = null): static
     {
         // Get the request data
-        $params = $req->get_params() ?? [];
-        $json = json_decode($req->get_body(), true) ?? [];
-        $form = $req->get_body_params() ?? [];
+        $route_params = $req->get_url_params() ?? [];
+        $query_params = $req->get_query_params() ?? [];
+        $form_params  = $req->get_body_params() ?? [];
+        $json_params  = $req->get_json_params() ?? [];
         $files = $req->get_file_params() ?? [];
         $headers = $req->get_headers() ?? [];
 
@@ -82,37 +83,44 @@ class Controller_Interface
         $schema_data_types = [];
 
         foreach($schema as $key => $s) {
-            $schema_data_types[$key] =  [
-                'type' => $s['type'],
-                'maximum' => $s['maximum'],
-                'minimum'  => $s['minimum'],
+            $schema_data_types[$key] = [
+                'type'    => $s['type'] ?? 'text',
+                'maximum' => $s['maximum'] ?? 255,
+                'minimum' => $s['minimum'] ?? 0,
             ];
         }
 
-        // Sanitize the request data according to the schema
-        $sanitized_params = [
-            'params' => Param_Sanitizer::sanitize($params, $schema_data_types),
-            'json'   => Param_Sanitizer::sanitize($json, $schema_data_types),
-            'form'   => Param_Sanitizer::sanitize($form, $schema_data_types)
-        ];
+        // Merge the request data
+        $raw_params = array_replace($route_params, $query_params, $form_params, $json_params);
 
-        // Merge the sanitized data
-        $merged_sanitized_params = array_merge(
-            $sanitized_params['params'],
-            $sanitized_params['json'],
-            $sanitized_params['form']
-        );
+        // Sanitize and merge the sanitized data
+        $merged_sanitized_params = Param_Sanitizer::sanitize($raw_params, $schema_data_types);
 
         // Check if the sanitized data contains any invalid types
         $invalid_types = [];
 
+        // Loop through the sanitized data and check if any invalid types are present
         foreach ($merged_sanitized_params as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $nested_value) {
+                    if ($nested_value->type_error) {
+                        $invalid_types[] = [
+                            'key' => $key,
+                            'type_message' => $nested_value->type_message,
+                            'type_found' => $nested_value->type_found,
+                            'expected_type' => $nested_value->expected_type,
+                        ];
+                    }
+                }
+                continue;
+            }
+
             if ($value->type_error) {
                 $invalid_types[] = [
                     'key' => $key,
                     'type_message' => $value->type_message,
                     'type_found' => $value->type_found,
-                    'expected_type' => $value->expected_type
+                    'expected_type' => $value->expected_type,
                 ];
             }
         }
@@ -231,15 +239,31 @@ class Controller_Interface
 
         if(isset($data->request_data)) {
             foreach ((array) $data->request_data ?? [] as $key => $object) {
-                if ($object->ok) {
-                    $compiled_data[$key] = $object->value;
-                } else return false;
+                if (is_array($object)) {
+                    $compiled_data[$key] = [];
+                    foreach ($object as $nested) {
+                        if (!$nested->ok) return false;
+                        $compiled_data[$key][] = $nested->value;
+                    }
+                    continue;
+                }
+
+                if (!$object->ok) return false;
+                $compiled_data[$key] = $object->value;
             }
         } else {
             foreach ((array) $data as $key => $object) {
-                if ($object->ok) {
-                    $compiled_data[$key] = $object->value;
-                } else return false;
+                if (is_array($object)) {
+                    $compiled_data[$key] = [];
+                    foreach ($object as $nested) {
+                        if (!$nested->ok) return false;
+                        $compiled_data[$key][] = $nested->value;
+                    }
+                    continue;
+                }
+
+                if (!$object->ok) return false;
+                $compiled_data[$key] = $object->value;
             }
         }
         return $compiled_data;
@@ -330,13 +354,40 @@ class Controller_Interface
                 $data_array = (array) $response;
             }
 
-            $keys_not_to_display = ['hash', 'nonce', 'token_name', 'first_issued_at', 'expiration_at', 'updated_tally', 'last_updated_at', 'additionals'];
+            $keys_not_to_display = [
+                'hash',
+                'nonce',
+                'refresh_nonce',
+                'header_nonce',
+                'token_name',
+                'issued_at',
+                'expiration_at',
+                'updated_tally',
+                'updated_at',
+                'additionals',
+            ];
 
-            foreach($keys_not_to_display as $key) {
-                if (isset($data_array[$key])) {
-                    unset($data_array[$key]);
+            $redact = function ($value) use (&$redact, $keys_not_to_display) {
+                if (is_object($value)) {
+                    $value = (array) $value;
                 }
-            }
+
+                if (!is_array($value)) {
+                    return $value;
+                }
+
+                foreach ($value as $k => $v) {
+                    if (in_array($k, $keys_not_to_display, true)) {
+                        unset($value[$k]);
+                        continue;
+                    }
+                    $value[$k] = $redact($v);
+                }
+
+                return $value;
+            };
+
+            $data_array = $redact($data_array);
 
             $parsed_response['data'] = $data_array;
         }
