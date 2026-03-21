@@ -203,6 +203,43 @@ class Param_Sanitizer {
                     $length_set['char_minimum_met'],
                     $length_set['char_length']
                 );
+            case 'float':
+                // Sanitize floats
+                // Accept numeric scalar values and cast them to float.
+                // Reject empty strings, arrays, and non-numeric values.
+
+                $string_val = is_scalar($value) ? trim((string) $value) : '';
+                $sanitized = null;
+                $valid = false;
+
+                if ($string_val !== '' && is_numeric($string_val)) {
+                    $sanitized = round((float) $string_val, 10);
+                    $valid = true;
+                }
+
+                $type_set = self::generate_types_response(
+                    $valid,
+                    $valid ? $sanitized : $value,
+                    'float'
+                );
+
+                $length_set = self::generate_chars_amount_response($value, $schema);
+
+                return new static(
+                    $valid && !$length_set['char_error'],
+                    $sanitized,
+                    $type_set['type_error'],
+                    $type_set['type_found'],
+                    $type_set['expected_type'],
+                    $type_set['type_message'],
+                    $length_set['char_maximum_exceeded'],
+                    $length_set['char_maximum_message'],
+                    $length_set['char_minimum_message'],
+                    $length_set['char_maximum'],
+                    $length_set['char_minimum'],
+                    $length_set['char_minimum_met'],
+                    $length_set['char_length']
+                );
             case 'bool':
                 // Sanitize booleans
                 // If the value is a boolean, or a string that can be interpreted as a boolean, return it.
