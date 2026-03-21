@@ -344,20 +344,11 @@ class Controller_Interface
 
             $data_array = null;
 
-            // If a Response_Handler-style object has a data property, use that payload only.
+            // Parse response data
             if (is_object($response) && property_exists($response, 'data')) {
                 $data_array = is_object($response->data) ? (array) $response->data : $response->data;
             } else {
                 $data_array = is_object($response) ? (array) $response : $response;
-            }
-            
-            // Check that response wasn't an associative array, if so, add it to data.  Otherwise use the data key from the object
-            if (isset($response->data) && is_object($response->data)) {
-
-                // Set data if response is an associaitve array
-                $data_array = (array) $response->data;
-            } else {
-                $data_array = (array) $response;
             }
 
             $keys_not_to_display = [
