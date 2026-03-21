@@ -293,11 +293,16 @@ abstract class Permission_Interface
         // Set the session nonce in a cookie
         $cookie_result = Cookie::set($prefixed_name, base64_encode(strval($id)) . '.' . base64_encode($nonce) . '.' . base64_encode($refresh_nonce) . '.' . base64_encode(strval($session_id)), $expiration_time);
 
-        // If an error occurred while setting the cookie, return the error response
-        if (!$cookie_result->ok) return $cookie_result;
+        // If an error occurred while setting the cookie, remove the just-created session row
+        if (!$cookie_result->ok) {
+            Session::delete((int) $session_id);
+            return $cookie_result;
+        }
 
         // Set header for header nonce
-        header(Config::HEADER_NONCE_PREFIX . ': ' . $header_nonce);
+        if (!headers_sent()) {
+            header(Config::HEADER_NONCE_PREFIX . ': ' . $header_nonce);
+        }
 
         // Return the successful session creation response
         return $session_result;

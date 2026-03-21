@@ -8,6 +8,12 @@ use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Database;
 use WP_Custom_API\Includes\Response_Handler;
 
+/** 
+ * Prevent direct access from sources other than the Wordpress environment
+ */
+
+if (!defined('ABSPATH')) exit;
+
 final class Session
 {
 

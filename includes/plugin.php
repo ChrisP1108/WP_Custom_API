@@ -287,20 +287,29 @@ final class Plugin
 
     private function files_autoloader(): void
     {
+        // Get all files to load
         $all_files_to_load = apply_filters('wp_custom_api_files_to_autoload', Config::FILES_TO_AUTOLOAD);
+        $required_files = ['routes'];
 
+        // Loop through all files to load
         foreach ($all_files_to_load as $filename) {
             try {
                 $path = self::$requested_route_data['folder'] . '/' . $filename . '.php';
+
                 if (file_exists($path)) {
                     $this->load_file($path);
-                } else {
+                    continue;
+                }
+
+                if (in_array($filename, $required_files, true)) {
                     Error_Generator::generate('File load error', 'Error loading ' . $filename . '.php file in "api" folder');
                 }
             } catch (Exception $e) {
                 Error_Generator::generate('File load error', 'Error loading ' . $filename . '.php file in "api" folder at ' . WP_CUSTOM_API_FOLDER_PATH . '/api: ' . $e->getMessage());
             }
         }
+
+        // Call Wordpress action hook after files autoloaded
         do_action('wp_custom_api_files_autoloaded', self::$files_loaded);
     }
 

@@ -121,7 +121,7 @@ final class Response_Handler
     private static function build_success_response(string $message, int $status_code, mixed $data): WP_REST_Response 
     {
         $response = ['message' => $message];
-        if (!is_array($data) || !isset($data['hash'])) {
+        if ($data !== null) {
             $response['data'] = $data;
         }
         return new WP_REST_Response($response, $status_code);

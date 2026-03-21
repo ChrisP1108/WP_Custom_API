@@ -449,7 +449,7 @@ final class Auth_Token
 
         // Check if refresh cookie value matches session data refresh nonce value
         if (!hash_equals($session_data['refresh_nonce'], $hashed_refresh_cookie_value)) {
-            self::remove_token($token_name_prefix, $id);
+            self::remove_token($token_name_prefix, $id, $session_id);
             return self::response(false, 401, null, $session_id_arr, "Invalid refresh token for token name of `" . $token_name_prefix . "`.");
         }
 
@@ -476,7 +476,7 @@ final class Auth_Token
 
         // If an error occurred while updating the session data, return the error response
         if (!$updated_session_data->ok) {
-            self::remove_token($token_name_prefix, $id);
+            self::remove_token($token_name_prefix, $id, $session_id);
             return $updated_session_data;
         }
 

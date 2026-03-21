@@ -173,24 +173,21 @@ class Param_Sanitizer {
         $sanitized = null;
         switch ($schema['type']) {
             case 'int':
-                // Sanitize integers
-                // If the value is numeric, cast it to an integer or float and return it.
-                // Otherwise, return an error message.
+                // Sanitize integers only
+                // Check if the value is an integer
+                // Otherwise return an error message
+                $string_val = is_scalar($value) ? trim((string) $value) : '';
+                $sanitized = null;
+                $valid = false;
 
-                $string_val = (string) $value;
-                $type = 'int';
-                $sanitized = $value;
-                if (is_numeric($string_val)) {
-                    if (strpos($string_val, '.') !== false) {
-                        $sanitized = round((float) $string_val, 10);
-                        $type = 'float';
-                    } else {
-                        $sanitized = absint((int) $string_val);
-                    }
+                if ($string_val !== '' && preg_match('/^-?\d+$/', $string_val)) {
+                    $sanitized = (int) $string_val;
                     $valid = true;
-                } 
-                $type_set = self::generate_types_response($valid, $sanitized, $type);
+                }
+
+                $type_set = self::generate_types_response($valid, $sanitized, 'int');
                 $length_set = self::generate_chars_amount_response($value, $schema);
+
                 return new static(
                     $valid && !$length_set['char_error'],
                     $sanitized,
@@ -331,7 +328,7 @@ class Param_Sanitizer {
                 $type_set = self::generate_types_response(true, $value, 'raw');
                 $length_set = self::generate_chars_amount_response($value, $schema);
                 return new static(
-                    true,
+                    !$length_set['char_error'],
                     $value,
                     $type_set['type_error'],
                     $type_set['type_found'],

@@ -7,6 +7,12 @@ namespace WP_Custom_API\Includes;
 use WP_Custom_API\Config;
 use WP_Custom_API\Includes\Response_Handler;
 
+/** 
+ * Prevent direct access from sources other than the Wordpress environment
+ */
+
+if (!defined('ABSPATH')) exit;
+
 final class Cookie {
 
     /**
@@ -24,8 +30,13 @@ final class Cookie {
 
     public static function set(string $name, string $value, int $expires_at = 0, string $path = '/', string $domain = ''): Response_Handler 
     {
-        // Delegate to the cookie setter method to handle cookie creation
-        return self::cookie_setter($name, $value, $expires_at, $path, $domain);
+        $result = self::cookie_setter($name, $value, $expires_at, $path, $domain);
+
+        if ($result->ok) {
+            $_COOKIE[$name] = $value;
+        }
+
+        return $result;
     }
 
     /**
@@ -67,7 +78,13 @@ final class Cookie {
 
     public static function remove(string $name, string $path = '/', string $domain = ''): Response_Handler 
     {
-        return self::cookie_setter($name, '', time() - 3600, $path, $domain);
+        $result = self::cookie_setter($name, '', time() - 3600, $path, $domain);
+
+        if ($result->ok && isset($_COOKIE[$name])) {
+            unset($_COOKIE[$name]);
+        }
+
+        return $result;
     }
 
     /**

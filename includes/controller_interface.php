@@ -338,12 +338,18 @@ class Controller_Interface
 
         // Check if the response contains an error or success response and return it
         if (isset($response->error_response) && $response->error_response) return $response->error_response;
-        if (isset($response->success_response) && $response->success_response) return $response->success_response;
 
         // Parse response data
         if ($response !== null) {
 
             $data_array = null;
+
+            // If a Response_Handler-style object has a data property, use that payload only.
+            if (is_object($response) && property_exists($response, 'data')) {
+                $data_array = is_object($response->data) ? (array) $response->data : $response->data;
+            } else {
+                $data_array = is_object($response) ? (array) $response : $response;
+            }
             
             // Check that response wasn't an associative array, if so, add it to data.  Otherwise use the data key from the object
             if (isset($response->data) && is_object($response->data)) {

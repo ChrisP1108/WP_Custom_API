@@ -450,9 +450,13 @@ final class Database
 
         ob_end_clean();
 
-        if ($result === false) return self::response(false, 500, 'An error occurred while updating the table row for `' . $table_name . '`.');
+        if ($result === false) {
+            return self::response(false, 500, 'An error occurred while updating the table row for `' . $table_name . '`.');
+        }
 
-        if ($result === 0) return self::response(false, 400, 'Table row for `' . $table_name . '` could not be updated.  Please check the ID and make sure it corresponds to an existing table row.');
+        if ($result === 0) {
+            return self::response(true, 200, 'No changes were made to the table row for `' . $table_name . '`.');
+        }
 
         return self::response(true, 200, 'Table row for `' . $table_name . '` successfully updated.');
     }
@@ -571,9 +575,13 @@ final class Database
             )
         );
 
-        if (!$table_names) return self::response(false, 500, 'An error occurred while attempting to retrieve table names.');
+        if ($table_names === null) {
+            return self::response(false, 500, 'An error occurred while attempting to retrieve table names.');
+        }
 
-        if (empty($table_names)) return self::response(false, 500, 'No tables created by this plugin were found.');
+        if (empty($table_names)) {
+            return self::response(true, 200, 'No tables created by this plugin were found.', []);
+        }
 
         // Initialize an empty array to store the table data
         $tables_data = [];
@@ -662,18 +670,30 @@ final class Database
 
         // Import data for each table created
         foreach ($results as $table_name => $result) {
+            $results[$table_name]['data_inserted'] = true;
+            $results[$table_name]['rows_inserted'] = 0;
+
             if ($result['table_created']) {
-                $table_data = $data[$table_name]['data'];
-                foreach ($table_data as $row) {
+                $table_rows = $data[$table_name]['data'] ?? [];
+
+                foreach ($table_rows as $row) {
                     $insert_row_data = self::insert_row($table_name, $row);
-                    $results[$table_name]['data_inserted'] = $insert_row_data->ok;
+
+                    if (!$insert_row_data->ok) {
+                        $results[$table_name]['data_inserted'] = false;
+                        break;
+                    }
+
+                    $results[$table_name]['rows_inserted']++;
                 }
+            } else {
+                $results[$table_name]['data_inserted'] = false;
             }
         }
 
-        // Check that all tables and data were created successfully.  If not, return error
-        foreach ($results as $table_name => $data) {
-            if (!$data['table_created'] || !$data['data_inserted']) {
+        // Check that all tables and data were created successfully. If not, return error
+        foreach ($results as $table_name => $table_result) {
+            if (!$table_result['table_created'] || !$table_result['data_inserted']) {
                 return self::response(
                     false,
                     500,
@@ -704,8 +724,10 @@ final class Database
         // Check if filename already exists
         $file_path = WP_CUSTOM_API_FOLDER_PATH . strtolower($filename) . '.json';
 
-        if (@file_get_contents($file_path) !== false) return self::response(false, 500, 'A file with the name ' . $filename . '.json already exists.');
-
+        // If file already exists, return error
+        if (file_exists($file_path)) {
+            return self::response(false, 409, 'A file with the name ' . $filename . '.json already exists.');
+        }
         // Get data from database
         $get_table_data = self::get_all_tables_data();
         
@@ -739,11 +761,21 @@ final class Database
 
     public static function run_migration_from_file(string $filename = 'migration'): Response_Handler
     {
-        // Get file data
-        $get_file_data = @file_get_contents(WP_CUSTOM_API_FOLDER_PATH . strtolower($filename) . '.json');
+        // Check if file exists
+        $file_path = WP_CUSTOM_API_FOLDER_PATH . strtolower($filename) . '.json';
 
-        // If file doesn't exist, return error
-        if (!$get_file_data) return self::response(false, 500, 'Error importing data from file.  Make sure that ' . WP_CUSTOM_API_FOLDER_PATH . $filename . '.json' . ' exists in the root folder of the plugin.');
+        // If file does not exist, return error
+        if (!file_exists($file_path) || !is_readable($file_path)) {
+            return self::response(false, 404, 'Error importing data from file. Make sure that ' . $file_path . ' exists in the root folder of the plugin and is readable.');
+        }
+
+        // Get file data
+        $get_file_data = file_get_contents($file_path);
+
+        // If error reading file, return error
+        if ($get_file_data === false) {
+            return self::response(false, 500, 'An error occurred while reading migration data from ' . $file_path . '.');
+        }
 
         // Convert JSON into an associative array
         $assoc_array = json_decode($get_file_data, true);
