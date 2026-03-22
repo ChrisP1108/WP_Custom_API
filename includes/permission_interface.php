@@ -219,13 +219,16 @@ abstract class Permission_Interface
      * Updates the additionals only data associated with a session.
      * 
      * @param int $session_id The session_id associated with the token.
+     * @param int $user_id The user ID associated with the token.
      * @param array $additionals The new additionals data (array will be JSON encoded)
      * @return Response_Handler The response of the update operation.
      */
     
-    final public static function token_update_session_additionals(int $session_id, array $additionals): Response_Handler
+    final public static function token_update_session_additionals(int $session_id, int $user_id, array $additionals): Response_Handler
     {
-        return Session::update_additionals($session_id, $additionals);
+        $token_prefixed = Config::AUTH_TOKEN_PREFIX . Plugin::get_requested_route_data()['namespace'];
+
+        return Session::update_additionals($session_id, $token_prefixed, $user_id, $additionals);
     }
 
     /**

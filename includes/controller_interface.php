@@ -132,8 +132,10 @@ class Controller_Interface
         // Loop through the schema to make sure all required keys from sanitized data are present, along with making sure all parameter values do not exceed character maximum.
         foreach ($schema as $key => $params) {
             $required_key = $params['required'] ?? true;
-            if ($required_key && !array_key_exists($key, $merged_sanitized_params)) {
-                $missing_keys[] = $key;
+            if (!array_key_exists($key, $merged_sanitized_params)) {
+                if ($required_key) {
+                    $missing_keys[] = $key;
+                }
                 continue;
             }
             $value = $merged_sanitized_params[$key];

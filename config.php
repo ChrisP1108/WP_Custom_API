@@ -48,6 +48,15 @@ final class Config
     /**
      * CONSTANT
      * 
+     * @const string DATABASE_MIGRATION_DIRECTORY
+     * Establishes directory for database migration files
+     */
+
+    public const DATABASE_MIGRATION_DIRECTORY = WP_CUSTOM_API_FOLDER_PATH . '/uploads/wp-custom-api-migrations/';
+
+    /**
+     * CONSTANT
+     * 
      * @const string DB_SESSION_SECRET_KEY
      * Secret key used for database nonce hash generation
      * 

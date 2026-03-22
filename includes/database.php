@@ -708,21 +708,49 @@ final class Database
     }
 
     /**
+     * METHOD - get_migration_file_path
+     * 
+     * Get the path to the migration file.
+     * 
+     * @param string $filename The name of the file to create without the .json extension.
+     * 
+     * @return string|false The path to the migration file or false if it could not be created.
+     */
+
+    private static function get_migration_file_path(string $filename): string|false
+    {
+        $filename = sanitize_file_name($filename);
+        $filename = preg_replace('/\.json$/i', '', $filename ?? '');
+
+        if (!$filename) {
+            return false;
+        }
+
+        if (!wp_mkdir_p(Config::DATABASE_MIGRATION_DIRECTORY)) {
+            return false;
+        }
+
+        return Config::DATABASE_MIGRATION_DIRECTORY . strtolower($filename) . '.json';
+    }
+
+    /**
      * METHOD - generate_data_migration
      * 
      * Generate a data migration file that can be used to import data into another Wordpress
      * site.
      *
-     * @param string $filename The name of the file to create without the .json extension.
-     *                          Default is 'migration'
+     * @param string $filename The name of the file to create without the .json extension. Default is 'migration'.
      * 
      * @return Response_Handler The response of the generate migration file operation from the self::response() method.
      */
 
     public static function generate_migration_file(string $filename = 'migration'): Response_Handler
     {
-        // Check if filename already exists
-        $file_path = WP_CUSTOM_API_FOLDER_PATH . strtolower($filename) . '.json';
+        $file_path = self::get_migration_file_path($filename);
+
+        if ($file_path === false) {
+            return self::response(false, 400, 'Invalid migration filename.');
+        }
 
         // If file already exists, return error
         if (file_exists($file_path)) {
@@ -738,8 +766,13 @@ final class Database
         if (empty($get_table_data->data)) return self::response(false, 400, 'No tables data was found in the database.');
 
         // Create file
-        $file_content = json_encode($get_table_data->data);
-        $create_file = file_put_contents($file_path, $file_content);
+        $file_content = wp_json_encode($get_table_data->data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+
+        if ($file_content === false) {
+            return self::response(false, 500, 'An error occurred while encoding migration data.');
+        }
+
+        $create_file = file_put_contents($file_path, $file_content, LOCK_EX);
 
         // If error creating file, return error
         if (!$create_file) return self::response(false, 500, 'An error occurred while attempting to create the data file.');
@@ -761,8 +794,11 @@ final class Database
 
     public static function run_migration_from_file(string $filename = 'migration'): Response_Handler
     {
-        // Check if file exists
-        $file_path = WP_CUSTOM_API_FOLDER_PATH . strtolower($filename) . '.json';
+        $file_path = self::get_migration_file_path($filename);
+
+        if ($file_path === false) {
+            return self::response(false, 400, 'Invalid migration filename.');
+        }
 
         // If file does not exist, return error
         if (!file_exists($file_path) || !is_readable($file_path)) {

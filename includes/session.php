@@ -414,8 +414,9 @@ final class Session
         if (!$update_session_data->ok) {
             return Response_Handler::response(
                 false,
-                500,
-                "Unable to retrieve session data corresponding to the name of `" . $name . "`."
+                $update_session_data->status_code,
+                $update_session_data->message,
+                $update_session_data->data
             );
         }
 
@@ -494,10 +495,12 @@ final class Session
      * Does not modify tallies, timestamps, or other fields.
      * 
      * @param int $id Session ID
+     * @param string $name Name of the session
+     * @param int $userid User ID
      * @param array $additionals The new additionals data (array will be JSON encoded)
      * @return Response_Handler Response object indicating the result of the operation.
      */
-    public static function update_additionals(int $id, array $additionals): Response_Handler
+    public static function update_additionals(int $id, string $name, int $user_id, array $additionals): Response_Handler
     {
         global $wpdb;
 
@@ -520,13 +523,26 @@ final class Session
             'Unable to update additionals data: sessions table does not exist.'
         );
 
+        // Check if session exists
+        $existing_session = self::get($id, $name, $user_id);
+
+        if (!$existing_session->ok) {
+            return Response_Handler::response(
+                false,
+                $existing_session->status_code,
+                $existing_session->message
+            );
+        }
+
         ob_start();
 
         // Update additionals column only for the specified session based on id
         $query = $wpdb->prepare(
-            'UPDATE ' . $table_name . ' SET additionals = %s WHERE id = %d',
-            json_encode($additionals),
-            $id
+            'UPDATE ' . $table_name . ' SET additionals = %s WHERE id = %d AND name = %s AND user = %d',
+            wp_json_encode($additionals),
+            $id,
+            $name,
+            $user_id
         );
         $result = $wpdb->query($query);
         ob_end_clean();

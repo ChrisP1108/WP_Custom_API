@@ -243,7 +243,29 @@ final class Router
                     }
 
                     // Return an unauthorized response if permission callback returned false
-                    if (!$ok) return new WP_Rest_Response(['message' => 'Unauthorized'], 401);
+                    if (!$ok) {
+                        $permission_class = null;
+
+                        if (is_array($route['permission_callback']) && isset($route['permission_callback'][0])) {
+                            $permission_class = is_string($route['permission_callback'][0])
+                                ? $route['permission_callback'][0]
+                                : get_class($route['permission_callback'][0]);
+                        }
+
+                        if ($permission_class && is_callable([$permission_class, 'unauthorized_response'])) {
+                            $unauthorized = call_user_func([$permission_class, 'unauthorized_response']);
+
+                            return new WP_REST_Response(
+                                [
+                                    'message' => $unauthorized->message ?? 'Unauthorized',
+                                    'data' => $unauthorized->data ?? null,
+                                ],
+                                $unauthorized->status_code ?? 401
+                            );
+                        }
+
+                        return new WP_REST_Response(['message' => 'Unauthorized'], 401);
+                    }
 
                     // Run controller callback if permission callback returned true and pass in permission_data from permission callback
                     return call_user_func($route['callback'], $request, $permission_callback_data_params);
