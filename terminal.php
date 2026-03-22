@@ -18,6 +18,8 @@ define('ABSPATH', dirname(__DIR__, 3) . '/');
 
 require __DIR__ . '/config.php';
 
+use WP_Custom_API\Config;
+
 define("BASE_API_ROUTE", WP_Custom_API\Config::BASE_API_ROUTE);
 
 /**
@@ -424,25 +426,22 @@ if (COMMAND === COMMAND_EXPORT || COMMAND === COMMAND_IMPORT && RESOURCE === 'da
         if (empty($get_table_data->data)) {
             echo $get_table_data->message . "\n";
         }
-        $file_content = json_encode($get_table_data->data);
-        $create_file = file_put_contents(DATA_FILE_PATH, $file_content);
-        if (!$create_file) {
-            echo "Error creating export file " . DATA_FILE_PATH . "\n";
+        $filename = pathinfo(DATA_FILE_PATH, PATHINFO_FILENAME);
+        $generate_migration = Database::generate_migration_file($filename);
+
+        if (!$generate_migration->ok) {
+            echo $generate_migration->message . "\n";
             exit;
         }
-        echo "Export file " . DATA_FILE_PATH . " created successfully. \n";
+
+        echo "Export file created successfully at " . Config::DATABASE_MIGRATION_DIRECTORY . strtolower($filename) . ".json\n";
         exit;
     }
 
     // Perform import command
     if (COMMAND === COMMAND_IMPORT) {
-        $get_file_data = file_get_contents(DATA_FILE_PATH);
-        if (!$get_file_data) {
-            echo "Error importing data from file.  Make sure that " . DATA_FILE_PATH . " exists in the root folder of the plugin.";
-            exit;
-        }
-        $assoc_array = json_decode($get_file_data, true);
-        $import_data = Database::import_tables_data($assoc_array);
+        $filename = pathinfo(DATA_FILE_PATH, PATHINFO_FILENAME);
+        $import_data = Database::run_migration_from_file($filename);
         $error_importing_data = false;
         if (!$import_data->ok) {
             echo $import_data->message . " See list below for error details.\n";

@@ -104,7 +104,10 @@ final class Plugin
             Session::delete_expired_sessions();
 
             // Create tables
-            $this->create_tables();
+            // Only allow schema creation in trusted contexts
+            if (is_admin() && current_user_can('manage_options')) {
+                $this->create_tables();
+            }
 
             // Initialize routes
             Router::init();

@@ -52,7 +52,7 @@ final class Config
      * Establishes directory for database migration files
      */
 
-    public const DATABASE_MIGRATION_DIRECTORY = WP_CUSTOM_API_FOLDER_PATH . '/uploads/wp-custom-api-migrations/';
+    public const DATABASE_MIGRATION_DIRECTORY = WP_CONTENT_DIR . '/wp-custom-api-private/wp-custom-api-migrations/';
 
     /**
      * CONSTANT

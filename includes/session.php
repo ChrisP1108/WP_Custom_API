@@ -236,7 +236,7 @@ final class Session
             'header_nonce' => $header_nonce,
             'expiration_at' => $expiration_time,
             'updated_tally' => 0,
-            'additionals' => json_encode($additionals)
+            'additionals' => wp_json_encode($additionals)
         ];
 
         // Create session table row in sessions table
@@ -432,7 +432,7 @@ final class Session
         }
 
         // Update additionals data
-        $existing_data['additionals'] = json_encode($updated_data);
+        $existing_data['additionals'] = wp_json_encode($updated_data);
 
         $sql_update_data = $existing_data;
 

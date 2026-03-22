@@ -726,11 +726,27 @@ final class Database
             return false;
         }
 
-        if (!wp_mkdir_p(Config::DATABASE_MIGRATION_DIRECTORY)) {
+        $directory = untrailingslashit(Config::DATABASE_MIGRATION_DIRECTORY) . '/';
+
+        if (!wp_mkdir_p($directory)) {
             return false;
         }
 
-        return Config::DATABASE_MIGRATION_DIRECTORY . strtolower($filename) . '.json';
+        $index_file = $directory . 'index.php';
+        if (!file_exists($index_file)) {
+            file_put_contents($index_file, "<?php\n// Silence is golden.\n", LOCK_EX);
+        }
+
+        $htaccess_file = $directory . '.htaccess';
+        if (!file_exists($htaccess_file)) {
+            file_put_contents(
+                $htaccess_file,
+                "<FilesMatch \".*\">\n    <IfModule mod_authz_core.c>\n        Require all denied\n    </IfModule>\n    <IfModule !mod_authz_core.c>\n        Order Allow,Deny\n        Deny from all\n    </IfModule>\n</FilesMatch>\n",
+                LOCK_EX
+            );
+        }
+
+        return $directory . strtolower($filename) . '.json';
     }
 
     /**
@@ -785,7 +801,6 @@ final class Database
      * Run a migration from a file.
      *
      * Runs a migration from a file with the specified name.  The file should be a JSON file
-     * in the root folder of the plugin.
      *
      * @param string $filename The name of the file to import without the .json extension.  Default is 'migration'
      * 
@@ -802,7 +817,7 @@ final class Database
 
         // If file does not exist, return error
         if (!file_exists($file_path) || !is_readable($file_path)) {
-            return self::response(false, 404, 'Error importing data from file. Make sure that ' . $file_path . ' exists in the root folder of the plugin and is readable.');
+            return self::response(false, 404, 'Error importing data from file. Make sure that ' . $file_path . ' exists in the configured migration directory and is readable.');
         }
 
         // Get file data
@@ -817,7 +832,7 @@ final class Database
         $assoc_array = json_decode($get_file_data, true);
 
         // If file is not a valid JSON array, return error
-        if (!is_array($assoc_array)) return self::response(false, 500, 'Data from ' . WP_CUSTOM_API_FOLDER_PATH . $filename . '.json' . ' is not valid for migrating. Check that the file is a valid JSON file.');
+        if (!is_array($assoc_array)) return self::response(false, 500, 'Data from ' . $file_path . ' is not valid for migrating. Check that the file is a valid JSON file.');
         
         // Import data and return result
         $import_data = self::import_tables_data($assoc_array);
