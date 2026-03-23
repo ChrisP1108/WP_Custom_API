@@ -100,11 +100,11 @@ final class Plugin
             // Autoload files based on Config::FILES_TO_AUTOLOAD constant
             $this->files_autoloader();
 
-            // Delete expired sessions from database
-            Session::delete_expired_sessions();
-
             // Create tables
             $this->create_tables();
+
+            // Delete expired sessions from database
+            Session::delete_expired_sessions();
 
             // Initialize routes
             Router::init();

@@ -48,15 +48,6 @@ final class Config
     /**
      * CONSTANT
      * 
-     * @const string DATABASE_MIGRATION_DIRECTORY
-     * Establishes directory for database migration files
-     */
-
-    public const DATABASE_MIGRATION_DIRECTORY = WP_CONTENT_DIR . '/wp-custom-api-private/wp-custom-api-migrations/';
-
-    /**
-     * CONSTANT
-     * 
      * @const string DB_SESSION_SECRET_KEY
      * Secret key used for database nonce hash generation
      * 
@@ -152,6 +143,15 @@ final class Config
      */
 
     public const DATABASE_REFRESH_INTERVAL = 86400;
+
+    /**
+     * CONSTANT
+     * 
+     * @const string DATABASE_MIGRATION_DIRECTORY
+     * Establishes directory for database migration files
+     */
+
+    public const DATABASE_MIGRATION_DIRECTORY = WP_CONTENT_DIR . '/wp-custom-api-private/wp-custom-api-migrations/';
 
     /**
      * CONSTANT
