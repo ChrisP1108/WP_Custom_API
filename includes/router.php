@@ -48,72 +48,6 @@ final class Router
     private static $routes_registered = false;
 
     /**
-     * Check if the current request matches a given route and method.
-     *
-     * @param string $method The HTTP method to check against (e.g., GET, POST).
-     * @param string $route The route pattern to match, with optional placeholders.
-     * @return bool True if the request matches the route and method, false otherwise.
-     */
-    private static function route_matches_request(string $method, string $route_pattern): bool
-    {
-        // Get the requested route data
-        $route_data = Plugin::get_requested_route_data();
-
-        // 1) Method must match
-        if ($route_data['method'] !== strtoupper($method)) {
-            return false;
-        }
-
-        // 2) Full path after /v1/, e.g. "youtube_blogs/categories/4"
-        $requested_full = trim($route_data['route'], '/');
-
-        // 3) Derive your base folder name, e.g. "youtube_blogs/categories"
-        $api_prefix = rtrim(WP_CUSTOM_API_FOLDER_PATH, '/') . '/api/';
-        $folder    = str_replace('\\', '/', $route_data['folder']);
-        $base      = '';
-        if (0 === strpos($folder, $api_prefix)) {
-            $base = trim(substr($folder, strlen($api_prefix)), '/');
-        }
-
-        // 4) Carve off the "remainder" after that base
-        if ($base === '') {
-            $remainder = $requested_full;
-        } elseif ($requested_full === $base) {
-            $remainder = '';
-        } elseif (str_starts_with($requested_full, $base . '/')) {
-            $remainder = substr($requested_full, strlen($base) + 1);
-        } else {
-            return false; // request isn’t under this folder
-        }
-        $remainder = trim($remainder, '/');
-
-        // 5) Normalize the developer‐supplied pattern (drops any "/" around it)
-        $pattern = trim($route_pattern, '/');
-
-        // 6) If they registered the root (e.g. Router::get("/")):
-        if ($pattern === '') {
-            return $remainder === '';
-        }
-
-        // 7) Break the pattern into segments, build a regex per segment
-        $parts      = explode('/', $pattern);
-        $regex_parts = [];
-        foreach ($parts as $part) {
-            if (preg_match('/^\{(\w+)\}$/', $part, $m)) {
-                // wildcard segment → named capture
-                $regex_parts[] = '(?P<' . $m[1] . '>[A-Za-z0-9_-]+)';
-            } else {
-                // literal segment → escape it
-                $regex_parts[] = preg_quote($part, '/');
-            }
-        }
-
-        // 8) Test remainder against that assembled regex
-        $regex = '#^' . implode('\/', $regex_parts) . '$#';
-        return (bool) preg_match($regex, $remainder);
-    }
-
-    /**
      * METHOD - register_rest_api_route
      * 
      * Register a REST API route.  Finds a route folder that the method was called from and registers the route relative to that folder name.
@@ -130,9 +64,6 @@ final class Router
     {
         $route_data = Plugin::get_requested_route_data();
 
-        // Check that route matches the request.  If not, the route will not be registered
-        if (!self::route_matches_request($method, $route)) return;
-
         // Check that permission callback is callable.  If not, return no_permission_callback_response and set permission_callback to true to display error message
 
         if (!is_callable($permission_callback)) {
@@ -145,11 +76,13 @@ final class Router
         }
 
         $route = trim($route, '/');
+        $full_route = self::parse_wildcards($route_data['route_without_remainder'] . $route);
+        $route_key = strtoupper($method) . '|' . $full_route;
 
-        self::$routes[] = [
+        self::$routes[$route_key] = [
             'name' => $route_data['folder'],
             'method' => strtoupper($method),
-            'route' => self::parse_wildcards($route_data['route_without_remainder'] . $route),
+            'route' => $full_route,
             'callback' => $callback,
             'permission_callback' => $permission_callback
         ];
@@ -176,7 +109,7 @@ final class Router
 
         add_action('rest_api_init', function () {
 
-            foreach (self::$routes as $route) {
+            foreach (array_values(self::$routes) as $route) {
             
                 // Callback wrapper to allow custom Permission callback unauthorized response to be set by running the main callback and checking if it returned true or false
 
@@ -278,10 +211,10 @@ final class Router
                     'permission_callback' => '__return_true'
                 ]);
             }
-        });
 
-        // Run action hook when REST API routes are registered
-        do_action('wp_custom_api_routes_registered', self::$routes);
+            // Run action hook when REST API routes are registered
+            do_action('wp_custom_api_routes_registered', self::$routes);
+        });
     }
 
     /**

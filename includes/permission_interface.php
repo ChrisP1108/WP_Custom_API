@@ -460,7 +460,18 @@ abstract class Permission_Interface
         }
 
         // Reset header for header nonce
-        header(Config::HEADER_NONCE_PREFIX . ': ' . $updated_header_nonce_value);
+        if (!headers_sent()) {
+            header(Config::HEADER_NONCE_PREFIX . ': ' . $updated_header_nonce_value);
+        } else {
+            Cookie::remove($prefixed_name);
+            Session::delete($session_id);
+
+            return Response_Handler::response(
+                false,
+                500,
+                "Unable to send refreshed header nonce for session `{$name}` because headers were already sent."
+            );
+        }
 
         // Return the successful session update response
         return $update_existing_session_result;

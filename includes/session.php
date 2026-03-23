@@ -400,12 +400,12 @@ final class Session
      * @param string $name Name of the session
      * @param int $userid User ID
      * @param array $updated_data The array to store in the additionals key
-     * @param string $refresh_nonce Nonce used for refreshing the session
-     * @param string $header_nonce Nonce used for refreshing the session in the request header
+     * @param string|null $refresh_nonce Nonce used for refreshing the session
+     * @param string|null $header_nonce Nonce used for refreshing the session in the request header
      * @return Response_Handler Response object containing session data or error details
      */
 
-    public static function update(int $id, string $name, int $user_id, array $updated_data, string $refresh_nonce = '', string $header_nonce = ''): Response_Handler
+    public static function update(int $id, string $name, int $user_id, array $updated_data, ?string $refresh_nonce = null, ?string $header_nonce = null): Response_Handler
     {
         // Retrieve the session
         $update_session_data = self::get($id, $name, $user_id);
@@ -424,12 +424,9 @@ final class Session
         $existing_data = (array) $update_session_data->data;
 
         // Add tally to number of times updated
-        if (isset($existing_data['updated_tally'])) {
-            $existing_data['updated_tally'] = intval($existing_data['updated_tally']);
-            $existing_data['updated_tally'] += 1;
-        } else {
-            $existing_data['updated_tally'] = 1;
-        }
+        $existing_data['updated_tally'] = isset($existing_data['updated_tally'])
+            ? intval($existing_data['updated_tally']) + 1
+            : 1;
 
         // Update additionals data
         $existing_data['additionals'] = wp_json_encode($updated_data);
@@ -446,14 +443,14 @@ final class Session
         $sql_update_data['header_nonce'] = $header_nonce;
 
         // Update session table row in sessions table
-        $insert_session_result = Database::update_row(
+        $update_result = Database::update_row(
             self::SESSIONS_TABLE_NAME,
             intval($existing_data['id']),
             $sql_update_data,
         );
 
         // Determine if the update was successful
-        $ok = $insert_session_result->ok;
+        $ok = $update_result->ok;
 
         // Object data
         $object_data = null;

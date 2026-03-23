@@ -565,7 +565,7 @@ final class Database
 
         if (!$table_name_query) return self::response(false, 500, 'An error occurred while attempting to retrieve table names or no tables exist.');
 
-        $like_table_name_query = '%' . $table_name_query . '%';
+        $like_table_name_query = $table_name_query . '%';
 
         // Get all table names
         $table_names = $wpdb->get_col(

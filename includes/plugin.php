@@ -142,44 +142,59 @@ final class Plugin
 
     private function request_to_plugin(): bool
     {
-        $uri    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        $prefix = '/wp-json/' . Config::BASE_API_ROUTE . '/';
+        $request_uri = wp_unslash($_SERVER['REQUEST_URI'] ?? '');
+        $uri = wp_parse_url($request_uri, PHP_URL_PATH);
 
-        if (strpos($uri, $prefix) !== 0) {
+        if (!is_string($uri) || $uri === '') {
             return false;
         }
 
-        $after = trim(str_replace($prefix, '', $uri), '/');   // e.g. "youtube_blogs/categories/4"
-        $api   = rtrim(WP_CUSTOM_API_FOLDER_PATH, '/') . '/api/';
+        $home_path = wp_parse_url(home_url('/'), PHP_URL_PATH);
+        $home_path = is_string($home_path) ? trim($home_path, '/') : '';
+
+        $prefix_parts = array_filter([
+            $home_path,
+            trim(rest_get_url_prefix(), '/'),
+            trim(Config::BASE_API_ROUTE, '/'),
+        ]);
+
+        $prefix = '/' . implode('/', $prefix_parts);
+        $prefix = preg_replace('#/+#', '/', $prefix);
+
+        if ($uri !== $prefix && !str_starts_with($uri, $prefix . '/')) {
+            return false;
+        }
+
+        $after = trim(substr($uri, strlen($prefix)), '/');
+        $api = rtrim(WP_CUSTOM_API_FOLDER_PATH, '/') . '/api/';
 
         $segments = $after === '' ? [] : explode('/', $after);
 
-        // find the deepest matching folder under api/
-        $matched    = false;
+        $matched = false;
         $matched_dir = '';
-        $remainder  = '';
+        $remainder = '';
+
         for ($i = count($segments); $i > 0; $i--) {
             $cand = implode('/', array_slice($segments, 0, $i));
+
             if (is_dir($api . $cand)) {
-                $matched    = true;
+                $matched = true;
                 $matched_dir = $cand;
-                $remainder  = implode('/', array_slice($segments, $i));
+                $remainder = implode('/', array_slice($segments, $i));
                 break;
             }
         }
 
-        if (! $matched) {
-            // fallback: first segment is folder
+        if (!$matched) {
             $matched_dir = $segments[0] ?? '';
         }
 
-        // Extract and sanitize the route path
-        $route_path = str_replace($prefix, '', $uri);
+        $route_path = $after;
         $route_path = str_replace('\\', '/', $route_path);
         $route_path = preg_replace('#/+#', '/', $route_path);
 
         $route_without_remainder = $route_path;
-        
+
         if ($remainder !== '' && str_ends_with($route_without_remainder, $remainder)) {
             $route_without_remainder = substr($route_without_remainder, 0, -strlen($remainder));
         }
@@ -189,19 +204,18 @@ final class Plugin
 
         $namespace = str_replace('/', '_', $route_without_remainder);
 
-        // Remove trailing underscore from namespace
-        if (str_ends_with($namespace, "_")) {
+        if (str_ends_with($namespace, '_')) {
             $namespace = substr($namespace, 0, -1);
         }
 
         self::$requested_route_data = [
             'folder' => $api . $matched_dir,
-            'method' => $_SERVER['REQUEST_METHOD'],
-            'route'  => $route_path,
+            'method' => strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET'),
+            'route' => $route_path,
             'route_without_remainder' => $route_without_remainder,
             'remainder' => $remainder,
             'namespace' => $namespace,
-            'model_schema' => [] 
+            'model_schema' => [],
         ];
 
         return true;

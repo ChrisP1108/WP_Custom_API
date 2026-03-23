@@ -279,7 +279,12 @@ final class Auth_Token
         }
 
         // Set header for header nonce
-        header(Config::HEADER_NONCE_PREFIX . ': ' . $header_nonce);
+        if (!headers_sent()) {
+            header(Config::HEADER_NONCE_PREFIX . ': ' . $header_nonce);
+        } else {
+            self::remove_token($token_name_prefix, $user_id, $session_id);
+            return self::response(false, 500, null, null, 'Unable to send header nonce because headers were already sent.');
+        }
         
         return self::response(true, 200, $user_id, $session_data, "Token successfully generated.", $issued_at, $expires_at);
     }
@@ -481,7 +486,18 @@ final class Auth_Token
         }
 
         // Reset header for header nonce
-        header(Config::HEADER_NONCE_PREFIX . ': ' . $updated_header_nonce_value);
+        if (!headers_sent()) {
+            header(Config::HEADER_NONCE_PREFIX . ': ' . $updated_header_nonce_value);
+        } else {
+            self::remove_token($token_name_prefix, $id, $session_id);
+            return self::response(
+                false,
+                500,
+                null,
+                $session_id_arr,
+                'Unable to send refreshed header nonce because headers were already sent.'
+            );
+        }
 
         // Token is valid
         return self::response(true, 200, $id, $session_data, "Token authenticated.", $issued_at, $expiration_at);
