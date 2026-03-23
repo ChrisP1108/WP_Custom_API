@@ -405,7 +405,7 @@ final class Session
      * @return Response_Handler Response object containing session data or error details
      */
 
-    public static function update(int $id, string $name, int $user_id, array $updated_data, ?string $refresh_nonce = null, ?string $header_nonce = null): Response_Handler
+    public static function update(int $id, string $name, int $user_id, array $updated_data, string|null $refresh_nonce = null, string|null $header_nonce = null): Response_Handler
     {
         // Retrieve the session
         $update_session_data = self::get($id, $name, $user_id);

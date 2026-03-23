@@ -199,13 +199,13 @@ abstract class Permission_Interface
      * @param int $session_id The session_id associated with the token.
      * @param int $user_id The user ID associated with the token.
      * @param array $updated_data The updated data to be stored in the session.
-     * @param string $refresh_nonce - Optional parameter to refresh the nonce.
-     * @param string $header_nonce - Optional parameter to update the header nonce.
+     * @param string|null $refresh_nonce - Optional parameter to refresh the nonce.
+     * @param string|null $header_nonce - Optional parameter to update the header nonce.
      *
      * @return Response_Handler The response of the update operation.
      */
 
-    final public static function token_update_session_data(int $session_id, int $user_id, array $updated_data, string $refresh_nonce = '', string $header_nonce = ''): Response_Handler 
+    final public static function token_update_session_data(int $session_id, int $user_id, array $updated_data, string|null $refresh_nonce = null, string|null $header_nonce = null): Response_Handler 
     {
         $token_prefixed = Config::AUTH_TOKEN_PREFIX . Plugin::get_requested_route_data()['namespace'];
 
