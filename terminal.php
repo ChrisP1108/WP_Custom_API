@@ -327,7 +327,7 @@ class Create
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Permission"
         ];
         $interface_namespace = str_replace('\\', '_', strtolower(NAMESPACE_PATH));
-        $class_content = "   const NAMESPACE = \"" . $interface_namespace . "\";\n\n   // Insert utility methods here.\n";
+        $class_content = "   public const NAMESPACE = \"" . $interface_namespace . "\";\n\n   // Insert utility methods here.\n";
         self::create_file("utils", $dependencies, $class_content);
     }
 
