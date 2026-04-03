@@ -230,12 +230,18 @@ class Create
     public static function model()
     {
         $dependencies = [
-            "WP_Custom_API\Includes\Model_Interface"
+            "WP_Custom_API\Includes\Model_Interface",
+            "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Utils"
         ];
 
         $model_table_name = strtolower(PATH);
 
         $class_content = $class_content = <<<PHP
+                public static function table_name(): string 
+                {
+                    return Utils::NAMESPACE;
+                }
+
                 public static function schema(): array 
                 {
                     // Below is a sample schema, feel free to update/delete as needed.
@@ -284,6 +290,11 @@ class Create
         ];
         $token_name = strtolower(str_replace('/', '_', PATH));
         $class_content = <<<PHP
+                public static function token_name(): string 
+                {
+                    return Utils::NAMESPACE;
+                }
+
                 // Insert permission methods here.
             PHP;
         self::create_file("permission", $dependencies, $class_content);
@@ -315,8 +326,8 @@ class Create
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Model",
             "WP_Custom_API\Api\\" . NAMESPACE_PATH . "\Permission"
         ];
-
-        $class_content = $class_content = '    // Enter utility/helper methods here.';
+        $interface_namespace = str_replace('\\', '_', strtolower(NAMESPACE_PATH));
+        $class_content = "   const NAMESPACE = \"" . $interface_namespace . "\";\n\n   // Insert utility methods here.\n";
         self::create_file("utils", $dependencies, $class_content);
     }
 

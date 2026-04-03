@@ -20,5 +20,8 @@ if (!defined('ABSPATH')) exit;
 
 final class Utils
 {
-    // Enter utility/helper methods here.
+   const NAMESPACE = "sample";
+
+   // Insert utility methods here.
+
 }

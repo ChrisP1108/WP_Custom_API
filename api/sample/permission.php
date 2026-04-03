@@ -21,5 +21,10 @@ if (!defined('ABSPATH')) exit;
 
 final class Permission extends Permission_Interface
 {
+    public static function token_name(): string 
+    {
+        return Utils::NAMESPACE;
+    }
+
     // Insert permission methods here.
 }
