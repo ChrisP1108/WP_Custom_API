@@ -17,6 +17,7 @@ Features include:
 - Request-scoped route loading for improved organization and reduced overhead
 - Nested API resources such as `api/blog/comments`
 - Route placeholders like `/{id}` and `/{slug}`
+- A shared resource namespace constant in `utils.php` used by both models and permissions
 - Controller helpers for validation, sanitization, pagination, and standardized responses
 - Model helpers for table creation and CRUD operations
 - Permission helpers for public routes, token authentication, password hashing, and session utilities
@@ -58,6 +59,21 @@ Nested resources are supported:
 - `api/blog/comments/controller.php`
 
 The plugin inspects the current request path, finds the deepest matching folder inside `api/`, autoloads that resource's files, then registers only the routes that match the current HTTP method and URL pattern.
+
+= Resource Namespace =
+
+Each resource defines its namespace string once in `utils.php`:
+
+```php
+final class Utils
+{
+    public const NAMESPACE = 'sample';
+}
+```
+
+`Model::table_name()` and `Permission::token_name()` should both return `Utils::NAMESPACE`, so the database table name and auth token namespace stay in sync.
+
+For nested resources created through the CLI, the generated namespace uses underscores. For example, `api/blog/comments/` becomes `blog_comments`.
 
 = Routing =
 
@@ -105,6 +121,11 @@ Useful controller helpers include:
 Models extend `Model_Interface` and define the database schema for the resource.
 
 ```php
+public static function table_name(): string
+{
+    return Utils::NAMESPACE;
+}
+
 public static function schema(): array
 {
     return [
@@ -124,6 +145,8 @@ public static function create_table(): bool
 }
 ```
 
+Using `Utils::NAMESPACE` for `table_name()` keeps the model aligned with the resource namespace defined in `utils.php`.
+
 Available helpers include:
 
 - `table_exists()`
@@ -138,6 +161,13 @@ Tables are created automatically on matching requests when `create_table()` retu
 = Permissions And Authentication =
 
 Permissions extend `Permission_Interface`.
+
+```php
+public static function token_name(): string
+{
+    return Utils::NAMESPACE;
+}
+```
 
 Public route:
 
@@ -289,7 +319,7 @@ Create a permission method in `permission.php` and use it in the router declarat
 
 = Where should custom shared logic go? =
 
-Place reusable resource-specific helpers in `utils.php`.
+Place reusable resource-specific helpers in `utils.php`. This file is also where the resource namespace is defined with `Utils::NAMESPACE`, which is then used by the `Model` and `Permission` classes.
 
 == Changelog ==
 
